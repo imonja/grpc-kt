@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example.proto";
+option java_multiple_files = true;
+
+import "model.proto";
+
+service PersonService {
+    rpc GetPerson(GetPersonRequest) returns (GetPersonResponse) {}
+    rpc ListPersons(ListPersonsRequest) returns (stream ListPersonsResponse) {}
+    rpc UpdatePerson(stream UpdatePersonRequest) returns (UpdatePersonResponse) {}
+    rpc ChatWithPerson(stream ChatRequest) returns (stream ChatResponse) {}
+}
+
+message GetPersonRequest {
+    string id = 1;
+}
+
+message GetPersonResponse {
+    Person person = 1;
+}
+
+message ListPersonsRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+message ListPersonsResponse {
+    Person person = 1;
+}
+
+message UpdatePersonRequest {
+    Person person = 1;
+}
+
+message UpdatePersonResponse {
+    bool success = 1;
+}
+
+message ChatRequest {
+    string message = 1;
+}
+
+message ChatResponse {
+    string message = 1;
+}
