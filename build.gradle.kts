@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
     kotlin("jvm") version "2.1.0" apply false
@@ -80,7 +82,7 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_1_8.toString()
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    tasks.withType<KotlinCompile> {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
             jvmTarget.set(JvmTarget.JVM_1_8)
@@ -104,7 +106,7 @@ subprojects {
         }
     }
 
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    configure<KtlintExtension> {
         ktlint {
             filter {
                 exclude("**/generated/**")

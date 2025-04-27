@@ -33,8 +33,8 @@ Add the following to your `build.gradle.kts` file:
 
 ```kotlin
 plugins {
-    kotlin("jvm")
-    id("com.google.protobuf")
+    kotlin("jvm") version "2.1.0"
+    id("com.google.protobuf") version "0.9.5"
 }
 
 dependencies {
@@ -42,20 +42,20 @@ dependencies {
     implementation("io.github.imonja:grpc-kt-common:1.0.0")
 
     // Other gRPC dependencies
-    implementation("io.grpc:grpc-stub:1.69.0")
-    implementation("io.grpc:grpc-protobuf:1.69.0")
+    implementation("io.grpc:grpc-stub:1.71.0")
+    implementation("io.grpc:grpc-protobuf:1.71.0")
     implementation("io.grpc:grpc-kotlin-stub:1.4.1")
-    implementation("com.google.protobuf:protobuf-kotlin:3.25.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("com.google.protobuf:protobuf-kotlin:4.30.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.25.4"
+        artifact = "com.google.protobuf:protoc:4.30.2"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.69.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.71.0"
         }
         id("grpc-kt") {
             artifact = "io.github.imonja:protoc-gen-grpc-kt:1.0.0:jdk8@jar"
@@ -124,7 +124,7 @@ package example;
 option java_package = "com.example.proto";
 option java_multiple_files = true;
 
-import "person.proto";
+import "model.proto";
 
 service PersonService {
     rpc GetPerson(GetPersonRequest) returns (GetPersonResponse) {}
@@ -285,7 +285,7 @@ class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
 
 ## License
 
-This project is licensed under the terms of the license included in the repository.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
