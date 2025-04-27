@@ -25,16 +25,13 @@ mapOf(
     "jupiterVersion" to "5.11.4"
 ).forEach({ (key, value) -> ext[key] = value })
 
-fun RepositoryHandler.gitlabRepository(urlPackages: String) {
+fun RepositoryHandler.privateMavenRepository(urlPackages: String) {
     maven {
+        name = "PrivateMaven"
         url = uri(urlPackages)
-        name = "GitLab"
-        // ~/.gradle/gradle.properties
         credentials(HttpHeaderCredentials::class) {
-            name = findProperty("gitlab.name") as String?
-                ?: throw GradleException("GitLab username not found")
-            value = findProperty("gitlab.token") as String?
-                ?: throw GradleException("GitLab password not found")
+            name = System.getenv("MAVEN_NAME")
+            value = System.getenv("MAVEN_TOKEN")
         }
         authentication {
             create("header", HttpHeaderAuthentication::class)
@@ -98,7 +95,7 @@ subprojects {
             }
         }
         repositories {
-            gitlabRepository("https://gitlab.com/api/v4/projects/54280949/packages/maven")
+            privateMavenRepository("https://gitlab.com/api/v4/projects/54280949/packages/maven")
         }
 
         tasks.withType<Test> {
