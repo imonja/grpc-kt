@@ -30,8 +30,10 @@ fun RepositoryHandler.privateMavenRepository(urlPackages: String) {
         name = "PrivateMaven"
         url = uri(urlPackages)
         credentials(HttpHeaderCredentials::class) {
-            name = System.getenv("MAVEN_NAME")
-            value = System.getenv("MAVEN_TOKEN")
+            name = findProperty("maven.name") as String?
+                ?: System.getenv("MAVEN_NAME")
+            value = findProperty("maven.token") as String?
+                ?: System.getenv("MAVEN_TOKEN")
         }
         authentication {
             create("header", HttpHeaderAuthentication::class)

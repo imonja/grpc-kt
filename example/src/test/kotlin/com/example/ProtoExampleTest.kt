@@ -100,8 +100,8 @@ class ProtoExampleTest {
         val response = stub.getPerson(request)
 
         // Verify the response
-        assert(response.person.name == "John Doe") { "Expected name to be 'John Doe'" }
-        assert(response.person.age == 30) { "Expected age to be 30" }
+        assert(response.person?.name == "John Doe") { "Expected name to be 'John Doe'" }
+        assert(response.person?.age == 30) { "Expected age to be 30" }
     }
 
     @Test
@@ -113,10 +113,10 @@ class ProtoExampleTest {
         val request = ListPersonsRequestKt(limit = 5, offset = 0)
 
         // Make the call and collect responses
-        val responses = mutableListOf<PersonKt>()
+        val responses = mutableListOf<PersonKt?>()
         stub.listPersons(request).collect { response ->
             responses.add(response.person)
-            println("Received person: ${response.person.name}")
+            println("Received person: ${response.person?.name}")
         }
 
         // Verify we received the expected number of responses
@@ -221,7 +221,7 @@ class ProtoExampleTest {
         override suspend fun updatePerson(requests: Flow<UpdatePersonRequestKt>): UpdatePersonResponseKt {
             // Process each update request
             requests.collect { request ->
-                println("Updating person: ${request.person.name}")
+                println("Updating person: ${request.person?.name}")
                 // In a real implementation, you would update the person in a database
             }
             return UpdatePersonResponseKt(success = true)

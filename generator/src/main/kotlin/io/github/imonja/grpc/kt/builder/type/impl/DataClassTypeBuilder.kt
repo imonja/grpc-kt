@@ -10,7 +10,9 @@ import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.import.Import
 import io.github.imonja.grpc.kt.toolkit.import.TypeSpecsWithImports
+import io.github.imonja.grpc.kt.toolkit.isExplicitlyOptional
 import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
+import io.github.imonja.grpc.kt.toolkit.isProtoOptional
 import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
 import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 
@@ -108,11 +110,16 @@ class DataClassTypeBuilder(
             paramBuilder.defaultValue(default.code)
             constructorBuilder.addParameter(paramBuilder.build())
 
-            dataClassBuilder.addProperty(
-                PropertySpec.builder(fieldName, fieldType)
-                    .initializer(fieldName)
-                    .build()
-            )
+            val propertyBuilder = PropertySpec.builder(fieldName, fieldType).initializer(fieldName)
+
+            // Add KDoc comments about field optionality
+            if (field.isExplicitlyOptional) {
+                propertyBuilder.addKdoc("This field was explicitly marked as optional in the proto file.")
+            } else if (field.isProtoOptional) {
+                propertyBuilder.addKdoc("This field is a message type and is implicitly optional in Proto3.")
+            }
+
+            dataClassBuilder.addProperty(propertyBuilder.build())
         }
 
         dataClassBuilder.primaryConstructor(constructorBuilder.build())

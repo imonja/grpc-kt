@@ -20,13 +20,28 @@ private fun FieldDescriptor.hasOptionalKeywordReflective(): Boolean {
     }
 }
 
+/**
+ * Determines if a field should be treated as optional in Proto3.
+ * In Proto3, fields can be optional if:
+ * 1. They have the 'optional' keyword (Proto3.15+)
+ * 2. They are MESSAGE type (always nullable in Proto3)
+ * 3. They are primitive wrapper types (e.g., google.protobuf.StringValue)
+ */
 val FieldDescriptor.isProtoOptional: Boolean
     get() = when {
         hasOptionalKeywordReflective() -> true
         isRepeated || isMapField -> false
-        type != FieldDescriptor.Type.MESSAGE -> false
-        else -> messageType.isPrimitiveWrapperType()
+        type == FieldDescriptor.Type.MESSAGE -> true // All MESSAGE fields are nullable in Proto3
+        else -> false
     }
+
+/**
+ * Determines if a field was explicitly marked as optional in the proto file.
+ * This is different from isProtoOptional because it only returns true for fields
+ * that have the 'optional' keyword (Proto3.15+).
+ */
+val FieldDescriptor.isExplicitlyOptional: Boolean
+    get() = hasOptionalKeywordReflective()
 
 val FieldDescriptor.javaFieldName: String
     get() {

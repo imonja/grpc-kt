@@ -114,17 +114,17 @@ object ProtoExample {
             println("\n--- Unary Call Example ---")
             val getPersonRequest = GetPersonRequestKt(id = "123")
             val getPersonResponse = stub.getPerson(getPersonRequest)
-            println("Received person: ${getPersonResponse.person.name}, age: ${getPersonResponse.person.age}")
+            println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
 
             // Example 2: Server streaming
             println("\n--- Server Streaming Example ---")
             val listRequest = ListPersonsRequestKt(limit = 5, offset = 0)
             println("Requesting persons with limit=${listRequest.limit}, offset=${listRequest.offset}")
 
-            val persons = mutableListOf<PersonKt>()
+            val persons = mutableListOf<PersonKt?>()
             stub.listPersons(listRequest).collect { response ->
                 persons.add(response.person)
-                println("Received person: ${response.person.name}, age: ${response.person.age}")
+                println("Received person: ${response.person?.name}, age: ${response.person?.age}")
             }
             println("Received ${persons.size} persons in total")
 
@@ -224,7 +224,7 @@ object ProtoExample {
 
             // Process each update request
             requests.collect { request ->
-                println("Server processing update for person: ${request.person.name}")
+                println("Server processing update for person: ${request.person?.name}")
                 // In a real implementation, you would update the person in a database
             }
             return UpdatePersonResponseKt(success = true)
