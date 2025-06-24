@@ -12,6 +12,8 @@ plugins {
 group = "io.github.imonja"
 description = "gRPC Kotlin"
 
+// Set version from releaseVersion property (for tag-based releases)
+// or from gradle.properties (for SNAPSHOT builds)
 if (project.hasProperty("releaseVersion")) {
     version = project.property("releaseVersion") as String
 }
@@ -25,18 +27,16 @@ mapOf(
     "jupiterVersion" to "5.11.4"
 ).forEach({ (key, value) -> ext[key] = value })
 
-fun RepositoryHandler.privateMavenRepository(urlPackages: String) {
+fun RepositoryHandler.githubPackages() {
     maven {
-        name = "PrivateMaven"
-        url = uri(urlPackages)
-        credentials(HttpHeaderCredentials::class) {
-            name = findProperty("maven.name") as String?
-                ?: System.getenv("MAVEN_NAME")
-            value = findProperty("maven.token") as String?
-                ?: System.getenv("MAVEN_TOKEN")
-        }
-        authentication {
-            create("header", HttpHeaderAuthentication::class)
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+        credentials {
+            username = findProperty("github.username") as String?
+                ?: System.getenv("GITHUB_USERNAME")
+                ?: "github-actions"
+            password = findProperty("github.token") as String?
+                ?: System.getenv("GITHUB_TOKEN")
         }
     }
 }
@@ -94,10 +94,11 @@ subprojects {
                 pom {
                     description.set(project.description)
                 }
+                from(components["java"])
             }
         }
         repositories {
-            privateMavenRepository("https://gitlab.com/api/v4/projects/54280949/packages/maven")
+            githubPackages()
         }
 
         tasks.withType<Test> {

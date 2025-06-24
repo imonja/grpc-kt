@@ -6,7 +6,6 @@ java {
 publishing {
     publications {
         named<MavenPublication>("maven") {
-            from(components["java"])
             pom {
                 name.set("grpc-kt common")
                 artifactId = "grpc-kt-common"

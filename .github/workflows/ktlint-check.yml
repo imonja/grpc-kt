@@ -1,13 +1,11 @@
-name: Run Tests
+name: Ktlint Check
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  test:
+  ktlint-check:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,12 +23,5 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run tests
-        run: ./gradlew test
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v2
-        if: always() # always run even if the previous step fails
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+      - name: Ktlint Check with Gradle
+        run: ./gradlew clean ktlintCheck
