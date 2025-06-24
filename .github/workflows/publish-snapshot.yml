@@ -24,13 +24,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Run ktlint check
+        run: ./gradlew clean ktlintCheck
+
+      - name: Run tests
+        run: ./gradlew test
+
       - name: Ensure SNAPSHOT version
         run: |
           ./gradlew setSnapshotVersion
           echo "Using SNAPSHOT version: $(grep -oP 'version=\K.*' gradle.properties)"
 
-      - name: Build with Gradle
-        run: ./gradlew build test publish
+      - name: Publish to GitHub Packages
+        run: ./gradlew publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
