@@ -32,7 +32,7 @@ fun RepositoryHandler.githubPackages() {
         url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
         name = "GitHub"
         credentials {
-            username = findProperty("github.username") as String? ?: System.getenv("GITHUB_ACTOR")
+            username = findProperty("github.username") as String? ?: System.getenv("GITHUB_USERNAME")
             password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
         }
     }
