@@ -29,14 +29,11 @@ mapOf(
 
 fun RepositoryHandler.githubPackages() {
     maven {
-        name = "GitHubPackages"
         url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+        name = "GitHub"
         credentials {
-            username = findProperty("github.username") as String?
-                ?: System.getenv("GITHUB_USERNAME")
-                ?: "github-actions"
-            password = findProperty("github.token") as String?
-                ?: System.getenv("GITHUB_TOKEN")
+            username = findProperty("github.username") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
         }
     }
 }
