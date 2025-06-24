@@ -34,15 +34,9 @@ jobs:
         run: |
           echo "GITHUB_USERNAME: $GITHUB_USERNAME"
           echo "GITHUB_TOKEN: $GITHUB_TOKEN"
-        env:
-          GITHUB_USERNAME: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to GitHub Packages
         run: ./gradlew publish
-        env:
-          GITHUB_USERNAME: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
