@@ -1,62 +1,65 @@
 name: Publish Release to GitHub Packages
 
+permissions:
+    contents: read
+    packages: write
+    checks: write
+
 on:
-  push:
-    tags:
-      - '*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release'
-        required: true
+    push:
+        tags:
+            - '*'
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to release'
+                required: true
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+    publish-release:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: gradle
-
-      - name: Extract version from tag
-        id: get_version
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            # Extract version from tag (e.g., 1.0.0)
-            TAG_VERSION=${GITHUB_REF#refs/tags/}
-            echo "Using version from tag: $TAG_VERSION"
-            echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
-          else
-            # Use manually provided version for workflow_dispatch
-            echo "Using manually provided version: ${{ github.event.inputs.version }}"
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          fi
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Run ktlint check
-        run: ./gradlew clean ktlintCheck
-
-      - name: Run tests
-        run: ./gradlew test
-
-      - name: Publish to GitHub Packages
-        run: ./gradlew publish -PreleaseVersion=$VERSION
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v2
-        if: always() # always run even if the previous step fails
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up JDK
+                uses: actions/setup-java@v3
+                with:
+                    distribution: 'temurin'
+                    java-version: '21'
+                    cache: gradle
+            -   name: Extract version from tag
+                id: get_version
+                run: |
+                    if [ "${{ github.event_name }}" == "push" ]; then
+                      # Extract version from tag (e.g., 1.0.0)
+                      TAG_VERSION=${GITHUB_REF#refs/tags/}
+                      echo "Using version from tag: $TAG_VERSION"
+                      echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
+                    else
+                      # Use manually provided version for workflow_dispatch
+                      echo "Using manually provided version: ${{ github.event.inputs.version }}"
+                      echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+                    fi
+            -   name: Grant execute permission for gradlew
+                run: chmod +x gradlew
+            -   name: Run ktlint check
+                run: ./gradlew clean ktlintCheck
+            -   name: Run tests
+                id: tests
+                run: ./gradlew test
+            -   name: Report Test Results
+                if: ${{ always() && !cancelled() && steps.tests.outcome != 'skipped' }}
+                uses: dorny/test-reporter@v2
+                with:
+                    name: JUnit Tests
+                    path: '**/build/test-results/test/TEST-*.xml'
+                    reporter: java-junit
+                    fail-on-error: false
+            -   name: Publish to GitHub Packages
+                #run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }}
+                run: ./gradlew publish
+                env:
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

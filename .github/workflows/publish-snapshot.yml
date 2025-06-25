@@ -11,7 +11,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    deploy:
+    publish-snapshot:
         runs-on: ubuntu-latest
         steps:
             -   uses: actions/checkout@v3
@@ -39,4 +39,8 @@ jobs:
                     reporter: java-junit
                     fail-on-error: false
             -   name: Publish to GitHub Packages
-                run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }}
+#                run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }}
+                run: ./gradlew publish
+                env:
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

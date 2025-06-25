@@ -15,3 +15,14 @@ add-tag-and-push:
 	git push origin "$$tag"; \
 	echo "✅ Tag $$tag pushed successfully."
 
+delete-tag:
+	@read -p "Enter tag name to delete: " tag; \
+	if [ -z "$$tag" ]; then \
+		echo "❌ Tag name is required."; \
+		exit 1; \
+	fi; \
+	echo "🗑️ Deleting tag '$$tag'"; \
+	git tag -d "$$tag"; \
+	git push origin --delete "$$tag"; \
+	echo "✅ Tag $$tag deleted successfully."
+
