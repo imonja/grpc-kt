@@ -82,16 +82,43 @@ protobuf {
 publishing {
     publications {
         named<MavenPublication>("maven") {
-            pom {
-                name.set("protoc generator grpc kt")
-                artifactId = "protoc-gen-grpc-kt"
-                description.set(
-                    "protoc-gen-grpc-kt is a protoc plugin designed to generation " +
-                        "Kotlin data classes and gRPC services/stubs from .proto input files."
-                )
-            }
+            artifactId = "protoc-gen-grpc-kt"
+
             artifact(tasks.jar) {
                 classifier = "jdk8"
+            }
+
+            // Если присутствуют withSourcesJar()/withJavadocJar(), можно включить
+            // from(components["java"])
+
+            pom {
+                name.set("protoc generator grpc kt")
+                description.set(
+                    "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
+                        "Kotlin data classes and gRPC services/stubs from .proto input files."
+                )
+                url.set("https://github.com/imonja/grpc-kt")
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        distribution.set("repo")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("imonja")
+                        name.set("imonja")
+                    }
+                }
+
+                scm {
+                    connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
+                    developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
+                    url.set("https://github.com/imonja/grpc-kt")
+                }
             }
         }
     }

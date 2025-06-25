@@ -58,4 +58,4 @@ jobs:
                     reporter: java-junit
                     fail-on-error: false
             -   name: Publish to GitHub Packages
-                run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }}
+                run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }} -PreleaseVersion=$VERSION
