@@ -10,12 +10,12 @@ grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/s
 - **Validation Support**: Compatible with Protocol Buffer validation rules
 - **Comprehensive Type Mapping**: Properly maps Protocol Buffer types to Kotlin types
 - **Support for Protocol Buffer Features**:
-  - Oneofs (mapped to sealed interfaces)
-  - Maps
-  - Repeated fields
-  - Optional fields
-  - Nested types
-  - Enums
+    - Oneofs (mapped to sealed interfaces)
+    - Maps
+    - Repeated fields
+    - Optional fields
+    - Nested types
+    - Enums
 
 ## Project Structure
 
@@ -172,7 +172,6 @@ message ChatResponse {
 After running the Gradle build, grpc-kt will generate Kotlin data classes and gRPC service/stub code:
 
 ```kotlin
-// Using generated data classes
 val person = PersonKt(
     name = "John Doe",
     age = 30,
@@ -185,29 +184,22 @@ val person = PersonKt(
     )
 )
 
-// Convert to Java proto
 val javaProto = person.toJavaProto()
-
-// Convert from Java proto
 val kotlinProto = javaProto.toKotlinProto()
 
-// Using generated gRPC client
 val channel = ManagedChannelBuilder.forAddress("localhost", 8080)
     .usePlaintext()
     .build()
 
 val client = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
-// Unary call
 val response = client.getPerson(GetPersonRequestKt(id = "123"))
 
-// Server streaming
 client.listPersons(ListPersonsRequestKt(limit = 10, offset = 0))
     .collect { response ->
         println("Received person: ${response.person.name}")
     }
 
-// Client streaming
 val updateResponse = client.updatePerson(
     flow {
         emit(UpdatePersonRequestKt(person = person))
@@ -215,7 +207,6 @@ val updateResponse = client.updatePerson(
     }
 )
 
-// Bidirectional streaming
 client.chatWithPerson(
     flow {
         emit(ChatRequestKt(message = "Hello"))
@@ -231,14 +222,12 @@ client.chatWithPerson(
 ```kotlin
 class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
     override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
-        // Implementation
         return GetPersonResponseKt(
             person = PersonKt(name = "John Doe", age = 30)
         )
     }
 
     override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> {
-        // Implementation
         return flow {
             repeat(request.limit) {
                 emit(ListPersonsResponseKt(
@@ -249,16 +238,13 @@ class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
     }
 
     override suspend fun updatePerson(requests: Flow<UpdatePersonRequestKt>): UpdatePersonResponseKt {
-        // Implementation
         requests.collect { request ->
-            // Process each request
             println("Updating person: ${request.person.name}")
         }
         return UpdatePersonResponseKt(success = true)
     }
 
     override fun chatWithPerson(requests: Flow<ChatRequestKt>): Flow<ChatResponseKt> {
-        // Implementation
         return requests.map { request ->
             ChatResponseKt(message = "Echo: ${request.message}")
         }
@@ -269,24 +255,36 @@ class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
 ## Building from Source
 
 1. Clone the repository:
-   ```
+   ```bash
    git clone https://github.com/imonja/grpc-kt.git
    ```
 
 2. Build the project:
-   ```
+   ```bash
    ./gradlew build
    ```
 
 3. Install to local Maven repository:
-   ```
+   ```bash
    ./gradlew publishToMavenLocal
    ```
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for full terms.
+
+It includes original work from [krotoDC](https://github.com/mscheong01/krotoDC),  
+with substantial modifications by [@ym](https://github.com/ym).
+
+## Acknowledgements
+
+This project is based on [krotoDC](https://github.com/mscheong01/krotoDC),  
+originally developed by [@mscheong01](https://github.com/mscheong01) and licensed under the Apache License, Version 2.0.
+
+Significant modifications and new features have been introduced by [@imonja](https://github.com/imonja),  
+including enhancements for coroutine handling, Kotlin idioms, and broader protobuf feature support.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome!  
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide before submitting a Pull Request.
