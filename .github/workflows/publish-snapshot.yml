@@ -1,49 +1,42 @@
 name: Publish Snapshot to GitHub Packages
 
 permissions:
-  packages: write
-  contents: read
-  checks: write
+    contents: read
+    packages: write
+    checks: write
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+    push:
+        branches: [ main ]
+    workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: gradle
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Run ktlint check
-        run: ./gradlew clean ktlintCheck
-
-      - name: Run tests
-        run: ./gradlew test
-
-      - name: Publish to GitHub Packages
-        run: ./gradlew publish
-        env:
-          GITHUB_USERNAME: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v2
-        if: always() # always run even if the previous step fails
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up JDK
+                uses: actions/setup-java@v3
+                with:
+                    distribution: 'temurin'
+                    java-version: '21'
+                    cache: gradle
+            -   name: Grant execute permission for gradlew
+                run: chmod +x gradlew
+            -   name: Run ktlint check
+                run: ./gradlew clean ktlintCheck
+            -   name: Run tests
+                id: tests
+                run: ./gradlew test
+            -   name: Report Test Results
+                if: ${{ always() && !cancelled() && steps.tests.outcome != 'skipped' }}
+                uses: dorny/test-reporter@v2
+                with:
+                    name: JUnit Tests
+                    path: '**/build/test-results/test/TEST-*.xml'
+                    reporter: java-junit
+                    fail-on-error: false
+            -   name: Publish to GitHub Packages
+                run: ./gradlew publish -Pgithub.username=${{ github.actor }} -Pgithub.token=${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,40 @@
+# https://editorconfig.org
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+
+# Optional but recommended
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+[*.{kt,kts}]
+ktlint_code_style = intellij
+ktlint_standard_package-name = disabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_newline-after-class-header = true
+
+# Disable some rules
+ktlint_disabled_rules = package-name,no-wildcard-imports
+
+[*.proto]
+max_line_length = 80
+ij_continuation_indent_size = 2
+ij_protobuf_keep_blank_lines_in_code = 2
+ij_protobuf_keep_indents_on_empty_lines = false
+ij_protobuf_keep_line_breaks = true
+ij_protobuf_space_after_comma = true
+ij_protobuf_space_before_comma = false
+ij_protobuf_spaces_around_assignment_operators = true
+ij_protobuf_spaces_within_braces = false
+ij_protobuf_spaces_within_brackets = false
+
+[*.md]
+trim_trailing_whitespace = false
+
+[charts/**]
+indent_size = 2
