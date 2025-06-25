@@ -10,7 +10,7 @@ trim_trailing_whitespace = true
 # Optional but recommended
 indent_style = space
 indent_size = 4
-max_line_length = 120
+max_line_length = 130
 
 [*.{kt,kts}]
 ktlint_code_style = intellij

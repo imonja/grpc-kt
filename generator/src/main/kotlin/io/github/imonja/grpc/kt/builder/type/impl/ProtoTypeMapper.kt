@@ -1,25 +1,10 @@
 package io.github.imonja.grpc.kt.builder.type.impl
 
 import com.google.protobuf.Descriptors
-import com.squareup.kotlinpoet.BOOLEAN
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.DOUBLE
-import com.squareup.kotlinpoet.FLOAT
-import com.squareup.kotlinpoet.INT
-import com.squareup.kotlinpoet.LIST
-import com.squareup.kotlinpoet.LONG
-import com.squareup.kotlinpoet.MAP
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.STRING
-import com.squareup.kotlinpoet.TypeName
-import io.github.imonja.grpc.kt.toolkit.MAP_ENTRY_KEY_FIELD_NUMBER
-import io.github.imonja.grpc.kt.toolkit.MAP_ENTRY_VALUE_FIELD_NUMBER
+import io.github.imonja.grpc.kt.toolkit.*
 import io.github.imonja.grpc.kt.toolkit.import.CodeWithImports
-import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
-import io.github.imonja.grpc.kt.toolkit.isKnownPreDefinedType
-import io.github.imonja.grpc.kt.toolkit.isProtoOptional
-import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
-import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
 /**
@@ -105,7 +90,9 @@ class ProtoTypeMapper {
     /**
      * Gets the type name and default value for predefined types.
      */
-    private fun getTypeNameAndDefaultValueForPreDefinedTypes(descriptor: Descriptors.Descriptor): Pair<TypeName, CodeWithImports> {
+    private fun getTypeNameAndDefaultValueForPreDefinedTypes(
+        descriptor: Descriptors.Descriptor
+    ): Pair<TypeName, CodeWithImports> {
         return if (descriptor.isKnownPreDefinedType()) {
             KnownPreDefinedType.Companion.valueOfByDescriptor(descriptor).let {
                 it.kotlinType to it.defaultValue
