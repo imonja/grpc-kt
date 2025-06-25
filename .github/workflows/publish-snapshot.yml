@@ -34,14 +34,6 @@ jobs:
       - name: Run tests
         run: ./gradlew test
 
-      - name: Print GitHub username and token
-        run: |
-          echo "GITHUB_USERNAME: $GITHUB_USERNAME"
-          echo "GITHUB_TOKEN: $GITHUB_TOKEN"
-        env:
-          GITHUB_USERNAME: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Publish to GitHub Packages
         run: ./gradlew publish
         env:
