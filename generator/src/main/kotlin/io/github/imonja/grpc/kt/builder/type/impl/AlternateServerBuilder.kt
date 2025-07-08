@@ -1,16 +1,8 @@
 package io.github.imonja.grpc.kt.builder.type.impl
 
 import com.google.protobuf.Descriptors
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.STAR
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.asClassName
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.decapitalize
 import io.github.imonja.grpc.kt.toolkit.grpcClass
@@ -27,7 +19,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<Descriptors.ServiceDescriptor> {
 
         // Create the alternate service object
         val alternateServiceObject =
-            TypeSpec.objectBuilder("${descriptor.name}GrpcServiceAlternate")
+            TypeSpec.objectBuilder("${descriptor.name}CoroutineImplAlternate")
 
         // Generate typealiases for each method as interface types
         descriptor.methods.forEach { method ->
@@ -125,7 +117,6 @@ class AlternateServerBuilder : TypeSpecsBuilder<Descriptors.ServiceDescriptor> {
             )
             .build()
 
-
         alternateServiceObject.addType(grpcBuilderClass)
 
         // No need for a separate bind function
@@ -134,19 +125,21 @@ class AlternateServerBuilder : TypeSpecsBuilder<Descriptors.ServiceDescriptor> {
         val grpcServiceFunction = FunSpec.builder("GrpcService")
             .addParameter("serviceDescriptor", ClassName("io.grpc", "ServiceDescriptor"))
             .addParameter(
-                "fun1", ClassName("kotlin", "Function1").parameterizedBy(
-                    ClassName("", "GrpcBuilder"),
-                    ClassName("kotlin", "Unit")
-                )
+                "fun1",
+                ClassName("kotlin", "Function1")
+                    .parameterizedBy(
+                        ClassName("", "GrpcBuilder"),
+                        ClassName("kotlin", "Unit")
+                    )
             )
             .returns(ClassName("io.grpc", "BindableService"))
             .addCode(
                 """
-                return object : io.grpc.kotlin.AbstractCoroutineServerImpl() {
-                    override fun bindService(): io.grpc.ServerServiceDefinition {
-                        return io.grpc.ServerServiceDefinition.builder(serviceDescriptor).build()
+                    return object : io.grpc.kotlin.AbstractCoroutineServerImpl() {
+                        override fun bindService(): io.grpc.ServerServiceDefinition {
+                            return io.grpc.ServerServiceDefinition.builder(serviceDescriptor).build()
+                        }
                     }
-                }
                 """.trimIndent()
             )
             .build()
@@ -173,7 +166,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<Descriptors.ServiceDescriptor> {
                     .apply {
                         descriptor.methods.forEach { method ->
                             val methodName = method.name
-                            add("    builder.bind(${descriptor.grpcClass.canonicalName}.get${methodName}Method() to ${methodName.decapitalize()}GrpcMethod)\n")
+                            add(
+                                "builder.bind(${descriptor.grpcClass.canonicalName}" +
+                                    ".get${methodName}Method() to ${methodName.decapitalize()}GrpcMethod)\n"
+                            )
                         }
                     }
                     .add("}")

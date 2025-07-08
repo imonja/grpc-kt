@@ -243,6 +243,7 @@ object ProtoExample {
             }
         }
     }
+
     /**
      * Demonstrates how to use the alternative gRPC service implementation.
      */
@@ -250,7 +251,7 @@ object ProtoExample {
         println("\n=== Alternative gRPC Service Example ===")
 
         // Create service implementations using functional interfaces
-        val getPersonImpl = PersonServiceGrpcKt.PersonServiceGrpcServiceAlternate.GetPersonGrpcMethod { request ->
+        val getPersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
             println("Alternative server received getPerson request for id: ${request.id}")
 
             // Simulate fetching a person by ID
@@ -268,7 +269,7 @@ object ProtoExample {
             GetPersonResponseKt(person = person)
         }
 
-        val listPersonsImpl = PersonServiceGrpcKt.PersonServiceGrpcServiceAlternate.ListPersonsGrpcMethod { request ->
+        val listPersonsImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
             println("Alternative server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
             // Simulate fetching a list of persons
@@ -288,14 +289,14 @@ object ProtoExample {
             }
         }
 
-        val updatePersonImpl = PersonServiceGrpcKt.PersonServiceGrpcServiceAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
             println("Alternative server received updatePerson request")
 
             // In a real implementation, you would update the person in a database
             UpdatePersonResponseKt(success = true)
         }
 
-        val chatWithPersonImpl = PersonServiceGrpcKt.PersonServiceGrpcServiceAlternate.ChatWithPersonGrpcMethod { request ->
+        val chatWithPersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { request ->
             println("Alternative server received chat message: ${request.message}")
 
             // Echo back each message with a prefix
@@ -305,7 +306,7 @@ object ProtoExample {
         }
 
         // Create the service using the alternative implementation
-        val alternativeService = PersonServiceGrpcKt.PersonServiceGrpcServiceAlternate.PersonServiceGrpcService(
+        val alternativeService = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.PersonServiceGrpcService(
             getPersonGrpcMethod = getPersonImpl,
             listPersonsGrpcMethod = listPersonsImpl,
             updatePersonGrpcMethod = updatePersonImpl,
@@ -347,7 +348,6 @@ object ProtoExample {
                 println("Received person: ${response.person?.name}, age: ${response.person?.age}")
             }
             println("Received ${persons.size} persons in total")
-
         } finally {
             // Shutdown the channel and server
             println("\nShutting down alternative client and server")
