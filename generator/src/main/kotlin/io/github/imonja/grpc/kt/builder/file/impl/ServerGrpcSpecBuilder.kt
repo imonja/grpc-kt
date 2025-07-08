@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.builder.file.FileSpecBuilder
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
+import io.github.imonja.grpc.kt.builder.type.impl.AlternateServerBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ClientBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilder
 import io.github.imonja.grpc.kt.toolkit.addAllImports
@@ -19,7 +20,8 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
                 ServerBuilder(),
-                ClientBuilder()
+                ClientBuilder(),
+                AlternateServerBuilder()
             )
             val results = generators.map {
                 it.build(service)
