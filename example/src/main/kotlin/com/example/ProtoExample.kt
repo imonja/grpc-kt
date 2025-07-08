@@ -34,9 +34,6 @@ object ProtoExample {
         // Example 2: gRPC service interaction
         demonstrateGrpcService()
 
-        // Example 3: Alternative gRPC service implementation
-        demonstrateGrpcServiceAlternate()
-
         println("Proto Example completed")
     }
 
@@ -241,118 +238,6 @@ object ProtoExample {
                 println("Server received chat message: ${request.message}")
                 ChatResponseKt(message = "Server received: ${request.message}")
             }
-        }
-    }
-
-    /**
-     * Demonstrates how to use the alternative gRPC service implementation.
-     */
-    private fun demonstrateGrpcServiceAlternate() = runBlocking {
-        println("\n=== Alternative gRPC Service Example ===")
-
-        // Create service implementations using functional interfaces
-        val getPersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
-            println("Alternative server received getPerson request for id: ${request.id}")
-
-            // Simulate fetching a person by ID
-            val person = PersonKt(
-                name = "Jane Doe",
-                age = 28,
-                hobbies = listOf("Swimming", "Painting"),
-                gender = Person.Gender.FEMALE,
-                address = PersonKt.AddressKt(
-                    street = "456 Oak St",
-                    city = "New York",
-                    country = "USA"
-                )
-            )
-            GetPersonResponseKt(person = person)
-        }
-
-        val listPersonsImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
-            println("Alternative server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
-
-            // Simulate fetching a list of persons
-            flow {
-                val persons = listOf(
-                    PersonKt(name = "David", age = 40, gender = Person.Gender.MALE),
-                    PersonKt(name = "Emma", age = 35, gender = Person.Gender.FEMALE),
-                    PersonKt(name = "Sam", age = 30, gender = Person.Gender.NON_BINARY)
-                )
-
-                // Emit each person as a separate response
-                persons.forEach { person ->
-                    println("Alternative server sending person: ${person.name}")
-                    emit(ListPersonsResponseKt(person = person))
-                    delay(100) // Simulate some processing time
-                }
-            }
-        }
-
-        val updatePersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
-            println("Alternative server received updatePerson request")
-
-            // In a real implementation, you would update the person in a database
-            UpdatePersonResponseKt(success = true)
-        }
-
-        val chatWithPersonImpl = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { request ->
-            println("Alternative server received chat message: ${request.message}")
-
-            // Echo back each message with a prefix
-            flow {
-                emit(ChatResponseKt(message = "Alternative server received: ${request.message}"))
-            }
-        }
-
-        // Create the service using the alternative implementation
-        val alternativeService = PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.PersonServiceGrpcService(
-            getPersonGrpcMethod = getPersonImpl,
-            listPersonsGrpcMethod = listPersonsImpl,
-            updatePersonGrpcMethod = updatePersonImpl,
-            chatWithPersonGrpcMethod = chatWithPersonImpl
-        )
-
-        // Start the gRPC server with the alternative service
-        val alternativePort = SERVER_PORT + 1
-        val server = ServerBuilder.forPort(alternativePort)
-            .addService(alternativeService)
-            .build()
-            .start()
-
-        println("Alternative server started on port $alternativePort")
-
-        // Create a channel to the server
-        val channel = ManagedChannelBuilder.forAddress("localhost", alternativePort)
-            .usePlaintext()
-            .build()
-
-        try {
-            // Create a client stub
-            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
-
-            // Example: Unary call
-            println("\n--- Alternative Unary Call Example ---")
-            val getPersonRequest = GetPersonRequestKt(id = "456")
-            val getPersonResponse = stub.getPerson(getPersonRequest)
-            println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
-
-            // Example: Server streaming
-            println("\n--- Alternative Server Streaming Example ---")
-            val listRequest = ListPersonsRequestKt(limit = 3, offset = 0)
-            println("Requesting persons with limit=${listRequest.limit}, offset=${listRequest.offset}")
-
-            val persons = mutableListOf<PersonKt?>()
-            stub.listPersons(listRequest).collect { response ->
-                persons.add(response.person)
-                println("Received person: ${response.person?.name}, age: ${response.person?.age}")
-            }
-            println("Received ${persons.size} persons in total")
-        } finally {
-            // Shutdown the channel and server
-            println("\nShutting down alternative client and server")
-            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
-            server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
         }
     }
 }

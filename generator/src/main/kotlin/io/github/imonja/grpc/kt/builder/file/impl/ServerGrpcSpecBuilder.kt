@@ -20,8 +20,8 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
                 ServerBuilder(),
-                ClientBuilder(),
-                AlternateServerBuilder()
+                AlternateServerBuilder(),
+                ClientBuilder()
             )
             val results = generators.map {
                 it.build(service)
