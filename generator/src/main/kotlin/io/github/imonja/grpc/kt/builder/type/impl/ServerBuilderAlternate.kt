@@ -6,6 +6,7 @@ import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.grpcClass
+import io.github.imonja.grpc.kt.toolkit.import.Import
 import io.github.imonja.grpc.kt.toolkit.import.TypeSpecsWithImports
 import io.grpc.BindableService
 import io.grpc.MethodDescriptor
@@ -134,6 +135,7 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 methodGetter,
                 reqJava,
                 respJava
+
             )
         }
         implFun.addCode("}")
@@ -290,7 +292,9 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(objectBuilder.build()),
-            imports = stubs.flatMap { it.imports }.toSet()
+            imports = stubs.flatMap { it.imports }.toSet() + setOf(
+                Import("kotlinx.coroutines.flow", listOf("map"))
+            )
         )
     }
 
