@@ -14,6 +14,7 @@ import io.grpc.ServerServiceDefinition
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
+import kotlin.coroutines.EmptyCoroutineContext
 
 class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
@@ -52,7 +53,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         objectBuilder.addFunction(
             FunSpec.builder("GrpcService")
                 .addModifiers(KModifier.PUBLIC)
-                .addParameter("serviceDescriptor", ClassName("io.grpc", "ServiceDescriptor"))
+                .addParameter(
+                    "serviceDescriptor",
+                    ClassName("io.grpc", "ServiceDescriptor")
+                )
                 .addParameter(
                     "builderFn",
                     LambdaTypeName.get(
@@ -129,36 +133,62 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                     )
             )
             .addCode(
-                """
-                val (descriptor, implementation) = pair
-                val methodDef = when (descriptor.type) {
-                    MethodDescriptor.MethodType.BIDI_STREAMING ->
-                        bidiStreamingServerMethodDefinition(
-                            context = EmptyCoroutineContext,
-                            descriptor = descriptor,
-                            implementation = implementation as (Flow<ReqT>) -> Flow<RespT>
-                        )
-                    MethodDescriptor.MethodType.SERVER_STREAMING ->
-                        serverStreamingServerMethodDefinition(
-                            context = EmptyCoroutineContext,
-                            descriptor = descriptor,
-                            implementation = implementation as (ReqT) -> Flow<RespT>
-                        )
-                    MethodDescriptor.MethodType.CLIENT_STREAMING ->
-                        clientStreamingServerMethodDefinition(
-                            context = EmptyCoroutineContext,
-                            descriptor = descriptor,
-                            implementation = implementation as suspend (Flow<ReqT>) -> RespT
-                        )
-                    else ->
-                        unaryServerMethodDefinition(
-                            context = EmptyCoroutineContext,
-                            descriptor = descriptor,
-                            implementation = implementation as suspend (ReqT) -> RespT
-                        )
-                }
-                addMethod(methodDef)
-                """.trimIndent()
+                CodeBlock.builder()
+                    // --- Step 1: Extract descriptor and implementation
+                    .addStatement("val (descriptor, implementation) = pair")
+                    // --- Step 2: Build methodDef based on method type
+                    .beginControlFlow("val methodDef = when (descriptor.type)")
+                    // --- BIDI_STREAMING case
+                    .addStatement(
+                        "%T.BIDI_STREAMING -> %M(",
+                        MethodDescriptor.MethodType::class,
+                        MemberName("io.grpc.kotlin.ServerCalls", "bidiStreamingServerMethodDefinition")
+                    )
+                    .indent()
+                    .addStatement("context = %T,", EmptyCoroutineContext::class)
+                    .addStatement("descriptor = descriptor,")
+                    .addStatement("implementation = implementation as (Flow<ReqT>) -> Flow<RespT>")
+                    .unindent()
+                    .addStatement(")")
+                    // --- SERVER_STREAMING case
+                    .addStatement(
+                        "%T.SERVER_STREAMING -> %M(",
+                        MethodDescriptor.MethodType::class,
+                        MemberName("io.grpc.kotlin.ServerCalls", "serverStreamingServerMethodDefinition")
+                    )
+                    .indent()
+                    .addStatement("context = %T,", EmptyCoroutineContext::class)
+                    .addStatement("descriptor = descriptor,")
+                    .addStatement("implementation = implementation as (ReqT) -> Flow<RespT>")
+                    .unindent()
+                    .addStatement(")")
+                    // --- CLIENT_STREAMING case
+                    .addStatement(
+                        "%T.CLIENT_STREAMING -> %M(",
+                        MethodDescriptor.MethodType::class,
+                        MemberName("io.grpc.kotlin.ServerCalls", "clientStreamingServerMethodDefinition")
+                    )
+                    .indent()
+                    .addStatement("context = %T,", EmptyCoroutineContext::class)
+                    .addStatement("descriptor = descriptor,")
+                    .addStatement("implementation = implementation as suspend (Flow<ReqT>) -> RespT")
+                    .unindent()
+                    .addStatement(")")
+                    // --- UNARY (default) case
+                    .addStatement(
+                        "else -> %M(",
+                        MemberName("io.grpc.kotlin.ServerCalls", "unaryServerMethodDefinition")
+                    )
+                    .indent()
+                    .addStatement("context = %T,", EmptyCoroutineContext::class)
+                    .addStatement("descriptor = descriptor,")
+                    .addStatement("implementation = implementation as suspend (ReqT) -> RespT")
+                    .unindent()
+                    .addStatement(")")
+                    .endControlFlow()
+                    // --- Step 3: Register method in server
+                    .addStatement("addMethod(methodDef)")
+                    .build()
             )
             .build()
 
@@ -169,11 +199,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             imports = stubs.flatMap { it.imports }.toSet() + setOf(
                 Import("kotlinx.coroutines.flow", listOf("Flow")),
                 Import("kotlin.coroutines", listOf("EmptyCoroutineContext")),
-                Import("kotlin", listOf("to")),
-                Import("io.grpc.kotlin.ServerCalls", listOf("bidiStreamingServerMethodDefinition")),
-                Import("io.grpc.kotlin.ServerCalls", listOf("serverStreamingServerMethodDefinition")),
-                Import("io.grpc.kotlin.ServerCalls", listOf("clientStreamingServerMethodDefinition")),
-                Import("io.grpc.kotlin.ServerCalls", listOf("unaryServerMethodDefinition"))
+                Import("kotlin", listOf("to"))
             )
         )
     }
