@@ -24,10 +24,8 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         val objectBuilder = TypeSpec.objectBuilder(objectName)
             .addModifiers(KModifier.PUBLIC)
 
-        val topLevelFun = mutableListOf<TypeSpec>()
-
         // Generate fun interfaces per method
-        stubs.map { stub ->
+        val interfaces = stubs.map { stub ->
             val method = stub.methodSpec
             val functionInterfaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
             val isSuspend = method.modifiers.contains(KModifier.SUSPEND)
@@ -39,13 +37,12 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 .returns(method.returnType.withoutKtSuffix())
                 .build()
 
-            val functionInterface = TypeSpec
+            TypeSpec
                 .funInterfaceBuilder(functionInterfaceName)
                 .addFunction(methodFunction)
                 .build()
-
-            objectBuilder.addType(functionInterface)
         }
+        interfaces.forEach { objectBuilder.addType(it) }
 
         // GrpcBuilder class
         val grpcBuilderClassName = ClassName("", "GrpcBuilder")
@@ -132,7 +129,6 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                     .build()
             )
             .build()
-
         objectBuilder.addType(grpcBuilderClass)
 
         // GrpcService(factory) function
@@ -167,7 +163,6 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 ServerServiceDefinition::class
             )
             .build()
-
         objectBuilder.addFunction(grpcServiceFunction)
 
         // CoroutineImplAlternate(...) factory function
@@ -188,7 +183,6 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             serviceFunction.addCode("    bind(%M() to ${method.name}::handle)\n", methodGetter)
         }
         serviceFunction.addCode("}\n")
-
         objectBuilder.addFunction(serviceFunction.build())
 
         return TypeSpecsWithImports(
