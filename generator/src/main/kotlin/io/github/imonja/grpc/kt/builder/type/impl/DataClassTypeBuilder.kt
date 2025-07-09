@@ -126,8 +126,8 @@ class DataClassTypeBuilder(
         dataClassBuilder.addType(TypeSpec.companionObjectBuilder().build())
 
         return TypeSpecsWithImports(
-            listOf(dataClassBuilder.build()),
-            imports
+            typeSpecs = listOf(dataClassBuilder.build()),
+            imports = imports
         )
     }
 }
