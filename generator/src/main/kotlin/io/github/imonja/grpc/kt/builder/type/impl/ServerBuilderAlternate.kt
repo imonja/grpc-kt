@@ -16,7 +16,7 @@ import io.grpc.StatusException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
 import kotlin.coroutines.EmptyCoroutineContext
 
-class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
+class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
 
     override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
         val stubs = descriptor.methods.map {
