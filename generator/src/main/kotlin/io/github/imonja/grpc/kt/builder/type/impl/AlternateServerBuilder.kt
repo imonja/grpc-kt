@@ -15,22 +15,6 @@ import io.grpc.kotlin.AbstractCoroutineServerImpl
 
 class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
-    // === Utility extension to strip Kt suffix ===
-    private fun TypeName.withoutKtSuffix(): TypeName = when (this) {
-        is ClassName -> {
-            if (simpleName.endsWith("Kt"))
-                ClassName(packageName, simpleName.removeSuffix("Kt"))
-            else this
-        }
-
-        is ParameterizedTypeName -> {
-            (rawType.withoutKtSuffix() as ClassName)
-                .parameterizedBy(*typeArguments.map { it.withoutKtSuffix() }.toTypedArray())
-        }
-
-        else -> this
-    }
-
     override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
         val stubs = descriptor.methods.map {
             ServerBuilder().serviceMethodStub(it)
@@ -218,5 +202,20 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 Import("io.grpc.kotlin.ServerCalls", listOf("unaryServerMethodDefinition")),
             )
         )
+    }
+
+    private fun TypeName.withoutKtSuffix(): TypeName = when (this) {
+        is ClassName -> {
+            if (simpleName.endsWith("Kt"))
+                ClassName(packageName, simpleName.removeSuffix("Kt"))
+            else this
+        }
+
+        is ParameterizedTypeName -> {
+            (rawType.withoutKtSuffix() as ClassName)
+                .parameterizedBy(*typeArguments.map { it.withoutKtSuffix() }.toTypedArray())
+        }
+
+        else -> this
     }
 }
