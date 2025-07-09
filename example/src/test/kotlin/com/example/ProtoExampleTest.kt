@@ -105,6 +105,21 @@ class ProtoExampleTest {
     }
 
     @Test
+    fun `test gRPC delete person`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create a request
+        val request = DeletePersonRequestKt(id = "123")
+
+        // Make the call
+        stub.deletePerson(request)
+
+        // No response to verify since it returns Unit, but we can assert that no exception was thrown
+        // If we reach this point, the test passes
+    }
+
+    @Test
     fun `test gRPC server streaming`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
@@ -201,6 +216,9 @@ class ProtoExampleTest {
                 )
             )
             return GetPersonResponseKt(person = person)
+        }
+
+        override suspend fun deletePerson(request: DeletePersonRequestKt) {
         }
 
         override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> = flow {

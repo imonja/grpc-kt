@@ -52,6 +52,11 @@ object AlternateServerExample {
                 GetPersonResponseKt(person = person)
             }
 
+        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+                println("Alternate server received deletePerson request for id: ${request.id}")
+            }
+
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 println("Alternate server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
@@ -100,6 +105,7 @@ object AlternateServerExample {
         // Create the service using the AlternateServerBuilder
         val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
             getPerson = getPerson,
+            deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson
@@ -132,11 +138,17 @@ object AlternateServerExample {
             // Create a client stub
             val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
-            // Example 1: Unary call
-            println("\n--- Alternate Unary Call Example ---")
+            // Example 1: Unary call - GetPerson
+            println("\n--- Alternate Unary Call Example (GetPerson) ---")
             val getPersonRequest = GetPersonRequestKt(id = "456")
             val getPersonResponse = stub.getPerson(getPersonRequest)
             println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
+
+            // Example 1.1: Unary call - DeletePerson
+            println("\n--- Alternate Unary Call Example (DeletePerson) ---")
+            val deletePersonRequest = DeletePersonRequestKt(id = "456")
+            stub.deletePerson(deletePersonRequest)
+            println("Person with id ${deletePersonRequest.id} deleted successfully")
 
             // Example 2: Server streaming
             println("\n--- Alternate Server Streaming Example ---")

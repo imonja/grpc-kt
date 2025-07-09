@@ -41,6 +41,11 @@ class AlternateServerExampleTest {
                 GetPersonResponseKt(person = person)
             }
 
+        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+                println("Test server received deletePerson request for id: ${request.id}")
+            }
+
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 println("Test server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
@@ -85,6 +90,7 @@ class AlternateServerExampleTest {
         // Create the service using the AlternateServerBuilder
         val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
             getPerson = getPerson,
+            deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson
@@ -124,6 +130,21 @@ class AlternateServerExampleTest {
         assert(response.person?.age == 28) { "Expected age to be 28" }
         assert(response.person?.gender == Person.Gender.FEMALE) { "Expected gender to be FEMALE" }
         assert(response.person?.address?.city == "New York") { "Expected city to be 'New York'" }
+    }
+
+    @Test
+    fun `test alternate server delete person`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create a request
+        val request = DeletePersonRequestKt(id = "456")
+
+        // Make the call
+        stub.deletePerson(request)
+
+        // No response to verify since it returns Unit, but we can assert that no exception was thrown
+        // If we reach this point, the test passes
     }
 
     @Test
@@ -248,6 +269,11 @@ class AlternateServerExampleTest {
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
+        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+                com.google.protobuf.Empty.getDefaultInstance()
+            }
+
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 flow {
@@ -270,6 +296,7 @@ class AlternateServerExampleTest {
         // Create the service using the AlternateServerBuilder
         val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
             getPerson = getPerson,
+            deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson
@@ -289,6 +316,11 @@ class AlternateServerExampleTest {
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
+        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+                com.google.protobuf.Empty.getDefaultInstance()
+            }
+
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 flow {
@@ -311,6 +343,7 @@ class AlternateServerExampleTest {
         // Create the service using the AlternateServerBuilder
         val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
             getPerson = getPerson,
+            deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson
@@ -359,6 +392,11 @@ class AlternateServerExampleTest {
             }
 
         // Create empty implementations for the other methods
+        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+                com.google.protobuf.Empty.getDefaultInstance()
+            }
+
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 flow { }
@@ -377,6 +415,7 @@ class AlternateServerExampleTest {
         // Create the service using the AlternateServerBuilder
         val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
             getPerson = getPerson,
+            deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson

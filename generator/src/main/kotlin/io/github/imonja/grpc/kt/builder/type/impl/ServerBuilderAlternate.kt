@@ -105,11 +105,9 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             val name = stub.methodSpec.name
             val methodGetter = descriptor.grpcClass.member("get${name.replaceFirstChar { it.uppercase() }}Method")
 
-            // Kotlin types (possibly Flow<...>)
             val reqKt = stub.methodSpec.parameters[0].type
             val respKt = stub.methodSpec.returnType
 
-            // Extract actual element type if it's Flow<T>
             val reqKtBase = if (reqKt is ParameterizedTypeName && reqKt.rawType.simpleName == "Flow") {
                 reqKt.typeArguments[0]
             } else {
@@ -124,19 +122,40 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             val reqJava = reqKtBase.withoutKtSuffix()
             val respJava = respKtBase
 
-            implFun.addCode(
-                """
+            val isEmptyReturn = respKtBase.copy(nullable = false) == UNIT
+
+            val toJavaProtoExpr = if (isEmptyReturn) {
+                "(fun Unit.(): Empty { return Empty.getDefaultInstance() })"
+            } else {
+                "%T::toJavaProto"
+            }
+
+            if (isEmptyReturn) {
+                implFun.addCode(
+                    """
                     bind(
                         pair = %M() to $name::handle,
                         toKotlinProto = %T::toKotlinProto,
-                        toJavaProto = %T::toJavaProto
+                        toJavaProto = $toJavaProtoExpr
                     )
-                """.trimIndent() + "\n",
-                methodGetter,
-                reqJava,
-                respJava
-
-            )
+                    """.trimIndent() + "\n",
+                    methodGetter,
+                    reqJava
+                )
+            } else {
+                implFun.addCode(
+                    """
+                    bind(
+                        pair = %M() to $name::handle,
+                        toKotlinProto = %T::toKotlinProto,
+                        toJavaProto = $toJavaProtoExpr
+                    )
+                    """.trimIndent() + "\n",
+                    methodGetter,
+                    reqJava,
+                    respJava
+                )
+            }
         }
         implFun.addCode("}")
         objectBuilder.addFunction(implFun.build())

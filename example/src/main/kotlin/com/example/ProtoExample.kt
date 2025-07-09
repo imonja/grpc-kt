@@ -110,11 +110,17 @@ object ProtoExample {
             // Create a client stub
             val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
-            // Example 1: Unary call
-            println("\n--- Unary Call Example ---")
+            // Example 1.1: Unary call - GetPerson
+            println("\n--- Unary Call Example (GetPerson) ---")
             val getPersonRequest = GetPersonRequestKt(id = "123")
             val getPersonResponse = stub.getPerson(getPersonRequest)
             println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
+
+            // Example 1.2: Unary call - DeletePerson
+            println("\n--- Unary Call Example (DeletePerson) ---")
+            val deletePersonRequest = DeletePersonRequestKt(id = "123")
+            stub.deletePerson(deletePersonRequest)
+            println("Person with id ${deletePersonRequest.id} deleted successfully")
 
             // Example 2: Server streaming
             println("\n--- Server Streaming Example ---")
@@ -199,6 +205,13 @@ object ProtoExample {
                 )
             )
             return GetPersonResponseKt(person = person)
+        }
+
+        override suspend fun deletePerson(request: DeletePersonRequestKt) {
+            println("Server received deletePerson request for id: ${request.id}")
+
+            // Simulate deleting a person by ID
+            // No return value needed as the method returns Unit
         }
 
         override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> = flow {
