@@ -42,7 +42,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         val topLevelFunInterfaces = mutableListOf<TypeSpec>()
 
         // Generate fun interfaces per method
-        val functionInterfaces = stubs.map { stub ->
+        stubs.map { stub ->
             val method = stub.methodSpec
             val functionInterfaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
             val isSuspend = method.modifiers.contains(KModifier.SUSPEND)
@@ -68,6 +68,20 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("builder", ServerServiceDefinition.Builder::class)
+                    .addParameter(
+                        ParameterSpec.builder(
+                            "methods",
+                            MutableList::class.asClassName().parameterizedBy(
+                                MethodDescriptor::class.asClassName().parameterizedBy(
+                                    WildcardTypeName.producerOf(Any::class.asClassName()),
+                                    WildcardTypeName.producerOf(Any::class.asClassName())
+                                )
+                            )
+                        )
+                            .defaultValue("mutableListOf()")
+                            .build()
+                    )
+
                     .build()
             )
             .addProperty(
@@ -84,7 +98,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                             WildcardTypeName.producerOf(Any::class.asClassName())
                         )
                     )
-                ).initializer("mutableListOf()").mutable(true).build()
+                ).initializer("methods").mutable(true).build()
             )
             .addFunction(
                 FunSpec.builder("bind")
