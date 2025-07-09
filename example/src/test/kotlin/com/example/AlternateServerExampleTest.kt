@@ -38,7 +38,7 @@ class AlternateServerExampleTest {
                         country = "USA"
                     )
                 )
-                GetPersonResponseKt(person = person).toJavaProto()
+                GetPersonResponseKt(person = person)
             }
 
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
@@ -54,7 +54,7 @@ class AlternateServerExampleTest {
 
                 flow {
                     persons.forEach { person ->
-                        emit(ListPersonsResponseKt(person = person).toJavaProto())
+                        emit(ListPersonsResponseKt(person = person))
                         delay(100) // Simulate some processing time
                     }
                 }
@@ -68,7 +68,7 @@ class AlternateServerExampleTest {
                 requests.collect { request ->
                     println("Test server processing update for person: ${request.person?.name}")
                 }
-                UpdatePersonResponseKt(success = true).toJavaProto()
+                UpdatePersonResponseKt(success = true)
             }
 
         val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
@@ -78,7 +78,7 @@ class AlternateServerExampleTest {
                 // Echo back each message with a prefix
                 requests.map { request ->
                     println("Test server received chat message: ${request.message}")
-                    ChatResponseKt(message = "Test server received: ${request.message}").toJavaProto()
+                    ChatResponseKt(message = "Test server received: ${request.message}")
                 }
             }
 
@@ -245,25 +245,25 @@ class AlternateServerExampleTest {
         // Define the service implementation functions
         val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
             PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
-                GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto()
+                GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 flow {
-                    emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto())
+                    emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)))
                 }
             }
 
         val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
             PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
-                UpdatePersonResponseKt(success = true).toJavaProto()
+                UpdatePersonResponseKt(success = true)
             }
 
         val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
             PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
-                    ChatResponseKt(message = "Test response").toJavaProto()
+                    ChatResponseKt(message = "Test response")
                 }
             }
 
@@ -286,25 +286,25 @@ class AlternateServerExampleTest {
         // Define the service implementation functions
         val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
             PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
-                GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto()
+                GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
             PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
                 flow {
-                    emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto())
+                    emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)))
                 }
             }
 
         val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
             PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
-                UpdatePersonResponseKt(success = true).toJavaProto()
+                UpdatePersonResponseKt(success = true)
             }
 
         val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
             PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
-                    ChatResponseKt(message = "Test response").toJavaProto()
+                    ChatResponseKt(message = "Test response")
                 }
             }
 
@@ -355,7 +355,7 @@ class AlternateServerExampleTest {
         val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
             PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
                 println("[DEBUG_LOG] Server received getPerson request for id: ${request.id}")
-                GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25)).toJavaProto()
+                GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25))
             }
 
         // Create empty implementations for the other methods
@@ -366,7 +366,7 @@ class AlternateServerExampleTest {
 
         val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
             PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
-                UpdatePersonResponseKt(success = true).toJavaProto()
+                UpdatePersonResponseKt(success = true)
             }
 
         val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =

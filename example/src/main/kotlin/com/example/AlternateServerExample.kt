@@ -49,7 +49,7 @@ object AlternateServerExample {
                         country = "USA"
                     )
                 )
-                GetPersonResponseKt(person = person).toJavaProto()
+                GetPersonResponseKt(person = person)
             }
 
         val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
@@ -67,7 +67,7 @@ object AlternateServerExample {
                 flow {
                     persons.forEach { person ->
                         println("Alternate server sending person: ${person.name}")
-                        emit(ListPersonsResponseKt(person = person).toJavaProto())
+                        emit(ListPersonsResponseKt(person = person))
                         delay(100) // Simulate some processing time
                     }
                 }
@@ -78,7 +78,7 @@ object AlternateServerExample {
                 println("Alternate server received updatePerson request stream")
 
                 // Process each update request
-                UpdatePersonResponseKt(success = true).toJavaProto()
+                UpdatePersonResponseKt(success = true)
             }
 
         val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
@@ -89,7 +89,7 @@ object AlternateServerExample {
                 flow {
                     requests.map { request ->
                         println("Received chat message: ${request.message}")
-                        ChatResponseKt(message = "Alternate server received: ${request.message}").toJavaProto()
+                        ChatResponseKt(message = "Alternate server received: ${request.message}")
                     }.collect { response ->
                         emit(response)
                         delay(100) // Simulate some processing time

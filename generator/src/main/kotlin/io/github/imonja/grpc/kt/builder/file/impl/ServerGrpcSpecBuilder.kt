@@ -6,9 +6,9 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.builder.file.FileSpecBuilder
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
-import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilderAlternate
 import io.github.imonja.grpc.kt.builder.type.impl.ClientBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilder
+import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilderAlternate
 import io.github.imonja.grpc.kt.toolkit.addAllImports
 import io.github.imonja.grpc.kt.toolkit.addGeneratedFileComments
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
