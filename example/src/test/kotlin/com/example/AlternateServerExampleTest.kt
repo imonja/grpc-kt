@@ -46,8 +46,8 @@ class AlternateServerExampleTest {
     @BeforeEach
     fun setup() {
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcKt.GetPersonGrpcMethod =
+            PersonServiceGrpcKt.GetPersonGrpcMethod { request ->
                 println("Test server received getPerson request for id: ${request.id}")
 
                 // Return a test person
@@ -65,8 +65,8 @@ class AlternateServerExampleTest {
                 GetPersonResponseKt(person = person).toJavaProto()
             }
 
-        val listPersons: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcKt.ListPersonsGrpcMethod { request ->
                 println("Test server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
                 // Return test persons
@@ -84,8 +84,8 @@ class AlternateServerExampleTest {
                 }
             }
 
-        val updatePerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcKt.UpdatePersonGrpcMethod { requests ->
                 println("Test server received updatePerson request stream")
 
                 // Process each update request
@@ -95,8 +95,8 @@ class AlternateServerExampleTest {
                 UpdatePersonResponseKt(success = true).toJavaProto()
             }
 
-        val chatWithPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcKt.ChatWithPersonGrpcMethod { requests ->
                 println("Test server received chatWithPerson request stream")
 
                 // Echo back each message with a prefix
@@ -267,25 +267,25 @@ class AlternateServerExampleTest {
         // This test verifies that we can create the alternate service without making gRPC calls
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcKt.GetPersonGrpcMethod =
+            PersonServiceGrpcKt.GetPersonGrpcMethod { request ->
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto()
             }
 
-        val listPersons: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcKt.ListPersonsGrpcMethod { request ->
                 flow {
                     emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto())
                 }
             }
 
-        val updatePerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true).toJavaProto()
             }
 
-        val chatWithPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
                     ChatResponseKt(message = "Test response").toJavaProto()
                 }
@@ -308,25 +308,25 @@ class AlternateServerExampleTest {
         // This test verifies that we can set up the gRPC server and client without making gRPC calls
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcKt.GetPersonGrpcMethod =
+            PersonServiceGrpcKt.GetPersonGrpcMethod { request ->
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto()
             }
 
-        val listPersons: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcKt.ListPersonsGrpcMethod { request ->
                 flow {
                     emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)).toJavaProto())
                 }
             }
 
-        val updatePerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true).toJavaProto()
             }
 
-        val chatWithPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
                     ChatResponseKt(message = "Test response").toJavaProto()
                 }
@@ -376,25 +376,25 @@ class AlternateServerExampleTest {
         // This test makes a very simple unary gRPC call to see if that works
 
         // Define the service implementation functions - only implement getPerson for this test
-        val getPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcKt.GetPersonGrpcMethod =
+            PersonServiceGrpcKt.GetPersonGrpcMethod { request ->
                 println("[DEBUG_LOG] Server received getPerson request for id: ${request.id}")
                 GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25)).toJavaProto()
             }
 
         // Create empty implementations for the other methods
-        val listPersons: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcKt.ListPersonsGrpcMethod { request ->
                 flow { }
             }
 
-        val updatePerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true).toJavaProto()
             }
 
-        val chatWithPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcKt.ChatWithPersonGrpcMethod { requests ->
                 flow { }
             }
 

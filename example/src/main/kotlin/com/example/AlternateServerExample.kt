@@ -33,8 +33,8 @@ object AlternateServerExample {
         println("\n=== Alternate gRPC Service Example ===")
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcKt.GetPersonGrpcMethod =
+            PersonServiceGrpcKt.GetPersonGrpcMethod { request ->
                 println("Alternate server received getPerson request for id: ${request.id}")
 
                 // Simulate fetching a person by ID
@@ -52,8 +52,8 @@ object AlternateServerExample {
                 GetPersonResponseKt(person = person).toJavaProto()
             }
 
-        val listPersons: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcKt.ListPersonsGrpcMethod { request ->
                 println("Alternate server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
                 // Simulate fetching a list of persons
@@ -73,16 +73,16 @@ object AlternateServerExample {
                 }
             }
 
-        val updatePerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcKt.UpdatePersonGrpcMethod { requests ->
                 println("Alternate server received updatePerson request stream")
 
                 // Process each update request
                 UpdatePersonResponseKt(success = true).toJavaProto()
             }
 
-        val chatWithPerson: PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcKt.ChatWithPersonGrpcMethod { requests ->
                 println("Alternate server received chatWithPerson request stream")
 
                 // Echo back each message with a prefix

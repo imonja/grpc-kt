@@ -39,6 +39,8 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         val dslObjectName = "${descriptor.name}CoroutineImplAlternate"
         val dslObjectBuilder = TypeSpec.objectBuilder(dslObjectName)
 
+        val topLevelFunInterfaces = mutableListOf<TypeSpec>()
+
         // Generate fun interfaces per method
         val functionInterfaces = stubs.map { stub ->
             val method = stub.methodSpec
@@ -57,8 +59,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 .addFunction(methodFunction)
                 .build()
 
-            dslObjectBuilder.addType(functionInterface)
-            functionInterfaceName
+            topLevelFunInterfaces += functionInterface
         }
 
         // GrpcBuilder class
@@ -174,11 +175,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         val serviceFunction = FunSpec.builder("${descriptor.name}GrpcService")
             .returns(BindableService::class)
 
-        stubs.forEachIndexed { index, stub ->
+        stubs.forEach { stub ->
             val method = stub.methodSpec
-            val functionInterfaceName = functionInterfaces[index]
-            val paramType = ClassName("", dslObjectName).nestedClass(functionInterfaceName)
-            serviceFunction.addParameter(method.name, paramType)
+            val aliasName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
+            serviceFunction.addParameter(method.name, ClassName("", aliasName))
         }
 
         serviceFunction.addCode("return GrpcService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
@@ -193,7 +193,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         dslObjectBuilder.addFunction(serviceFunction.build())
 
         return TypeSpecsWithImports(
-            typeSpecs = listOf(dslObjectBuilder.build()),
+            typeSpecs = topLevelFunInterfaces + listOf(dslObjectBuilder.build()),
             imports = stubs.flatMap { it.imports }.toSet() + setOf(
                 Import("kotlinx.coroutines.flow", listOf("Flow")),
                 Import("kotlin", listOf("to")),
