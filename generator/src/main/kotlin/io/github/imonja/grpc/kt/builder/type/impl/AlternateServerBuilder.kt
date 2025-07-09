@@ -22,10 +22,12 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 ClassName(packageName, simpleName.removeSuffix("Kt"))
             else this
         }
+
         is ParameterizedTypeName -> {
             (rawType.withoutKtSuffix() as ClassName)
                 .parameterizedBy(*typeArguments.map { it.withoutKtSuffix() }.toTypedArray())
         }
+
         else -> this
     }
 
@@ -194,7 +196,11 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             typeSpecs = listOf(dslObjectBuilder.build()),
             imports = stubs.flatMap { it.imports }.toSet() + setOf(
                 Import("kotlinx.coroutines.flow", listOf("Flow")),
-                Import("kotlin", listOf("to"))
+                Import("kotlin", listOf("to")),
+                Import("io.grpc.kotlin.ServerCalls", listOf("bidiStreamingServerMethodDefinition")),
+                Import("io.grpc.kotlin.ServerCalls", listOf("serverStreamingServerMethodDefinition")),
+                Import("io.grpc.kotlin.ServerCalls", listOf("clientStreamingServerMethodDefinition")),
+                Import("io.grpc.kotlin.ServerCalls", listOf("unaryServerMethodDefinition")),
             )
         )
     }
