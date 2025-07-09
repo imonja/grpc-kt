@@ -6,6 +6,7 @@ grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/s
 
 - **Kotlin Data Classes**: Generates Kotlin data classes from Protocol Buffer messages with appropriate types and default values
 - **gRPC Service/Stub Code**: Generates Kotlin-friendly gRPC service and client code
+- **Flexible Service Implementation**: Supports both traditional (class-based) and functional interface approaches for implementing gRPC services
 - **Coroutines Support**: Uses Kotlin Coroutines for asynchronous operations and streaming
 - **Validation Support**: Compatible with Protocol Buffer validation rules
 - **Comprehensive Type Mapping**: Properly maps Protocol Buffer types to Kotlin types
@@ -219,6 +220,10 @@ client.chatWithPerson(
 
 ### Implementing a gRPC Service
 
+#### Traditional Approach
+
+The traditional approach involves extending the generated base class:
+
 ```kotlin
 class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
     override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
@@ -251,6 +256,74 @@ class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
     }
 }
 ```
+
+#### Alternative Approach with Functional Interfaces
+
+grpc-kt also provides an alternative way to implement gRPC services using functional interfaces, which allows for more modular and flexible service implementation:
+
+```kotlin
+// Define the service implementation functions
+val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
+    PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+        println("Received getPerson request for id: ${request.id}")
+        GetPersonResponseKt(
+            person = PersonKt(name = "John Doe", age = 30)
+        ).toJavaProto()
+    }
+
+val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
+    PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+        println("Received listPersons request with limit: ${request.limit}")
+        flow {
+            repeat(request.limit) {
+                emit(ListPersonsResponseKt(
+                    person = PersonKt(name = "Person $it", age = 20 + it)
+                ).toJavaProto())
+                delay(100) // Simulate some processing time
+            }
+        }
+    }
+
+val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
+    PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
+        requests.collect { request ->
+            println("Updating person: ${request.person?.name}")
+        }
+        UpdatePersonResponseKt(success = true).toJavaProto()
+    }
+
+val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
+    PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
+        flow {
+            requests.map { request ->
+                ChatResponseKt(message = "Echo: ${request.message}").toJavaProto()
+            }.collect { response ->
+                emit(response)
+                delay(100) // Simulate some processing time
+            }
+        }
+    }
+
+// Create the service using the AlternateServerBuilder
+val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+    getPerson = getPerson,
+    listPersons = listPersons,
+    updatePerson = updatePerson,
+    chatWithPerson = chatWithPerson
+)
+
+// Start the gRPC server with the alternate service
+val server = ServerBuilder.forPort(8080)
+    .addService(alternateService)
+    .build()
+    .start()
+```
+
+This approach has several advantages:
+- Each method can be implemented separately, making the code more modular
+- Methods can be easily swapped or mocked for testing
+- Implementation can be provided as lambda functions or method references
+- No need to create a class that extends a base class
 
 ## Building from Source
 
