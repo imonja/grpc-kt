@@ -20,7 +20,6 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
                 ServerBuilder(),
-                AlternateServerBuilder(),
                 ClientBuilder()
             )
             val results = generators.map {
@@ -45,6 +44,34 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
                     .build()
             )
         }
+
+        fileDescriptor.services.forEach { service ->
+            val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
+                AlternateServerBuilder()
+            )
+            val results = generators.map {
+                it.build(service)
+            }
+            val grpcClassName = "${service.name}GrpcAlternateKt"
+
+            fileSpecs.add(
+                FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
+                    .addType(
+                        TypeSpec.objectBuilder(grpcClassName)
+                            .apply { results.flatMap { it.typeSpecs }.forEach { addType(it) } }
+                            .build()
+                    ).apply {
+                        addGeneratedFileComments(fileDescriptor.name)
+
+                        if (service.methods.any { it.isServerStreaming || it.isClientStreaming }) {
+                            addImport("kotlinx.coroutines.flow", "map")
+                        }
+                        addAllImports(results.flatMap { it.imports }.toSet())
+                    }
+                    .build()
+            )
+        }
+
 
         return fileSpecs
     }

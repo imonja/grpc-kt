@@ -62,9 +62,9 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             topLevelFunInterfaces += functionInterface
         }
 
-        // GrpcBuilder class
-        val grpcBuilderClassName = ClassName("", "GrpcBuilder")
-        val grpcBuilderClass = TypeSpec.classBuilder("GrpcBuilder")
+        // GrpcBuilderAlternate class
+        val grpcBuilderClassName = ClassName("", "GrpcBuilderAlternate")
+        val grpcBuilderClass = TypeSpec.classBuilder("GrpcBuilderAlternate")
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("builder", ServerServiceDefinition.Builder::class)
@@ -150,8 +150,8 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
         dslObjectBuilder.addType(grpcBuilderClass)
 
-        // GrpcService(factory) function
-        val grpcServiceFunction = FunSpec.builder("GrpcService")
+        // GrpcServiceAlternate(factory) function
+        val grpcServiceFunction = FunSpec.builder("GrpcServiceAlternate")
             .addParameter("serviceDescriptor", ClassName("io.grpc", "ServiceDescriptor"))
             .addParameter(
                 "builderFn",
@@ -162,7 +162,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 """
                 return object : %T() {
                     override fun bindService() = %T.builder(serviceDescriptor).apply {
-                        val b = GrpcBuilder(this)
+                        val b = GrpcBuilderAlternate(this)
                         builderFn(b)
                         serviceDescriptor.methods
                             .filterNot { m -> b.methods.contains(m) }
@@ -185,8 +185,8 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
         dslObjectBuilder.addFunction(grpcServiceFunction)
 
-        // PersonServiceGrpcService(...) factory function
-        val serviceFunction = FunSpec.builder("${descriptor.name}GrpcService")
+        // GrpcServiceAlternate(...) factory function
+        val serviceFunction = FunSpec.builder("${descriptor.name}GrpcServiceAlternate")
             .returns(BindableService::class)
 
         stubs.forEach { stub ->
@@ -195,7 +195,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             serviceFunction.addParameter(method.name, ClassName("", aliasName))
         }
 
-        serviceFunction.addCode("return GrpcService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
+        serviceFunction.addCode("return GrpcServiceAlternate(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
 
         stubs.forEachIndexed { index, stub ->
             val method = stub.methodSpec
@@ -210,6 +210,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             typeSpecs = topLevelFunInterfaces + listOf(dslObjectBuilder.build()),
             imports = stubs.flatMap { it.imports }.toSet() + setOf(
                 Import("kotlinx.coroutines.flow", listOf("Flow")),
+                Import("kotlin.coroutines", listOf("EmptyCoroutineContext")),
                 Import("kotlin", listOf("to")),
                 Import("io.grpc.kotlin.ServerCalls", listOf("bidiStreamingServerMethodDefinition")),
                 Import("io.grpc.kotlin.ServerCalls", listOf("serverStreamingServerMethodDefinition")),
