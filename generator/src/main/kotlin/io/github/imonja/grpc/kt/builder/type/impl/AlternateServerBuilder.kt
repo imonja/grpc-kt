@@ -20,10 +20,11 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             ServerBuilder().serviceMethodStub(it)
         }
 
-        val dslObjectName = "${descriptor.name}CoroutineImplAlternate"
-        val dslObjectBuilder = TypeSpec.objectBuilder(dslObjectName)
+        val objectName = "${descriptor.name}GrpcAlternateKt"
+        val objectBuilder = TypeSpec.objectBuilder(objectName)
+            .addModifiers(KModifier.PUBLIC)
 
-        val topLevelFunInterfaces = mutableListOf<TypeSpec>()
+        val topLevelFun = mutableListOf<TypeSpec>()
 
         // Generate fun interfaces per method
         stubs.map { stub ->
@@ -43,12 +44,12 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 .addFunction(methodFunction)
                 .build()
 
-            topLevelFunInterfaces += functionInterface
+            objectBuilder.addType(functionInterface)
         }
 
-        // GrpcBuilderAlternate class
-        val grpcBuilderClassName = ClassName("", "GrpcBuilderAlternate")
-        val grpcBuilderClass = TypeSpec.classBuilder("GrpcBuilderAlternate")
+        // GrpcBuilder class
+        val grpcBuilderClassName = ClassName("", "GrpcBuilder")
+        val grpcBuilderClass = TypeSpec.classBuilder("GrpcBuilder")
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("builder", ServerServiceDefinition.Builder::class)
@@ -132,10 +133,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             )
             .build()
 
-        dslObjectBuilder.addType(grpcBuilderClass)
+        objectBuilder.addType(grpcBuilderClass)
 
-        // GrpcServiceAlternate(factory) function
-        val grpcServiceFunction = FunSpec.builder("GrpcServiceAlternate")
+        // GrpcService(factory) function
+        val grpcServiceFunction = FunSpec.builder("GrpcService")
             .addParameter("serviceDescriptor", ClassName("io.grpc", "ServiceDescriptor"))
             .addParameter(
                 "builderFn",
@@ -146,7 +147,7 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 """
                 return object : %T() {
                     override fun bindService() = %T.builder(serviceDescriptor).apply {
-                        val b = GrpcBuilderAlternate(this)
+                        val b = GrpcBuilder(this)
                         builderFn(b)
                         serviceDescriptor.methods
                             .filterNot { m -> b.methods.contains(m) }
@@ -167,10 +168,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             )
             .build()
 
-        dslObjectBuilder.addFunction(grpcServiceFunction)
+        objectBuilder.addFunction(grpcServiceFunction)
 
-        // GrpcServiceAlternate(...) factory function
-        val serviceFunction = FunSpec.builder("${descriptor.name}GrpcServiceAlternate")
+        // CoroutineImplAlternate(...) factory function
+        val serviceFunction = FunSpec.builder("${descriptor.name}CoroutineImplAlternate")
             .returns(BindableService::class)
 
         stubs.forEach { stub ->
@@ -179,19 +180,19 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             serviceFunction.addParameter(method.name, ClassName("", aliasName))
         }
 
-        serviceFunction.addCode("return GrpcServiceAlternate(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
+        serviceFunction.addCode("return GrpcService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
 
         stubs.forEachIndexed { index, stub ->
             val method = stub.methodSpec
             val methodGetter = descriptor.grpcClass.member("get${method.name.replaceFirstChar { it.uppercase() }}Method")
             serviceFunction.addCode("    bind(%M() to ${method.name}::handle)\n", methodGetter)
         }
-
         serviceFunction.addCode("}\n")
-        dslObjectBuilder.addFunction(serviceFunction.build())
+
+        objectBuilder.addFunction(serviceFunction.build())
 
         return TypeSpecsWithImports(
-            typeSpecs = topLevelFunInterfaces + listOf(dslObjectBuilder.build()),
+            typeSpecs = listOf(objectBuilder.build()),
             imports = stubs.flatMap { it.imports }.toSet() + setOf(
                 Import("kotlinx.coroutines.flow", listOf("Flow")),
                 Import("kotlin.coroutines", listOf("EmptyCoroutineContext")),

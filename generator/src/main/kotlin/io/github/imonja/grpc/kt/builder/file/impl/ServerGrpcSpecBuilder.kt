@@ -56,11 +56,8 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
 
             fileSpecs.add(
                 FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
-                    .addType(
-                        TypeSpec.objectBuilder(grpcClassName)
-                            .apply { results.flatMap { it.typeSpecs }.forEach { addType(it) } }
-                            .build()
-                    ).apply {
+                    .apply {
+                        results.flatMap { it.typeSpecs }.forEach { addType(it) }
                         addGeneratedFileComments(fileDescriptor.name)
 
                         if (service.methods.any { it.isServerStreaming || it.isClientStreaming }) {

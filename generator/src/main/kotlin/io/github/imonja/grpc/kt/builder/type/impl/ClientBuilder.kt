@@ -186,8 +186,8 @@ class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         }
 
         return FunSpecsWithImports(
-            listOf(methodBuilder.build()),
-            imports
+            funSpecs = listOf(methodBuilder.build()),
+            imports = imports
         )
     }
 
