@@ -1,15 +1,9 @@
 package io.github.imonja.grpc.kt.builder.type.impl
 
 import com.google.protobuf.Descriptors.ServiceDescriptor
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.grpcClass
 import io.github.imonja.grpc.kt.toolkit.import.Import
@@ -18,51 +12,54 @@ import io.grpc.BindableService
 import io.grpc.MethodDescriptor
 import io.grpc.ServerServiceDefinition
 import io.grpc.kotlin.AbstractCoroutineServerImpl
-import io.grpc.kotlin.ServerCalls
-import kotlin.Unit
-import kotlin.coroutines.EmptyCoroutineContext
 
 class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
+
+    // === Utility extension to strip Kt suffix ===
+    private fun TypeName.withoutKtSuffix(): TypeName = when (this) {
+        is ClassName -> {
+            if (simpleName.endsWith("Kt"))
+                ClassName(packageName, simpleName.removeSuffix("Kt"))
+            else this
+        }
+        is ParameterizedTypeName -> {
+            (rawType.withoutKtSuffix() as ClassName)
+                .parameterizedBy(*typeArguments.map { it.withoutKtSuffix() }.toTypedArray())
+        }
+        else -> this
+    }
+
     override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
-        val stubs: List<ServerBuilder.MethodStub> = descriptor.methods.map {
+        val stubs = descriptor.methods.map {
             ServerBuilder().serviceMethodStub(it)
         }
 
-        // Create the DSL-style builder object
         val dslObjectName = "${descriptor.name}CoroutineImplAlternate"
         val dslObjectBuilder = TypeSpec.objectBuilder(dslObjectName)
 
-        // Add function interfaces for each method
+        // Generate fun interfaces per method
         val functionInterfaces = stubs.map { stub ->
             val method = stub.methodSpec
-            val functionInterfaceName = "${method.name.capitalize()}GrpcMethod"
-
-            // Determine if this method should be a suspend function
+            val functionInterfaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
             val isSuspend = method.modifiers.contains(KModifier.SUSPEND)
 
-            val functionInterface = TypeSpec.funInterfaceBuilder(functionInterfaceName)
-                .addSuperinterface(
-                    if (!isSuspend) {
-                        Function1::class.asClassName().parameterizedBy(
-                            method.parameters[0].type,
-                            method.returnType
-                        )
-                    } else {
-                        // For suspend functions, we need to use SuspendFunction1
-                        ClassName("kotlin.coroutines", "SuspendFunction1").parameterizedBy(
-                            method.parameters[0].type,
-                            method.returnType
-                        )
-                    }
-                )
+            val methodFunction = FunSpec.builder("handle")
+                .addModifiers(KModifier.ABSTRACT)
+                .apply { if (isSuspend) addModifiers(KModifier.SUSPEND) }
+                .addParameter("request", method.parameters[0].type.withoutKtSuffix())
+                .returns(method.returnType.withoutKtSuffix())
+                .build()
+
+            val functionInterface = TypeSpec
+                .funInterfaceBuilder(functionInterfaceName)
+                .addFunction(methodFunction)
                 .build()
 
             dslObjectBuilder.addType(functionInterface)
-
             functionInterfaceName
         }
 
-        // Add GrpcBuilder class
+        // GrpcBuilder class
         val grpcBuilderClassName = ClassName("", "GrpcBuilder")
         val grpcBuilderClass = TypeSpec.classBuilder("GrpcBuilder")
             .primaryConstructor(
@@ -78,81 +75,57 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             .addProperty(
                 PropertySpec.builder(
                     "methods",
-                    List::class.asClassName()
-                        .parameterizedBy(
-                            MethodDescriptor::class.asClassName()
-                                .parameterizedBy(
-                                    com.squareup.kotlinpoet.WildcardTypeName.producerOf(Any::class.asClassName()),
-                                    com.squareup.kotlinpoet.WildcardTypeName.producerOf(Any::class.asClassName())
-                                )
+                    MutableList::class.asClassName().parameterizedBy(
+                        MethodDescriptor::class.asClassName().parameterizedBy(
+                            WildcardTypeName.producerOf(Any::class.asClassName()),
+                            WildcardTypeName.producerOf(Any::class.asClassName())
                         )
-                )
-                    .initializer("mutableListOf()")
-                    .mutable(true)
-                    .build()
+                    )
+                ).initializer("mutableListOf()").mutable(true).build()
             )
             .addFunction(
                 FunSpec.builder("bind")
-                    .addTypeVariable(com.squareup.kotlinpoet.TypeVariableName.invoke("ReqT"))
-                    .addTypeVariable(com.squareup.kotlinpoet.TypeVariableName.invoke("RespT"))
+                    .addTypeVariable(TypeVariableName("ReqT"))
+                    .addTypeVariable(TypeVariableName("RespT"))
                     .addParameter(
-                        "pair",
-                        Pair::class.asClassName().parameterizedBy(
+                        "pair", Pair::class.asClassName().parameterizedBy(
                             MethodDescriptor::class.asClassName()
-                                .parameterizedBy(
-                                    com.squareup.kotlinpoet.TypeVariableName.invoke("ReqT"),
-                                    com.squareup.kotlinpoet.TypeVariableName.invoke("RespT")
-                                ),
-                            Any::class.asClassName()
+                                .parameterizedBy(TypeVariableName("ReqT"), TypeVariableName("RespT")),
+                            ANY
                         )
                     )
                     .addCode(
                         """
                         val (descriptor, implementation) = pair
                         val methodDef = when (descriptor.type) {
-                            %T.BIDI_STREAMING -> {
-                                %M(
-                                    context = %T,
+                            MethodDescriptor.MethodType.BIDI_STREAMING ->
+                                bidiStreamingServerMethodDefinition(
+                                    context = EmptyCoroutineContext,
                                     descriptor = descriptor,
-                                    implementation = implementation as Function1<Flow<ReqT>, Flow<RespT>>
+                                    implementation = implementation as (Flow<ReqT>) -> Flow<RespT>
                                 )
-                            }
-                            %T.SERVER_STREAMING -> {
-                                %M(
-                                    context = %T,
+                            MethodDescriptor.MethodType.SERVER_STREAMING ->
+                                serverStreamingServerMethodDefinition(
+                                    context = EmptyCoroutineContext,
                                     descriptor = descriptor,
-                                    implementation = implementation as Function1<ReqT, Flow<RespT>>
+                                    implementation = implementation as (ReqT) -> Flow<RespT>
                                 )
-                            }
-                            %T.CLIENT_STREAMING -> {
-                                %M(
-                                    context = %T,
+                            MethodDescriptor.MethodType.CLIENT_STREAMING ->
+                                clientStreamingServerMethodDefinition(
+                                    context = EmptyCoroutineContext,
                                     descriptor = descriptor,
-                                    implementation = implementation as kotlin.coroutines.SuspendFunction1<Flow<ReqT>, RespT>
+                                    implementation = implementation as suspend (Flow<ReqT>) -> RespT
                                 )
-                            }
-                            else -> {
-                                %M(
-                                    context = %T,
+                            else ->
+                                unaryServerMethodDefinition(
+                                    context = EmptyCoroutineContext,
                                     descriptor = descriptor,
-                                    implementation = implementation as kotlin.coroutines.SuspendFunction1<ReqT, RespT>
+                                    implementation = implementation as suspend (ReqT) -> RespT
                                 )
-                            }
                         }
                         builder.addMethod(methodDef)
                         methods += descriptor
-                        """.trimIndent(),
-                        MethodDescriptor.MethodType::class,
-                        ServerCalls::class.member("bidiStreamingServerMethodDefinition"),
-                        EmptyCoroutineContext::class,
-                        MethodDescriptor.MethodType::class,
-                        ServerCalls::class.member("serverStreamingServerMethodDefinition"),
-                        EmptyCoroutineContext::class,
-                        MethodDescriptor.MethodType::class,
-                        ServerCalls::class.member("clientStreamingServerMethodDefinition"),
-                        EmptyCoroutineContext::class,
-                        ServerCalls::class.member("unaryServerMethodDefinition"),
-                        EmptyCoroutineContext::class
+                        """.trimIndent()
                     )
                     .build()
             )
@@ -160,19 +133,12 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
         dslObjectBuilder.addType(grpcBuilderClass)
 
-        // Add GrpcService function
+        // GrpcService(factory) function
         val grpcServiceFunction = FunSpec.builder("GrpcService")
-            .addParameter("serviceDescriptor", io.grpc.ServiceDescriptor::class)
+            .addParameter("serviceDescriptor", ClassName("io.grpc", "ServiceDescriptor"))
             .addParameter(
-                ParameterSpec.builder(
-                    "builderFn",
-                    Function1::class.asClassName()
-                        .parameterizedBy(
-                            grpcBuilderClassName,
-                            Unit::class.asClassName()
-                        )
-                )
-                    .build()
+                "builderFn",
+                LambdaTypeName.get(receiver = grpcBuilderClassName, returnType = UNIT)
             )
             .returns(BindableService::class)
             .addCode(
@@ -185,10 +151,10 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                             .filterNot { m -> b.methods.contains(m) }
                             .forEach {
                                 addMethod(
-                                    %M(
-                                        context = %T,
+                                    unaryServerMethodDefinition(
+                                        context = EmptyCoroutineContext,
                                         descriptor = it,
-                                        implementation = { throw IllegalStateException("Not implemented: ${'$'}{it}") }
+                                        implementation = { throw IllegalStateException("Not implemented: ${'$'}it") }
                                     )
                                 )
                             }
@@ -196,65 +162,40 @@ class AlternateServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
                 }
                 """.trimIndent(),
                 AbstractCoroutineServerImpl::class,
-                ServerServiceDefinition::class,
-                ServerCalls::class.member("unaryServerMethodDefinition"),
-                EmptyCoroutineContext::class
+                ServerServiceDefinition::class
             )
             .build()
 
         dslObjectBuilder.addFunction(grpcServiceFunction)
 
-        // Add a service function
+        // PersonServiceGrpcService(...) factory function
         val serviceFunction = FunSpec.builder("${descriptor.name}GrpcService")
             .returns(BindableService::class)
 
-        // Add parameters for each method
         stubs.forEachIndexed { index, stub ->
             val method = stub.methodSpec
             val functionInterfaceName = functionInterfaces[index]
-            val parameterType = ClassName("", dslObjectName).nestedClass(functionInterfaceName)
-
-            serviceFunction.addParameter(
-                ParameterSpec.builder(method.name, parameterType)
-                    .build()
-            )
+            val paramType = ClassName("", dslObjectName).nestedClass(functionInterfaceName)
+            serviceFunction.addParameter(method.name, paramType)
         }
 
-        // Add function body
-        serviceFunction.addCode(
-            """
-            return GrpcService(%M()) { builder ->
-            """.trimIndent(),
-            descriptor.grpcClass.member("getServiceDescriptor")
-        )
+        serviceFunction.addCode("return GrpcService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
 
-        // Add bind statements for each method
         stubs.forEachIndexed { index, stub ->
             val method = stub.methodSpec
-            serviceFunction.addCode(
-                """
-                    builder.bind(%M() to ${method.name})
-                """.trimIndent(),
-                descriptor.grpcClass.member("get${method.name.capitalize()}Method")
-            )
-
-            // Add a newline between bind statements, except for the last one
-            if (index < stubs.size - 1) {
-                serviceFunction.addCode("\n")
-            }
+            val methodGetter = descriptor.grpcClass.member("get${method.name.replaceFirstChar { it.uppercase() }}Method")
+            serviceFunction.addCode("    bind(%M() to ${method.name}::handle)\n", methodGetter)
         }
 
-        serviceFunction.addCode(
-            """
-            }
-            """.trimIndent()
-        )
-
+        serviceFunction.addCode("}\n")
         dslObjectBuilder.addFunction(serviceFunction.build())
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(dslObjectBuilder.build()),
-            imports = stubs.flatMap { it.imports }.toSet() + setOf(Import("kotlin", listOf("to")))
+            imports = stubs.flatMap { it.imports }.toSet() + setOf(
+                Import("kotlinx.coroutines.flow", listOf("Flow")),
+                Import("kotlin", listOf("to"))
+            )
         )
     }
 }

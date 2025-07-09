@@ -211,7 +211,7 @@ class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
     data class MethodStub(
         val methodSpec: FunSpec,
         /**
-         * A [CodeBlock] that computes a [ServerMethodDefinition] based on an implementation of
+         * A [CodeBlock] that computes a [io.grpc.ServerMethodDefinition] based on an implementation of
          * the function described in [methodSpec].
          */
         val serverMethodDef: CodeBlock,
