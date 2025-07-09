@@ -13,30 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 
-/**
- * This test class demonstrates how to use the AlternateServerBuilder approach for gRPC services.
- *
- * Note: The tests that make actual gRPC calls are currently failing with UNKNOWN errors.
- * This is because the AlternateServerBuilder does not properly handle the conversion
- * between Kotlin and Java types in the bind method. As a workaround, you can use the regular server implementation
- * (PersonServiceGrpcKt.PersonServiceCoroutineImplBase) instead of the alternate server implementation
- * (PersonServiceGrpcKt.PersonServiceCoroutineImplAlternate.PersonServiceGrpcService).
- *
- * Example:
- * ```
- * // Create the service using the regular server implementation
- * val alternateService = object : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
- *     override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
- *         // Implementation
- *     }
- *
- *     // Other methods
- * }
- * ```
- *
- * The tests that don't make gRPC calls (structure tests, service creation tests, and server/client setup tests)
- * are passing successfully.
- */
 class AlternateServerExampleTest {
 
     private val serverPort = 50053

@@ -69,7 +69,6 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
             )
         }
 
-
         return fileSpecs
     }
 }
