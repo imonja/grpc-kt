@@ -51,8 +51,8 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
 
         // === GrpcService(...) ===
         objectBuilder.addFunction(
-            FunSpec.builder("GrpcService")
-                .addModifiers(KModifier.PUBLIC)
+            FunSpec.builder("createBindableService")
+                .addModifiers(KModifier.PRIVATE)
                 .addParameter(
                     "serviceDescriptor",
                     ClassName("io.grpc", "ServiceDescriptor")
@@ -81,6 +81,11 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
 
         // === PersonServiceCoroutineImplAlternate(...) bind ===
         val implFun = FunSpec.builder("${descriptor.name}CoroutineImplAlternate")
+            .addAnnotation(
+                AnnotationSpec.builder(Suppress::class)
+                    .addMember("%S", "FunctionName")
+                    .build()
+            )
             .addModifiers(KModifier.PUBLIC)
             .returns(BindableService::class)
 
@@ -100,7 +105,7 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             )
         }
 
-        implFun.addCode("return GrpcService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
+        implFun.addCode("return createBindableService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
         stubs.forEach { stub ->
             val name = stub.methodSpec.name
             val methodGetter = descriptor.grpcClass.member("get${name.replaceFirstChar { it.uppercase() }}Method")
