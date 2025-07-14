@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/github/license/imonja/grpc-kt)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/imonja/grpc-kt)](https://github.com/imonja/grpc-kt/releases)
+
 # grpc-kt
 
 grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/stub code from Protocol Buffer (.proto) definitions. It provides a more Kotlin-idiomatic way to work with Protocol Buffers and gRPC in Kotlin projects.
