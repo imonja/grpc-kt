@@ -27,19 +27,19 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
         val objectBuilder = TypeSpec.objectBuilder(objectName)
             .addModifiers(KModifier.PUBLIC)
 
-        // === fun interfaces ===
+        // Generate interfaces for each service method that handlers will implement
         val interfacesTypeSpecs = generateInterfaceTypeSpecs(stubs)
         objectBuilder.addTypes(interfacesTypeSpecs)
 
-        // === GrpcService(...) ===
+        // Generate a function to create a bindable service
         val createBindableFunSpec = generateCreateBindableFunSpec()
         objectBuilder.addFunction(createBindableFunSpec)
 
-        // === PersonServiceCoroutineImplAlternate(...) bind ===
+        // Create a coroutine-based alternate implementation for PersonService binding
         val coroutineImplAlternateFunSpec = generateCoroutineImplAlternateFunSpec(descriptor, stubs)
         objectBuilder.addFunction(coroutineImplAlternateFunSpec)
 
-        // === ServerServiceDefinition.Builder.bind(...) extension ===
+        // Add an extension function to bind service to ServerServiceDefinition.Builder
         val bindFunSpec = generateBindFunSpec()
         objectBuilder.addFunction(bindFunSpec)
 
