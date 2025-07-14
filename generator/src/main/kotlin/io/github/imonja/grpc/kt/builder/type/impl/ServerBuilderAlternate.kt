@@ -28,7 +28,31 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             .addModifiers(KModifier.PUBLIC)
 
         // === fun interfaces ===
-        stubs.forEach { stub ->
+        val interfacesTypeSpecs = generateInterfaceTypeSpecs(stubs)
+        objectBuilder.addTypes(interfacesTypeSpecs)
+
+        // === GrpcService(...) ===
+        val createBindableFunSpec = generateCreateBindableFunSpec()
+        objectBuilder.addFunction(createBindableFunSpec)
+
+        // === PersonServiceCoroutineImplAlternate(...) bind ===
+        val coroutineImplAlternateFunSpec = generateCoroutineImplAlternateFunSpec(descriptor, stubs)
+        objectBuilder.addFunction(coroutineImplAlternateFunSpec)
+
+        // === ServerServiceDefinition.Builder.bind(...) extension ===
+        val bindFunSpec = generateBindFunSpec()
+        objectBuilder.addFunction(bindFunSpec)
+
+        return TypeSpecsWithImports(
+            typeSpecs = listOf(objectBuilder.build()),
+            imports = stubs.flatMap { it.imports }.toSet() + setOf(
+                Import("kotlinx.coroutines.flow", listOf("map"))
+            )
+        )
+    }
+
+    private fun generateInterfaceTypeSpecs(stubs: List<ServerBuilder.MethodStub>): List<TypeSpec> {
+        val interfacesTypeSpecs = stubs.map { stub ->
             val method = stub.methodSpec
             val ifaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
 
@@ -41,46 +65,49 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 .returns(method.returnType)
                 .build()
 
-            objectBuilder.addType(
-                TypeSpec.funInterfaceBuilder(ifaceName)
-                    .addModifiers(KModifier.PUBLIC)
-                    .addFunction(methodFun)
-                    .build()
-            )
+            TypeSpec.funInterfaceBuilder(ifaceName)
+                .addModifiers(KModifier.PUBLIC)
+                .addFunction(methodFun)
+                .build()
         }
+        return interfacesTypeSpecs
+    }
 
-        // === GrpcService(...) ===
-        objectBuilder.addFunction(
-            FunSpec.builder("createBindableService")
-                .addModifiers(KModifier.PRIVATE)
-                .addParameter(
-                    "serviceDescriptor",
-                    ClassName("io.grpc", "ServiceDescriptor")
+    private fun generateCreateBindableFunSpec(): FunSpec {
+        val createBindableFunSpec = FunSpec.builder("createBindableService")
+            .addModifiers(KModifier.PRIVATE)
+            .addParameter(
+                "serviceDescriptor",
+                ClassName("io.grpc", "ServiceDescriptor")
+            )
+            .addParameter(
+                "builderFn",
+                LambdaTypeName.get(
+                    receiver = ClassName("io.grpc.ServerServiceDefinition", "Builder"),
+                    returnType = UNIT
                 )
-                .addParameter(
-                    "builderFn",
-                    LambdaTypeName.get(
-                        receiver = ClassName("io.grpc.ServerServiceDefinition", "Builder"),
-                        returnType = UNIT
-                    )
-                )
-                .returns(BindableService::class)
-                .addCode(
-                    """
+            )
+            .returns(BindableService::class)
+            .addCode(
+                """
                     return object : %T() {
                         override fun bindService() = %T.builder(serviceDescriptor).apply {
                             builderFn()
                         }.build()
                     }
-                    """.trimIndent(),
-                    AbstractCoroutineServerImpl::class,
-                    ServerServiceDefinition::class
-                )
-                .build()
-        )
+                """.trimIndent(),
+                AbstractCoroutineServerImpl::class,
+                ServerServiceDefinition::class
+            )
+            .build()
+        return createBindableFunSpec
+    }
 
-        // === PersonServiceCoroutineImplAlternate(...) bind ===
-        val implFun = FunSpec.builder("${descriptor.name}CoroutineImplAlternate")
+    private fun generateCoroutineImplAlternateFunSpec(
+        descriptor: ServiceDescriptor,
+        stubs: List<ServerBuilder.MethodStub>
+    ): FunSpec {
+        val coroutineImplAlternateFunSpec = FunSpec.builder("${descriptor.name}CoroutineImplAlternate")
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
                     .addMember("%S", "FunctionName")
@@ -98,14 +125,17 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 Status::class.member("UNIMPLEMENTED"),
                 "Method ${name.replaceFirstChar { it.uppercase() }} is unimplemented"
             )
-            implFun.addParameter(
+            coroutineImplAlternateFunSpec.addParameter(
                 ParameterSpec.builder(name, ClassName("", ifaceName))
                     .defaultValue("$ifaceName { request -> throw $defaultImpl }")
                     .build()
             )
         }
 
-        implFun.addCode("return createBindableService(%M()) {\n", descriptor.grpcClass.member("getServiceDescriptor"))
+        coroutineImplAlternateFunSpec.addCode(
+            "return createBindableService(%M()) {\n",
+            descriptor.grpcClass.member("getServiceDescriptor")
+        )
         stubs.forEach { stub ->
             val name = stub.methodSpec.name
             val methodGetter = descriptor.grpcClass.member("get${name.replaceFirstChar { it.uppercase() }}Method")
@@ -136,25 +166,25 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             }
 
             if (isEmptyReturn) {
-                implFun.addCode(
+                coroutineImplAlternateFunSpec.addCode(
                     """
-                    bind(
-                        pair = %M() to $name::handle,
-                        toKotlinProto = %T::toKotlinProto,
-                        toJavaProto = $toJavaProtoExpr
-                    )
+                        bind(
+                            pair = %M() to $name::handle,
+                            toKotlinProto = %T::toKotlinProto,
+                            toJavaProto = $toJavaProtoExpr
+                        )
                     """.trimIndent() + "\n",
                     methodGetter,
                     reqJava
                 )
             } else {
-                implFun.addCode(
+                coroutineImplAlternateFunSpec.addCode(
                     """
-                    bind(
-                        pair = %M() to $name::handle,
-                        toKotlinProto = %T::toKotlinProto,
-                        toJavaProto = $toJavaProtoExpr
-                    )
+                        bind(
+                            pair = %M() to $name::handle,
+                            toKotlinProto = %T::toKotlinProto,
+                            toJavaProto = $toJavaProtoExpr
+                        )
                     """.trimIndent() + "\n",
                     methodGetter,
                     reqJava,
@@ -162,11 +192,12 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 )
             }
         }
-        implFun.addCode("}")
-        objectBuilder.addFunction(implFun.build())
+        coroutineImplAlternateFunSpec.addCode("}")
+        return coroutineImplAlternateFunSpec.build()
+    }
 
-        // === ServerServiceDefinition.Builder.bind(...) extension ===
-        val bindFun = FunSpec.builder("bind")
+    private fun generateBindFunSpec(): FunSpec {
+        val bindFunSpec = FunSpec.builder("bind")
             .addModifiers(KModifier.PUBLIC)
             .receiver(ClassName("io.grpc.ServerServiceDefinition", "Builder"))
             .addTypeVariable(TypeVariableName("ReqT"))
@@ -208,11 +239,11 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                             .add(
                                 CodeBlock.of(
                                     """
-                                        implementation = { req ->
-                                        val reqKt = toKotlinProto(req as ReqT)
-                                        val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)
-                                        toJavaProto(respKt)
-                                        }
+                                            implementation = { req ->
+                                            val reqKt = toKotlinProto(req as ReqT)
+                                            val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)
+                                            toJavaProto(respKt)
+                                            }
                                     """.trimMargin()
                                 )
                             )
@@ -234,12 +265,12 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                             .add(
                                 CodeBlock.of(
                                     """
-                                        implementation = { req ->
-                                        val reqKt = toKotlinProto(req as ReqT)
-                                        (implementationRaw as (ReqKotlin) -> %T<RespKotlin>)
-                                        .invoke(reqKt)
-                                        .map(toJavaProto)
-                                        }
+                                            implementation = { req ->
+                                            val reqKt = toKotlinProto(req as ReqT)
+                                            (implementationRaw as (ReqKotlin) -> %T<RespKotlin>)
+                                            .invoke(reqKt)
+                                            .map(toJavaProto)
+                                            }
                                     """.trimMargin(),
                                     ClassName("kotlinx.coroutines.flow", "Flow")
                                 )
@@ -262,11 +293,11 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                             .add(
                                 CodeBlock.of(
                                     """
-                                        implementation = { reqFlow ->
-                                        val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
-                                        val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)
-                                        toJavaProto(resultKt)
-                                        }
+                                            implementation = { reqFlow ->
+                                            val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
+                                            val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)
+                                            toJavaProto(resultKt)
+                                            }
                                     """.trimMargin(),
                                     ClassName("kotlinx.coroutines.flow", "Flow"),
                                     ClassName("kotlinx.coroutines.flow", "Flow")
@@ -290,10 +321,10 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                             .add(
                                 CodeBlock.of(
                                     """
-                                        implementation = { reqFlow ->
-                                        val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
-                                        (implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)
-                                        }
+                                            implementation = { reqFlow ->
+                                            val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
+                                            (implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)
+                                            }
                                     """.trimMargin(),
                                     ClassName("kotlinx.coroutines.flow", "Flow"),
                                     ClassName("kotlinx.coroutines.flow", "Flow"),
@@ -311,15 +342,7 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
 
             )
             .build()
-
-        objectBuilder.addFunction(bindFun)
-
-        return TypeSpecsWithImports(
-            typeSpecs = listOf(objectBuilder.build()),
-            imports = stubs.flatMap { it.imports }.toSet() + setOf(
-                Import("kotlinx.coroutines.flow", listOf("map"))
-            )
-        )
+        return bindFunSpec
     }
 
     private fun TypeName.withoutKtSuffix(): TypeName = when (this) {
