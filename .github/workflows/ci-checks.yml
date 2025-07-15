@@ -35,12 +35,12 @@ jobs:
 
             -   name: Run ktlint check
                 if: ${{ inputs.run-ktlint == true || github.event_name != 'workflow_call' }}
-                run: ./gradlew clean ktlintCheck --no-build-cache
+                run: ./gradlew clean ktlintCheck
 
             -   name: Run tests
                 if: ${{ inputs.run-tests == true || github.event_name != 'workflow_call' }}
                 id: tests
-                run: ./gradlew test --no-build-cache
+                run: ./gradlew test
 
             -   name: Report Test Results
                 if: ${{ always() && !cancelled() && steps.tests.outcome != 'skipped' && (inputs.run-tests == true || github.event_name != 'workflow_call') }}
