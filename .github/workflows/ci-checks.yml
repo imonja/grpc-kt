@@ -34,16 +34,16 @@ jobs:
                 run: chmod +x gradlew
 
             -   name: Run ktlint check
-                if: ${{ inputs.run-ktlint }}
+                if: ${{ inputs.run-ktlint == true || github.event_name != 'workflow_call' }}
                 run: ./gradlew clean ktlintCheck --no-build-cache
 
             -   name: Run tests
-                if: ${{ inputs.run-tests }}
+                if: ${{ inputs.run-tests == true || github.event_name != 'workflow_call' }}
                 id: tests
                 run: ./gradlew test --no-build-cache
 
             -   name: Report Test Results
-                if: ${{ always() && !cancelled() && steps.tests.outcome != 'skipped' && inputs.run-tests }}
+                if: ${{ always() && !cancelled() && steps.tests.outcome != 'skipped' && (inputs.run-tests == true || github.event_name != 'workflow_call') }}
                 uses: dorny/test-reporter@v2
                 with:
                     name: JUnit Tests
