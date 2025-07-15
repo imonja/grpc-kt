@@ -4,6 +4,7 @@ last-tag:
 	echo "🔖 Latest tag: $$latest"
 
 add-tag-and-push:
+	make last-tag
 	@read -p "Enter tag name (e.g. 1.1.1): " tag; \
 	read -p "Enter tag message: " msg; \
 	if [ -z "$$tag" ] || [ -z "$$msg" ]; then \

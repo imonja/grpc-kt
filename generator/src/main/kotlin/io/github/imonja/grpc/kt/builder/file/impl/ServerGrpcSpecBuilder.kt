@@ -8,6 +8,7 @@ import io.github.imonja.grpc.kt.builder.file.FileSpecBuilder
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ClientBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilder
+import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilderAlternate
 import io.github.imonja.grpc.kt.toolkit.addAllImports
 import io.github.imonja.grpc.kt.toolkit.addGeneratedFileComments
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
@@ -33,6 +34,30 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
                             .apply { results.flatMap { it.typeSpecs }.forEach { addType(it) } }
                             .build()
                     ).apply {
+                        addGeneratedFileComments(fileDescriptor.name)
+
+                        if (service.methods.any { it.isServerStreaming || it.isClientStreaming }) {
+                            addImport("kotlinx.coroutines.flow", "map")
+                        }
+                        addAllImports(results.flatMap { it.imports }.toSet())
+                    }
+                    .build()
+            )
+        }
+
+        fileDescriptor.services.forEach { service ->
+            val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
+                ServerBuilderAlternate()
+            )
+            val results = generators.map {
+                it.build(service)
+            }
+            val grpcClassName = "${service.name}GrpcAlternateKt"
+
+            fileSpecs.add(
+                FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
+                    .apply {
+                        results.flatMap { it.typeSpecs }.forEach { addType(it) }
                         addGeneratedFileComments(fileDescriptor.name)
 
                         if (service.methods.any { it.isServerStreaming || it.isClientStreaming }) {
