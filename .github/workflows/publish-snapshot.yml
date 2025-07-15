@@ -12,7 +12,7 @@ on:
 
 jobs:
     ci-checks:
-        uses: ./.github/workflows/ci-base.yml
+        uses: ./.github/workflows/ci-checks.yml
         with:
             run-ktlint: true
             run-tests: true

@@ -1,6 +1,8 @@
-name: CI Base
+name: CI Checks
 
 on:
+    pull_request:
+    workflow_dispatch:
     workflow_call:
         inputs:
             run-ktlint:
