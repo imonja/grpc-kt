@@ -35,6 +35,10 @@ grpc-kt consists of three main modules:
 
 Add the following to your `build.gradle.kts` file:
 
+> **Note**: Artifacts are published to both GitHub Packages and Maven Central.
+> For GitHub Packages, you'll need to add the repository configuration.
+> Maven Central is the recommended source for public consumption.
+
 ```kotlin
 plugins {
     kotlin("jvm") version "2.1.0"
@@ -43,7 +47,7 @@ plugins {
 
 dependencies {
     // grpc-kt runtime
-    implementation("io.github.imonja:grpc-kt-common:1.0.0")
+    implementation("io.github.imonja:grpc-kt-common:1.1.0")
 
     // Other gRPC dependencies
     implementation("io.grpc:grpc-stub:1.71.0")
@@ -62,7 +66,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:1.71.0"
         }
         id("grpc-kt") {
-            artifact = "io.github.imonja:protoc-gen-grpc-kt:1.0.0:jdk8@jar"
+            artifact = "io.github.imonja:protoc-gen-grpc-kt:1.1.0:jdk8@jar"
         }
     }
     generateProtoTasks {
