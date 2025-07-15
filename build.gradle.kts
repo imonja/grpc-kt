@@ -29,17 +29,6 @@ mapOf(
     "jupiterVersion" to "5.11.4"
 ).forEach({ (key, value) -> ext[key] = value })
 
-fun RepositoryHandler.githubPackages() {
-    maven {
-        url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
-        name = "GitHub"
-        credentials {
-            username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
-            password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
-}
-
 repositories {
     mavenCentral()
 }
@@ -96,7 +85,14 @@ subprojects {
     // GitHub Packages publishing
     publishing {
         repositories {
-            githubPackages()
+            maven {
+                url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+                name = "GitHub"
+                credentials {
+                    username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
+                    password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
+                }
+            }
         }
     }
 
