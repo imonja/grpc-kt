@@ -51,12 +51,10 @@ jobs:
                       echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
                     fi
             -   name: Publish to GitHub Packages
-                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION
+                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION -PsigningKey="${{ secrets.SIGNING_KEY }}" -PsigningPassword="${{ secrets.SIGNING_PASSWORD }}"
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    signingKey: ${{ secrets.SIGNING_KEY }}
-                    signingPassword: ${{ secrets.SIGNING_PASSWORD }}
     
     publish-maven:
         needs: ci-checks
@@ -87,9 +85,7 @@ jobs:
                       echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
                     fi
             -   name: Publish to Maven Central
-                run: ./gradlew publishToMavenCentral -PreleaseVersion=$VERSION
+                run: ./gradlew publishToMavenCentral -PreleaseVersion=$VERSION -PsigningKey="${{ secrets.SIGNING_KEY }}" -PsigningPassword="${{ secrets.SIGNING_PASSWORD }}"
                 env:
                     MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-                    signingKey: ${{ secrets.SIGNING_KEY }}
-                    signingPassword: ${{ secrets.SIGNING_PASSWORD }}
