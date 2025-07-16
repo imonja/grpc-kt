@@ -50,8 +50,16 @@ jobs:
                       echo "Using manually provided version: ${{ github.event.inputs.version }}"
                       echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
                     fi
+            -   name: Debug signing key
+                run: |
+                    echo "Signing key length: ${#SIGNING_KEY}"
+                    echo "Signing key first 50 chars: ${SIGNING_KEY:0:50}"
+                    echo "Signing password length: ${#SIGNING_PASSWORD}"
+                env:
+                    SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+                    SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
             -   name: Publish to GitHub Packages
-                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION -PsigningKey="${{ secrets.SIGNING_KEY }}" -PsigningPassword="${{ secrets.SIGNING_PASSWORD }}"
+                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION -PsigningKey="${{ secrets.SIGNING_KEY }}" -PsigningPassword="${{ secrets.SIGNING_PASSWORD }}" --info
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
