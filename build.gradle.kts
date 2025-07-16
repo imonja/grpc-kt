@@ -134,9 +134,11 @@ subprojects {
             }
         }
 
-        publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
-
-        signAllPublications()
+        // Only publish to Maven Central for non-SNAPSHOT versions
+        if (!version.toString().contains("SNAPSHOT")) {
+            publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+            signAllPublications()
+        }
     }
 
     configure<KtlintExtension> {
