@@ -55,8 +55,8 @@ jobs:
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-                    SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+                    signingKey: ${{ secrets.SIGNING_KEY }}
+                    signingPassword: ${{ secrets.SIGNING_PASSWORD }}
     
     publish-maven:
         needs: ci-checks
@@ -91,5 +91,5 @@ jobs:
                 env:
                     MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-                    SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-                    SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+                    signingKey: ${{ secrets.SIGNING_KEY }}
+                    signingPassword: ${{ secrets.SIGNING_PASSWORD }}
