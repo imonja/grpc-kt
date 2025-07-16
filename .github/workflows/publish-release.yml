@@ -59,10 +59,12 @@ jobs:
                     SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
                     SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
             -   name: Publish to GitHub Packages
-                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION -PsigningKey="${{ secrets.SIGNING_KEY }}" -PsigningPassword="${{ secrets.SIGNING_PASSWORD }}" --info
+                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION --info
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
     
     publish-maven:
         needs: ci-checks
