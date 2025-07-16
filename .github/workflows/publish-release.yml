@@ -22,17 +22,36 @@ jobs:
             run-ktlint: true
             run-tests: true
     
-    setup-build:
-        uses: ./.github/workflows/setup-build.yml
-        with:
-            version-input: ${{ github.event.inputs.version }}
-    
     publish-github:
-        needs: [ci-checks, setup-build]
+        needs: ci-checks
         runs-on: ubuntu-latest
         steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up JDK
+                uses: actions/setup-java@v3
+                with:
+                    distribution: 'temurin'
+                    java-version: '21'
+                    cache: gradle
+            -   name: Grant execute permission for gradlew
+                run: chmod +x gradlew
+            -   name: Extract version from tag
+                id: get_version
+                run: |
+                    if [ "${{ github.event_name }}" == "push" ]; then
+                      # Extract version from tag (e.g., 1.0.0)
+                      TAG_VERSION=${GITHUB_REF#refs/tags/}
+                      echo "Using version from tag: $TAG_VERSION"
+                      echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
+                    else
+                      # Use manually provided version for workflow_dispatch
+                      echo "Using manually provided version: ${{ github.event.inputs.version }}"
+                      echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+                    fi
             -   name: Publish to GitHub Packages
-                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=${{ needs.setup-build.outputs.version }}
+                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,11 +59,35 @@ jobs:
                     SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
     
     publish-maven:
-        needs: [ci-checks, setup-build]
+        needs: ci-checks
         runs-on: ubuntu-latest
         steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up JDK
+                uses: actions/setup-java@v3
+                with:
+                    distribution: 'temurin'
+                    java-version: '21'
+                    cache: gradle
+            -   name: Grant execute permission for gradlew
+                run: chmod +x gradlew
+            -   name: Extract version from tag
+                id: get_version
+                run: |
+                    if [ "${{ github.event_name }}" == "push" ]; then
+                      # Extract version from tag (e.g., 1.0.0)
+                      TAG_VERSION=${GITHUB_REF#refs/tags/}
+                      echo "Using version from tag: $TAG_VERSION"
+                      echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
+                    else
+                      # Use manually provided version for workflow_dispatch
+                      echo "Using manually provided version: ${{ github.event.inputs.version }}"
+                      echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+                    fi
             -   name: Publish to Maven Central
-                run: ./gradlew publishToMavenCentral -PreleaseVersion=${{ needs.setup-build.outputs.version }}
+                run: ./gradlew publishToMavenCentral -PreleaseVersion=$VERSION
                 env:
                     MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
