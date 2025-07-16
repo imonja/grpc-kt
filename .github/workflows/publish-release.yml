@@ -52,7 +52,7 @@ jobs:
                       echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
                     fi
             -   name: Publish to GitHub Packages
-                run: ./gradlew publishToGitHub -PreleaseVersion=$VERSION
+                run: ./gradlew publishAllPublicationsToGitHubRepository -PreleaseVersion=$VERSION
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
