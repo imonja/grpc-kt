@@ -46,7 +46,7 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     archiveClassifier.set("jdk8")
 
-    // Создаем ссылку без классификатора для protobuf plugin
+    // Creating a link without a classifier for the protobuf plugin
     doLast {
         val sourceFile = archiveFile.get().asFile
         val targetFile = File(sourceFile.parent, sourceFile.name.replace("-jdk8", ""))
@@ -94,7 +94,12 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         artifactId = "protoc-gen-grpc-kt",
         version = project.version.toString()
     )
-}
 
-description = "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
-    "Kotlin data classes and gRPC services/stubs from .proto input files."
+    pom {
+        name.set("protoc generator grpc kt")
+        description.set(
+            "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
+                "Kotlin data classes and gRPC services/stubs from .proto input files."
+        )
+    }
+}

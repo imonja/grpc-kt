@@ -108,7 +108,7 @@ subprojects {
             name.set("grpc-kt")
             description.set(project.description ?: "gRPC Kotlin code generator")
             url.set("https://github.com/imonja/grpc-kt")
-            inceptionYear.set("2024")
+            inceptionYear.set("2025")
 
             licenses {
                 license {
@@ -122,7 +122,8 @@ subprojects {
                 developer {
                     id.set("imonja")
                     name.set("imonja")
-                    email.set("imonja@users.noreply.github.com")
+                    url.set("https://github.com/imonja")
+                    organization.set("imonja")
                 }
             }
 
