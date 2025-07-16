@@ -1,11 +1,9 @@
 import com.google.protobuf.gradle.id
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     application
-}
-
-java {
-    withJavadocJar()
 }
 
 application {
@@ -46,6 +44,17 @@ tasks.jar {
     from(runtimeClasspathJars.map { zipTree(it) })
 
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    archiveClassifier.set("jdk8")
+
+    // Creating a link without a classifier for the protobuf plugin
+    doLast {
+        val sourceFile = archiveFile.get().asFile
+        val targetFile = File(sourceFile.parent, sourceFile.name.replace("-jdk8", ""))
+        if (targetFile.exists()) {
+            targetFile.delete()
+        }
+        Files.copy(sourceFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    }
 }
 
 protobuf {
@@ -61,7 +70,7 @@ protobuf {
                 "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk8@jar"
         }
         id("grpc-kt") {
-            path = tasks.jar.get().archiveFile.get().asFile.absolutePath
+            path = tasks.jar.get().archiveFile.get().asFile.absolutePath.replace("-jdk8", "")
         }
     }
     generateProtoTasks {
@@ -79,47 +88,18 @@ protobuf {
     }
 }
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            artifactId = "protoc-gen-grpc-kt"
+configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+    coordinates(
+        groupId = project.group.toString(),
+        artifactId = "protoc-gen-grpc-kt",
+        version = project.version.toString()
+    )
 
-            artifact(tasks.jar) {
-                classifier = "jdk8"
-            }
-
-            // Если присутствуют withSourcesJar()/withJavadocJar(), можно включить
-            // from(components["java"])
-
-            pom {
-                name.set("protoc generator grpc kt")
-                description.set(
-                    "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
-                        "Kotlin data classes and gRPC services/stubs from .proto input files."
-                )
-                url.set("https://github.com/imonja/grpc-kt")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                        distribution.set("repo")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("imonja")
-                        name.set("imonja")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
-                    developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
-                    url.set("https://github.com/imonja/grpc-kt")
-                }
-            }
-        }
+    pom {
+        name.set("protoc generator grpc kt")
+        description.set(
+            "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
+                "Kotlin data classes and gRPC services/stubs from .proto input files."
+        )
     }
 }

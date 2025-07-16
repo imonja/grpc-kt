@@ -6,13 +6,15 @@ plugins {
     kotlin("jvm") version "2.1.0" apply false
     id("com.google.protobuf") version "0.9.5" apply false
     `maven-publish`
+    signing
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("com.vanniktech.maven.publish") version "0.29.0" apply false
 }
 
 group = "io.github.imonja"
 description = "gRPC Kotlin"
 
-// Set version from releaseVersion property (for tag-based releases)
+// Set a version from releaseVersion property (for tag-based releases)
 // or from gradle.properties (for SNAPSHOT builds)
 if (project.hasProperty("releaseVersion")) {
     version = project.property("releaseVersion") as String
@@ -27,17 +29,6 @@ mapOf(
     "jupiterVersion" to "5.11.4"
 ).forEach({ (key, value) -> ext[key] = value })
 
-fun RepositoryHandler.githubPackages() {
-    maven {
-        url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
-        name = "GitHub"
-        credentials {
-            username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
-            password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
-}
-
 repositories {
     mavenCentral()
 }
@@ -49,6 +40,8 @@ subprojects {
         plugin("com.google.protobuf")
         plugin("maven-publish")
         plugin("org.jlleitschuh.gradle.ktlint")
+        plugin("signing")
+        plugin("com.vanniktech.maven.publish")
     }
 
     group = rootProject.group
@@ -85,46 +78,66 @@ subprojects {
         }
     }
 
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
+
+    // GitHub Packages publishing
     publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                from(components["java"])
-
-                pom {
-                    name.set("grpc-kt")
-                    description.set(project.description)
-                    url.set("https://github.com/imonja/grpc-kt")
-
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                            distribution.set("repo")
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id.set("imonja")
-                            name.set("imonja")
-                        }
-                    }
-
-                    scm {
-                        connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
-                        developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
-                        url.set("https://github.com/imonja/grpc-kt")
-                    }
+        repositories {
+            maven {
+                url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+                name = "GitHub"
+                credentials {
+                    username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
+                    password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
                 }
             }
         }
+    }
 
-        repositories {
-            githubPackages()
+    // Maven Central publishing configuration
+    configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+        coordinates(
+            groupId = project.group.toString(),
+            artifactId = project.name,
+            version = project.version.toString()
+        )
+
+        pom {
+            name.set("grpc-kt")
+            description.set(project.description ?: "gRPC Kotlin code generator")
+            url.set("https://github.com/imonja/grpc-kt")
+            inceptionYear.set("2025")
+
+            licenses {
+                license {
+                    name.set("The Apache License, Version 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                    distribution.set("repo")
+                }
+            }
+
+            developers {
+                developer {
+                    id.set("imonja")
+                    name.set("imonja")
+                    url.set("https://github.com/imonja")
+                    organization.set("imonja")
+                }
+            }
+
+            scm {
+                connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
+                developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
+                url.set("https://github.com/imonja/grpc-kt")
+            }
         }
 
-        tasks.withType<Test> {
-            useJUnitPlatform()
+        // Only publish to Maven Central for non-SNAPSHOT versions
+        if (!version.toString().contains("SNAPSHOT")) {
+            publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+            signAllPublications()
         }
     }
 
