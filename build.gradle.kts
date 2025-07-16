@@ -37,9 +37,9 @@ subprojects {
     apply {
         plugin("java")
         plugin("org.jetbrains.kotlin.jvm")
+        plugin("org.jlleitschuh.gradle.ktlint")
         plugin("com.google.protobuf")
         plugin("maven-publish")
-        plugin("org.jlleitschuh.gradle.ktlint")
         plugin("signing")
         plugin("com.vanniktech.maven.publish")
     }
@@ -82,7 +82,6 @@ subprojects {
         useJUnitPlatform()
     }
 
-    // GitHub Packages publishing
     publishing {
         repositories {
             maven {
@@ -96,7 +95,7 @@ subprojects {
         }
     }
 
-    // Maven Central publishing configuration
+    // Maven Central publishing configuration - only for publishable modules
     configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         coordinates(
             groupId = project.group.toString(),
@@ -148,5 +147,16 @@ subprojects {
                 include("**/build/generated/**")
             }
         }
+    }
+}
+
+tasks.register("ktlintFormatAll") {
+    description = "Run ktlintFormat for all modules (grpc-kt, gradle-plugin)"
+    group = "formatting"
+    dependsOn("ktlintFormat")
+
+    doLast {
+        // Run ktlintFormat for gradle-plugin composite build
+        gradle.includedBuild("gradle-plugin").task(":ktlintFormat")
     }
 }

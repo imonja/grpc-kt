@@ -1,0 +1,144 @@
+import java.util.Properties
+
+plugins {
+    `kotlin-dsl`
+    `java-gradle-plugin`
+    `maven-publish`
+    signing
+    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("com.vanniktech.maven.publish") version "0.29.0"
+    id("com.gradle.plugin-publish") version "1.3.0"
+}
+
+group = "io.github.imonja"
+description = "gRPC Kotlin"
+
+// Set a version from releaseVersion property (for tag-based releases)
+// or read from root gradle.properties (for SNAPSHOT builds)
+if (project.hasProperty("releaseVersion")) {
+    version = project.property("releaseVersion") as String
+} else {
+    // Read version from root gradle.properties
+    val rootGradleProperties = file("../gradle.properties")
+    if (rootGradleProperties.exists()) {
+        val properties = Properties()
+        rootGradleProperties.inputStream().use { properties.load(it) }
+        version = properties.getProperty("version", "0.0.1-SNAPSHOT")
+    }
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.5")
+    implementation(gradleApi())
+    implementation(localGroovy())
+}
+
+gradlePlugin {
+    website = "https://github.com/imonja/grpc-kt"
+    vcsUrl = "https://github.com/imonja/grpc-kt"
+
+    plugins {
+        create("grpc-kt-gradle-plugin") {
+            id = "io.github.imonja.grpc-kt-gradle-plugin"
+            implementationClass = "io.github.imonja.grpc.kt.plugin.GrpcKtProtobufPlugin"
+            displayName = "gRPC Kotlin Gradle Plugin"
+            description = "A Gradle plugin that configures protobuf generation with grpc-kt, " +
+                "grpc-java, validation, and documentation"
+            tags = listOf("grpc", "kotlin", "protobuf", "grpc-kt")
+        }
+    }
+}
+
+// Configure signing for Gradle Plugin Portal
+signing {
+    val signingKeyId = findProperty("signing.keyId") as String?
+    val signingKey = findProperty("signingInMemoryKey") as String?
+    val signingPassword = findProperty("signingInMemoryKeyPassword") as String?
+
+    if (signingKeyId != null || signingKey != null) {
+        if (signingKey != null && signingPassword != null) {
+            useInMemoryPgpKeys(signingKey, signingPassword)
+        }
+        sign(publishing.publications)
+    }
+}
+
+tasks.withType<Copy>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+}
+
+// GitHub packages publishing (keep for backward compatibility)
+publishing {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+            name = "GitHub"
+            credentials {
+                username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
+                password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+// Maven Central publishing configuration
+configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+    coordinates(
+        groupId = project.group.toString(),
+        artifactId = "grpc-kt-gradle-plugin",
+        version = project.version.toString()
+    )
+
+    pom {
+        name.set("gRPC Kotlin Gradle Plugin")
+        description.set(
+            "A Gradle plugin that configures protobuf generation with grpc-kt, grpc-java, validation, and documentation"
+        )
+        url.set("https://github.com/imonja/grpc-kt")
+        inceptionYear.set("2025")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("imonja")
+                name.set("imonja")
+                url.set("https://github.com/imonja")
+                organization.set("imonja")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
+            developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
+            url.set("https://github.com/imonja/grpc-kt")
+        }
+    }
+
+    // Only publish to Maven Central for non-SNAPSHOT versions
+    if (!version.toString().contains("SNAPSHOT")) {
+        publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+        // Only sign if GPG keys are configured
+        if (project.hasProperty("signing.keyId") || project.hasProperty("signingInMemoryKey")) {
+            signAllPublications()
+        }
+    }
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    filter {
+        exclude("**/generated/**")
+        include("**/build/generated/**")
+    }
+}
