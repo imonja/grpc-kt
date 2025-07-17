@@ -85,7 +85,7 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
                         }
                         id("grpc-docs") {
                             option(
-                                "${extension.docs.grpcDocsFormat.get()}, ${extension.docs.grpcDocsFileName.get()}"
+                                "${extension.docs.grpcDocsFormat.get()},${extension.docs.grpcDocsFileName.get()}"
                             )
                             outputSubDir = extension.docs.grpcDocsOutputSubDir.get()
                         }
