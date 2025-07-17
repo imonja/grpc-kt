@@ -11,8 +11,10 @@ grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/s
 - **gRPC Service/Stub Code**: Generates Kotlin-friendly gRPC service and client code
 - **Flexible Service Implementation**: Supports both traditional (class-based) and functional interface approaches for implementing gRPC services
 - **Coroutines Support**: Uses Kotlin Coroutines for asynchronous operations and streaming
-- **Validation Support**: Compatible with Protocol Buffer validation rules
+- **Validation Support**: Compatible with Protocol Buffer validation rules via protoc-gen-validate
+- **Documentation Generation**: Automatically generates protocol buffer documentation
 - **Comprehensive Type Mapping**: Properly maps Protocol Buffer types to Kotlin types
+- **Gradle Plugin**: Simplifies project setup and configuration
 - **Support for Protocol Buffer Features**:
     - Oneofs (mapped to sealed interfaces)
     - Maps
@@ -23,21 +25,39 @@ grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/s
 
 ## Project Structure
 
-grpc-kt consists of three main modules:
+grpc-kt consists of four main modules:
 
 - **common**: Provides runtime support for the generated code
-- **example**: Contains example proto files and usage
+- **example**: Contains example proto files and usage demonstrations
 - **generator**: The main code generation module (the protoc plugin)
+- **gradle-plugin**: A Gradle plugin that simplifies protobuf configuration
 
 ## Installation
 
 ### Gradle
 
-Add the following to your `build.gradle.kts` file:
-
 > **Note**: Artifacts are published to both GitHub Packages and Maven Central.
 > For GitHub Packages, you'll need to add the repository configuration.
 > Maven Central is the recommended source for public consumption.
+
+#### Option 1: Using the Gradle Plugin (Recommended)
+
+The easiest way to use grpc-kt is with the Gradle plugin, which automatically configures all dependencies and protobuf generation:
+
+```kotlin
+plugins {
+    kotlin("jvm") version "2.1.0"
+    id("io.github.imonja.grpc-kt-protobuf") version "1.1.0"
+}
+
+// The plugin automatically adds all necessary dependencies including grpc-kt-common
+```
+
+Place your `.proto` files in `proto/` directory in your project root (or `src/main/proto`).
+
+#### Option 2: Manual Configuration
+
+If you prefer manual configuration, add the following to your `build.gradle.kts` file:
 
 ```kotlin
 plugins {
@@ -331,6 +351,31 @@ This approach has several advantages:
 - Methods can be easily swapped or mocked for testing
 - Implementation can be provided as lambda functions or method references
 - No need to create a class that extends a base class
+
+## Gradle Plugin Configuration
+
+When using the Gradle plugin, you can customize the configuration:
+
+```kotlin
+grpcKtProtobuf {
+    sourceDir {
+        protoSourceDir.set("custom/proto/dir")  // Default: "${project.projectDir}/proto"
+    }
+    
+    generateSource {
+        grpcJavaOutputSubDir.set("java")        // Default: "java"
+        grpcKtOutputSubDir.set("kotlin")        // Default: "kotlin"
+        javaPgvOutputSubDir.set("java-pgv")     // Default: "java-pgv"
+        javaPgvLang.set("java")                 // Default: "java"
+    }
+    
+    docs {
+        grpcDocsFormat.set("markdown")          // Default: "markdown"
+        grpcDocsFileName.set("api-docs.md")     // Default: "grpc-docs.md"
+        grpcDocsOutputSubDir.set("docs")        // Default: "grpc-docs"
+    }
+}
+```
 
 ## Building from Source
 

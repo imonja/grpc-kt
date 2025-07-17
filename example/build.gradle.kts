@@ -1,7 +1,6 @@
-import com.google.protobuf.gradle.id
-
 plugins {
     application
+    id("io.github.imonja.grpc-kt-gradle-plugin")
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
 }
 
@@ -15,36 +14,16 @@ java {
     }
 }
 
-val pgvVersion = "1.1.0"
-val pgdVersion = "1.5.1"
-val kotlinGrpcVersion = "1.4.1"
-val javaGrpcVersion = "1.71.0"
-val protobufVersion = "4.30.2"
-val coroutinesVersion = "1.10.2"
 val jupiterVersion = "5.11.4"
 
 dependencies {
     // Kotlin dependency
     implementation(kotlin("stdlib-jdk8"))
 
-    // Project-specific gRPC dependencies
-    implementation("io.grpc:grpc-stub:$javaGrpcVersion")
-    implementation("io.grpc:grpc-protobuf:$javaGrpcVersion")
-    implementation("io.grpc:grpc-kotlin-stub:$kotlinGrpcVersion")
-    implementation("io.grpc:grpc-netty:$javaGrpcVersion")
+    // Additional gRPC dependencies not included in plugin
+    implementation("io.grpc:grpc-netty:1.71.0")
 
-    // protobuf-kotlin dependencies
-    implementation("com.google.protobuf:protobuf-kotlin:$protobufVersion")
-
-    implementation("com.google.protobuf:protobuf-java:$protobufVersion")
-    implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
-
-    // pgv dependencies
-    implementation("build.buf.protoc-gen-validate:pgv-java-grpc:$pgvVersion")
-    implementation("build.buf.protoc-gen-validate:pgv-java-stub:$pgvVersion")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-
+    // Project dependencies
     api(project(":common"))
 
     // JUnit 5 dependencies
@@ -56,51 +35,22 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-sourceSets {
-    main {
-        proto {
-            srcDir("$projectDir/proto")
-        }
+grpcKtProtobuf {
+    sourceDir {
+        protoSourceDir = "$projectDir/proto"
     }
-}
 
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:$protobufVersion"
+    generateSource {
+        grpcJavaOutputSubDir = "java"
+        grpcKtOutputSubDir = "kotlin"
+        javaPgvOutputSubDir = "java-pgv"
+        javaPgvLang = "java"
     }
-    plugins {
-        id("grpc-java") {
-            artifact = "io.grpc:protoc-gen-grpc-java:$javaGrpcVersion"
-        }
-        id("java-pgv") {
-            artifact = "build.buf.protoc-gen-validate:protoc-gen-validate:$pgvVersion"
-        }
-        id("grpc-docs") {
-            artifact = "io.github.pseudomuto:protoc-gen-doc:$pgdVersion"
-        }
-        id("grpc-kt") {
-            path = "$rootDir/generator/build/libs/generator-${project(":generator").version}.jar"
-        }
-    }
-    generateProtoTasks {
-        all().forEach {
-            it.plugins {
-                id("grpc-java") {
-                    outputSubDir = "java"
-                }
-                id("grpc-kt") {
-                    outputSubDir = "kotlin"
-                }
-                id("java-pgv") {
-                    option("lang=java")
-                    outputSubDir = "java-pgv"
-                }
-                id("grpc-docs") {
-                    option("markdown,grpc-docs.md")
-                    outputSubDir = "grpc-docs"
-                }
-            }
-        }
+
+    docs {
+        grpcDocsFormat = "markdown"
+        grpcDocsFileName = "grpc-docs.md"
+        grpcDocsOutputSubDir = "grpc-docs"
     }
 }
 
@@ -111,22 +61,8 @@ configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
 }
 
 tasks.named("generateProto") {
-    dependsOn(":generator:build")
+    dependsOn(gradle.includedBuild("gradle-plugin").task(":build"))
     finalizedBy(":example:ktlintFormat")
-}
-
-tasks.withType<Jar> {
-    val filesToInclude = mapOf(
-        "$projectDir/proto" to "proto" to "**/*.proto",
-        "${layout.buildDirectory.get()}/generated/source/proto/main/grpc-docs" to "docs" to "**/*.md"
-    )
-
-    filesToInclude.forEach { (sourcePath, targetDir), pattern ->
-        from(sourcePath) {
-            include(pattern)
-            into(targetDir)
-        }
-    }
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
