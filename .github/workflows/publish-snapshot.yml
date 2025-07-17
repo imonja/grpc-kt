@@ -61,7 +61,7 @@ jobs:
                     echo "SNAPSHOT_VERSION=$SNAPSHOT_VERSION" >> $GITHUB_ENV
                     echo "Publishing plugin snapshot version: $SNAPSHOT_VERSION"
             -   name: Publish plugin to GitHub Packages
-                run: ./gradlew :gradle-plugin:publishPluginMavenPublicationToGitHubRepository -PreleaseVersion=$SNAPSHOT_VERSION
+                run: ./gradlew :gradle-plugin:publish -PreleaseVersion=$SNAPSHOT_VERSION
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

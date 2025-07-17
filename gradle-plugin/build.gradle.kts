@@ -56,14 +56,10 @@ gradlePlugin {
 
 // Configure signing for Gradle Plugin Portal
 signing {
-    val signingKeyId = findProperty("signing.keyId") as String?
-    val signingKey = findProperty("signingInMemoryKey") as String?
-    val signingPassword = findProperty("signingInMemoryKeyPassword") as String?
-
-    if (signingKeyId != null || signingKey != null) {
-        if (signingKey != null && signingPassword != null) {
-            useInMemoryPgpKeys(signingKey, signingPassword)
-        }
+    if (!version.toString().contains("SNAPSHOT")) {
+        val signingKey = findProperty("signingInMemoryKey") as String?
+        val signingPassword = findProperty("signingInMemoryKeyPassword") as String?
+        useInMemoryPgpKeys(signingKey, signingPassword)
         sign(publishing.publications)
     }
 }
@@ -129,10 +125,7 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
     // Only publish to Maven Central for non-SNAPSHOT versions
     if (!version.toString().contains("SNAPSHOT")) {
         publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
-        // Only sign if GPG keys are configured
-        if (project.hasProperty("signing.keyId") || project.hasProperty("signingInMemoryKey")) {
-            signAllPublications()
-        }
+        signAllPublications()
     }
 }
 
