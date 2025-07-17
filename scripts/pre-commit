@@ -1,0 +1,18 @@
+#!/bin/sh
+
+echo "Running ktlint check..."
+./gradlew ktlintCheck :gradle-plugin:ktlintCheck
+
+# Store the exit code of the ktlint check
+RESULT=$?
+
+# If ktlint check failed, prevent the commit
+if [ $RESULT -ne 0 ]; then
+  echo "ktlint check failed. Please fix the issues before committing."
+  echo "You can run './gradlew ktlintFormat' or './gradlew ktlintFormatAll' to auto-fix most issues."
+  exit 1
+fi
+
+# If we got here, the check passed
+echo "ktlint check passed."
+exit 0

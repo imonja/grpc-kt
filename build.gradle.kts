@@ -160,3 +160,23 @@ tasks.register("ktlintFormatAll") {
         gradle.includedBuild("gradle-plugin").task(":ktlintFormat")
     }
 }
+
+tasks.register<Copy>("setupHooks") {
+    description = "Setup git hooks for development"
+    group = "git hooks"
+    outputs.upToDateWhen { false }
+    from("$rootDir/scripts/pre-commit")
+    into("$rootDir/.git/hooks/")
+
+    doLast {
+        // Make the hook executable
+        file("$rootDir/.git/hooks/pre-commit").setExecutable(true)
+        println("✅ Pre-commit hook installed successfully")
+        println("   Hook will run ktlintCheck for all modules (generator, common, gradle-plugin)")
+        println("   Use 'git commit --no-verify' to skip the hook if needed")
+        println("")
+        println("💡 Available commands:")
+        println("   ./gradlew ktlintFormat     - Auto-fix main modules")
+        println("   ./gradlew ktlintFormatAll  - Auto-fix all modules")
+    }
+}

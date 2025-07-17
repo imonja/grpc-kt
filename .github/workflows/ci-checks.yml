@@ -35,7 +35,7 @@ jobs:
 
             -   name: Run ktlint check
                 if: ${{ inputs.run-ktlint == true || github.event_name != 'workflow_call' }}
-                run: ./gradlew clean ktlintCheck
+                run: ./gradlew clean ktlintCheck :gradle-plugin:ktlintCheck
 
             -   name: Run tests
                 if: ${{ inputs.run-tests == true || github.event_name != 'workflow_call' }}
