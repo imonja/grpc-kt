@@ -53,15 +53,8 @@ jobs:
                     cache: gradle
             -   name: Grant execute permission for gradlew
                 run: chmod +x gradlew
-            -   name: Generate snapshot version
-                run: |
-                    COMMIT_SHA=$(git rev-parse --short HEAD)
-                    TIMESTAMP=$(date +%Y%m%d.%H%M%S)
-                    SNAPSHOT_VERSION="$TIMESTAMP-$COMMIT_SHA-SNAPSHOT"
-                    echo "SNAPSHOT_VERSION=$SNAPSHOT_VERSION" >> $GITHUB_ENV
-                    echo "Publishing plugin snapshot version: $SNAPSHOT_VERSION"
             -   name: Publish plugin to GitHub Packages
-                run: ./gradlew :gradle-plugin:publish -PreleaseVersion=$SNAPSHOT_VERSION
+                run: ./gradlew :gradle-plugin:publish
                 env:
                     GITHUB_USERNAME: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
