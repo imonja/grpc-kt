@@ -40,6 +40,8 @@ grpc-kt consists of four main modules:
 > For GitHub Packages, you'll need to add the repository configuration.
 > Maven Central is the recommended source for public consumption.
 
+> **Version**: For all examples below, replace `X.X.X` with the latest version from [GitHub Releases](https://github.com/imonja/grpc-kt/releases)
+
 #### Option 1: Using the Gradle Plugin (Recommended)
 
 The easiest way to use grpc-kt is with the Gradle plugin, which automatically configures all dependencies and protobuf generation:
@@ -47,7 +49,7 @@ The easiest way to use grpc-kt is with the Gradle plugin, which automatically co
 ```kotlin
 plugins {
     kotlin("jvm") version "2.1.0"
-    id("io.github.imonja.grpc-kt-protobuf") version "1.1.0"
+    id("io.github.imonja.grpc-kt-gradle-plugin") version "X.X.X"
 }
 
 // The plugin automatically adds all necessary dependencies including grpc-kt-common
@@ -67,7 +69,7 @@ plugins {
 
 dependencies {
     // grpc-kt runtime
-    implementation("io.github.imonja:grpc-kt-common:1.1.0")
+    implementation("io.github.imonja:grpc-kt-common:X.X.X")
 
     // Other gRPC dependencies
     implementation("io.grpc:grpc-stub:1.71.0")
@@ -86,7 +88,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:1.71.0"
         }
         id("grpc-kt") {
-            artifact = "io.github.imonja:protoc-gen-grpc-kt:1.1.0:jdk8@jar"
+            artifact = "io.github.imonja:protoc-gen-grpc-kt:X.X.X:jdk8@jar"
         }
     }
     generateProtoTasks {
@@ -392,6 +394,11 @@ grpcKtProtobuf {
 3. Install to local Maven repository:
    ```bash
    ./gradlew publishToMavenLocal
+   ```
+
+4. Run tests:
+   ```bash
+   ./gradlew test
    ```
 
 ## License
