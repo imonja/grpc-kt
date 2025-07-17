@@ -64,6 +64,13 @@ signing {
     }
 }
 
+// Disable signing tasks for SNAPSHOT versions
+if (version.toString().contains("SNAPSHOT")) {
+    tasks.withType<Sign>().configureEach {
+        enabled = false
+    }
+}
+
 tasks.withType<Copy>().configureEach {
     duplicatesStrategy = DuplicatesStrategy.WARN
 }
