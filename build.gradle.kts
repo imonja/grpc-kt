@@ -180,3 +180,27 @@ tasks.register<Copy>("setupHooks") {
         println("   ./gradlew ktlintFormatAll  - Auto-fix all modules")
     }
 }
+
+// Auto-install git hooks on the first run
+gradle.taskGraph.whenReady {
+    val preCommitHook = file("$rootDir/.git/hooks/pre-commit")
+    val sourceHook = file("$rootDir/scripts/pre-commit")
+
+    // Check if we need to install/update the hook
+    val needsInstall = !preCommitHook.exists() ||
+        !sourceHook.exists() ||
+        (
+            preCommitHook.exists() && sourceHook.exists() &&
+                preCommitHook.readText() != sourceHook.readText()
+            )
+
+    if (needsInstall && file("$rootDir/.git").exists() && sourceHook.exists()) {
+        println("🔧 Auto-installing git hooks...")
+        copy {
+            from("$rootDir/scripts/pre-commit")
+            into("$rootDir/.git/hooks/")
+        }
+        file("$rootDir/.git/hooks/pre-commit").setExecutable(true)
+        println("✅ Git hooks auto-installed")
+    }
+}
