@@ -286,64 +286,44 @@ class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
 }
 ```
 
-#### Alternative Approach with Functional Interfaces
+#### Partial Implementation Approach with Functional Interfaces
 
-grpc-kt also provides an alternative way to implement gRPC services using functional interfaces, which allows for more modular and flexible service implementation:
+grpc-kt also provides a partial implementation approach for gRPC services using functional interfaces, which allows for more modular and flexible service implementation where you can selectively implement only the methods you need:
 
 ```kotlin
 // Define the service implementation functions
-val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-    PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+    PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
         println("Received getPerson request for id: ${request.id}")
         GetPersonResponseKt(
             person = PersonKt(name = "John Doe", age = 30)
-        ).toJavaProto()
+        )
     }
 
-val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-    PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+    PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
         println("Received listPersons request with limit: ${request.limit}")
         flow {
             repeat(request.limit) {
                 emit(ListPersonsResponseKt(
                     person = PersonKt(name = "Person $it", age = 20 + it)
-                ).toJavaProto())
+                ))
                 delay(100) // Simulate some processing time
             }
         }
     }
 
-val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-    PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
-        requests.collect { request ->
-            println("Updating person: ${request.person?.name}")
-        }
-        UpdatePersonResponseKt(success = true).toJavaProto()
-    }
-
-val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-    PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
-        flow {
-            requests.map { request ->
-                ChatResponseKt(message = "Echo: ${request.message}").toJavaProto()
-            }.collect { response ->
-                emit(response)
-                delay(100) // Simulate some processing time
-            }
-        }
-    }
-
-// Create the service using the AlternateServerBuilder
-val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+// Create the service using the PartialServerBuilder
+// Only implement the methods you need - others will throw UNIMPLEMENTED by default
+val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
     getPerson = getPerson,
-    listPersons = listPersons,
-    updatePerson = updatePerson,
-    chatWithPerson = chatWithPerson
+    listPersons = listPersons
+    // updatePerson and chatWithPerson are not implemented and will throw UNIMPLEMENTED
 )
 
-// Start the gRPC server with the alternate service
+// Start the gRPC server with the partial service
 val server = ServerBuilder.forPort(8080)
-    .addService(alternateService)
+    .addService(partialService)
     .build()
     .start()
 ```
@@ -353,6 +333,7 @@ This approach has several advantages:
 - Methods can be easily swapped or mocked for testing
 - Implementation can be provided as lambda functions or method references
 - No need to create a class that extends a base class
+- **Partial implementation**: Only implement the methods you need - unimplemented methods will automatically throw `UNIMPLEMENTED` status exceptions
 
 ## Gradle Plugin Configuration
 

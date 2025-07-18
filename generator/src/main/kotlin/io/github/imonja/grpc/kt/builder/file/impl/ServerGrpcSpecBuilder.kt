@@ -8,7 +8,7 @@ import io.github.imonja.grpc.kt.builder.file.FileSpecBuilder
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ClientBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilder
-import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilderAlternate
+import io.github.imonja.grpc.kt.builder.type.impl.ServerBuilderPartial
 import io.github.imonja.grpc.kt.toolkit.addAllImports
 import io.github.imonja.grpc.kt.toolkit.addGeneratedFileComments
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
@@ -47,12 +47,12 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
 
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
-                ServerBuilderAlternate()
+                ServerBuilderPartial()
             )
             val results = generators.map {
                 it.build(service)
             }
-            val grpcClassName = "${service.name}GrpcAlternateKt"
+            val grpcClassName = "${service.name}GrpcPartialKt"
 
             fileSpecs.add(
                 FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")

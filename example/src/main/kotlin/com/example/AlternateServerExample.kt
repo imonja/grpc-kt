@@ -13,29 +13,29 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
-object AlternateServerExample {
+object PartialServerExample {
 
     private const val SERVER_PORT = 50052
 
     @JvmStatic
     fun main(args: Array<String>) {
-        println("Starting Alternate Server Example")
+        println("Starting Partial Server Example")
 
-        demonstrateAlternateGrpcService()
+        demonstratePartialGrpcService()
 
-        println("Alternate Server Example completed")
+        println("Partial Server Example completed")
     }
 
     /**
-     * Demonstrates how to use gRPC services with the AlternateServerBuilder.
+     * Demonstrates how to use gRPC services with the PartialServerBuilder.
      */
-    fun demonstrateAlternateGrpcService() = runBlocking {
-        println("\n=== Alternate gRPC Service Example ===")
+    fun demonstratePartialGrpcService() = runBlocking {
+        println("\n=== Partial gRPC Service Example ===")
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
-                println("Alternate server received getPerson request for id: ${request.id}")
+        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
+                println("Partial server received getPerson request for id: ${request.id}")
 
                 // Simulate fetching a person by ID
                 val person = PersonKt(
@@ -52,14 +52,14 @@ object AlternateServerExample {
                 GetPersonResponseKt(person = person)
             }
 
-        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
-                println("Alternate server received deletePerson request for id: ${request.id}")
+        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
+                println("Partial server received deletePerson request for id: ${request.id}")
             }
 
-        val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
-                println("Alternate server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
+        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
+                println("Partial server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
                 // Simulate fetching a list of persons
                 val persons = listOf(
@@ -71,30 +71,30 @@ object AlternateServerExample {
                 // Return a flow of responses
                 flow {
                     persons.forEach { person ->
-                        println("Alternate server sending person: ${person.name}")
+                        println("Partial server sending person: ${person.name}")
                         emit(ListPersonsResponseKt(person = person))
                         delay(100) // Simulate some processing time
                     }
                 }
             }
 
-        val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
-                println("Alternate server received updatePerson request stream")
+        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
+                println("Partial server received updatePerson request stream")
 
                 // Process each update request
                 UpdatePersonResponseKt(success = true)
             }
 
-        val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
-                println("Alternate server received chatWithPerson request stream")
+        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
+                println("Partial server received chatWithPerson request stream")
 
                 // Echo back each message with a prefix
                 flow {
                     requests.map { request ->
                         println("Received chat message: ${request.message}")
-                        ChatResponseKt(message = "Alternate server received: ${request.message}")
+                        ChatResponseKt(message = "Partial server received: ${request.message}")
                     }.collect { response ->
                         emit(response)
                         delay(100) // Simulate some processing time
@@ -102,8 +102,8 @@ object AlternateServerExample {
                 }
             }
 
-        // Create the service using the AlternateServerBuilder
-        val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+        // Create the service using the PartialServerBuilder
+        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
@@ -111,9 +111,9 @@ object AlternateServerExample {
             chatWithPerson = chatWithPerson
         )
 
-        // Start the gRPC server with the alternate service
+        // Start the gRPC server with the partial service
         val server = ServerBuilder.forPort(SERVER_PORT)
-            .addService(alternateService)
+            .addService(partialService)
             .intercept(object : ServerInterceptor {
                 override fun <ReqT : Any?, RespT : Any?> interceptCall(
                     call: ServerCall<ReqT?, RespT?>?,
@@ -127,7 +127,7 @@ object AlternateServerExample {
             .build()
             .start()
 
-        println("Alternate server started on port $SERVER_PORT")
+        println("Partial server started on port $SERVER_PORT")
 
         // Create a channel to the server
         val channel = ManagedChannelBuilder.forAddress("localhost", SERVER_PORT)
@@ -139,19 +139,19 @@ object AlternateServerExample {
             val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
             // Example 1: Unary call - GetPerson
-            println("\n--- Alternate Unary Call Example (GetPerson) ---")
+            println("\n--- Partial Unary Call Example (GetPerson) ---")
             val getPersonRequest = GetPersonRequestKt(id = "456")
             val getPersonResponse = stub.getPerson(getPersonRequest)
             println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
 
             // Example 1.1: Unary call - DeletePerson
-            println("\n--- Alternate Unary Call Example (DeletePerson) ---")
+            println("\n--- Partial Unary Call Example (DeletePerson) ---")
             val deletePersonRequest = DeletePersonRequestKt(id = "456")
             stub.deletePerson(deletePersonRequest)
             println("Person with id ${deletePersonRequest.id} deleted successfully")
 
             // Example 2: Server streaming
-            println("\n--- Alternate Server Streaming Example ---")
+            println("\n--- Partial Server Streaming Example ---")
             val listRequest = ListPersonsRequestKt(limit = 5, offset = 0)
             println("Requesting persons with limit=${listRequest.limit}, offset=${listRequest.offset}")
 
@@ -163,7 +163,7 @@ object AlternateServerExample {
             println("Received ${persons.size} persons in total")
 
             // Example 3: Client streaming
-            println("\n--- Alternate Client Streaming Example ---")
+            println("\n--- Partial Client Streaming Example ---")
             val updateRequests = flow {
                 for (i in 1..3) {
                     val person = PersonKt(
@@ -187,10 +187,10 @@ object AlternateServerExample {
             println("Update successful: ${updateResponse.success}")
 
             // Example 4: Bidirectional streaming
-            println("\n--- Alternate Bidirectional Streaming Example ---")
+            println("\n--- Partial Bidirectional Streaming Example ---")
             val chatRequests = flow {
                 for (i in 1..5) {
-                    val message = "Hello $i from alternate client"
+                    val message = "Hello $i from partial client"
                     println("Sending: $message")
                     emit(ChatRequestKt(message = message))
                     delay(100) // Simulate some processing time
@@ -207,7 +207,7 @@ object AlternateServerExample {
             job.join()
         } finally {
             // Shutdown the channel and server
-            println("\nShutting down alternate client and server")
+            println("\nShutting down partial client and server")
             channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
             server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
         }

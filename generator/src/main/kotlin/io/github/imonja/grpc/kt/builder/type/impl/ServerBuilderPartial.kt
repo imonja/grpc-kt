@@ -16,14 +16,14 @@ import io.grpc.StatusException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
 import kotlin.coroutines.EmptyCoroutineContext
 
-class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
+class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
 
     override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
         val stubs = descriptor.methods.map {
             ServerBuilder().serviceMethodStub(it)
         }
 
-        val objectName = "${descriptor.name}GrpcAlternateKt"
+        val objectName = "${descriptor.name}GrpcPartialKt"
         val objectBuilder = TypeSpec.objectBuilder(objectName)
             .addModifiers(KModifier.PUBLIC)
 
@@ -35,9 +35,9 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
         val createBindableFunSpec = generateCreateBindableFunSpec()
         objectBuilder.addFunction(createBindableFunSpec)
 
-        // Create a coroutine-based alternate implementation for PersonService binding
-        val coroutineImplAlternateFunSpec = generateCoroutineImplAlternateFunSpec(descriptor, stubs)
-        objectBuilder.addFunction(coroutineImplAlternateFunSpec)
+        // Create a coroutine-based partial implementation for PersonService binding
+        val coroutineImplPartialFunSpec = generateCoroutineImplPartialFunSpec(descriptor, stubs)
+        objectBuilder.addFunction(coroutineImplPartialFunSpec)
 
         // Add an extension function to bind service to ServerServiceDefinition.Builder
         val bindFunSpec = generateBindFunSpec()
@@ -103,11 +103,11 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
         return createBindableFunSpec
     }
 
-    private fun generateCoroutineImplAlternateFunSpec(
+    private fun generateCoroutineImplPartialFunSpec(
         descriptor: ServiceDescriptor,
         stubs: List<ServerBuilder.MethodStub>
     ): FunSpec {
-        val coroutineImplAlternateFunSpec = FunSpec.builder("${descriptor.name}CoroutineImplAlternate")
+        val coroutineImplPartialFunSpec = FunSpec.builder("${descriptor.name}CoroutineImplPartial")
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
                     .addMember("%S", "FunctionName")
@@ -125,14 +125,14 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 Status::class.member("UNIMPLEMENTED"),
                 "Method ${name.replaceFirstChar { it.uppercase() }} is unimplemented"
             )
-            coroutineImplAlternateFunSpec.addParameter(
+            coroutineImplPartialFunSpec.addParameter(
                 ParameterSpec.builder(name, ClassName("", ifaceName))
                     .defaultValue("$ifaceName { request -> throw $defaultImpl }")
                     .build()
             )
         }
 
-        coroutineImplAlternateFunSpec.addCode(
+        coroutineImplPartialFunSpec.addCode(
             "return createBindableService(%M()) {\n",
             descriptor.grpcClass.member("getServiceDescriptor")
         )
@@ -166,7 +166,7 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
             }
 
             if (isEmptyReturn) {
-                coroutineImplAlternateFunSpec.addCode(
+                coroutineImplPartialFunSpec.addCode(
                     """
                         bind(
                             pair = %M() to $name::handle,
@@ -178,7 +178,7 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                     reqJava
                 )
             } else {
-                coroutineImplAlternateFunSpec.addCode(
+                coroutineImplPartialFunSpec.addCode(
                     """
                         bind(
                             pair = %M() to $name::handle,
@@ -192,8 +192,8 @@ class ServerBuilderAlternate : TypeSpecsBuilder<ServiceDescriptor> {
                 )
             }
         }
-        coroutineImplAlternateFunSpec.addCode("}")
-        return coroutineImplAlternateFunSpec.build()
+        coroutineImplPartialFunSpec.addCode("}")
+        return coroutineImplPartialFunSpec.build()
     }
 
     private fun generateBindFunSpec(): FunSpec {

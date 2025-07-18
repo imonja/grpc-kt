@@ -13,3 +13,4 @@ gen
 build
 **/build/
 
+/tmp

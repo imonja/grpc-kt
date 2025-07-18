@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 
-class AlternateServerExampleTest {
+class PartialServerExampleTest {
 
     private val serverPort = 50053
     private var server: io.grpc.Server? = null
@@ -22,8 +22,8 @@ class AlternateServerExampleTest {
     @BeforeEach
     fun setup() {
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
                 println("Test server received getPerson request for id: ${request.id}")
 
                 // Return a test person
@@ -41,13 +41,13 @@ class AlternateServerExampleTest {
                 GetPersonResponseKt(person = person)
             }
 
-        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
                 println("Test server received deletePerson request for id: ${request.id}")
             }
 
-        val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
                 println("Test server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
                 // Return test persons
@@ -65,8 +65,8 @@ class AlternateServerExampleTest {
                 }
             }
 
-        val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
                 println("Test server received updatePerson request stream")
 
                 // Process each update request
@@ -76,8 +76,8 @@ class AlternateServerExampleTest {
                 UpdatePersonResponseKt(success = true)
             }
 
-        val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
                 println("Test server received chatWithPerson request stream")
 
                 // Echo back each message with a prefix
@@ -87,8 +87,8 @@ class AlternateServerExampleTest {
                 }
             }
 
-        // Create the service using the AlternateServerBuilder
-        val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+        // Create the service using the PartialServerBuilder
+        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
@@ -96,9 +96,9 @@ class AlternateServerExampleTest {
             chatWithPerson = chatWithPerson
         )
 
-        // Start the gRPC server with the alternate service
+        // Start the gRPC server with the partial service
         server = ServerBuilder.forPort(serverPort)
-            .addService(alternateService)
+            .addService(partialService)
             .build()
             .start()
 
@@ -115,7 +115,7 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test alternate server unary call`() = runBlocking {
+    fun `test partial server unary call`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -133,7 +133,7 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test alternate server delete person`() = runBlocking {
+    fun `test partial server delete person`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -148,7 +148,7 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test alternate server streaming`() = runBlocking {
+    fun `test partial server streaming`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -172,7 +172,7 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test alternate client streaming`() = runBlocking {
+    fun `test partial client streaming`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -204,7 +204,7 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test alternate bidirectional streaming`() = runBlocking {
+    fun `test partial bidirectional streaming`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -242,59 +242,59 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test structure of AlternateServerExample`() {
-        // This test verifies the structure of the AlternateServerExample without making gRPC calls
+    fun `test structure of PartialServerExample`() {
+        // This test verifies the structure of the PartialServerExample without making gRPC calls
 
-        // Verify that the AlternateServerExample object exists
-        assert(AlternateServerExample != null) { "AlternateServerExample should exist" }
+        // Verify that the PartialServerExample object exists
+        assert(PartialServerExample != null) { "PartialServerExample should exist" }
 
-        // Verify that the demonstrateAlternateGrpcService method exists
-        val method = AlternateServerExample::class.java.getDeclaredMethod("demonstrateAlternateGrpcService")
-        assert(method != null) { "demonstrateAlternateGrpcService method should exist" }
+        // Verify that the demonstratePartialGrpcService method exists
+        val method = PartialServerExample::class.java.getDeclaredMethod("demonstratePartialGrpcService")
+        assert(method != null) { "demonstratePartialGrpcService method should exist" }
 
         // Verify that the SERVER_PORT constant exists and has the expected value
-        val serverPortField = AlternateServerExample::class.java.getDeclaredField("SERVER_PORT")
+        val serverPortField = PartialServerExample::class.java.getDeclaredField("SERVER_PORT")
         serverPortField.isAccessible = true
-        val serverPort = serverPortField.get(AlternateServerExample) as Int
+        val serverPort = serverPortField.get(PartialServerExample) as Int
         assert(serverPort == 50052) { "SERVER_PORT should be 50052" }
     }
 
     @Test
-    fun `test creation of alternate service`() {
-        // This test verifies that we can create the alternate service without making gRPC calls
+    fun `test creation of partial service`() {
+        // This test verifies that we can create the partial service without making gRPC calls
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
-        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
                 com.google.protobuf.Empty.getDefaultInstance()
             }
 
-        val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
                 flow {
                     emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)))
                 }
             }
 
-        val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true)
             }
 
-        val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
                     ChatResponseKt(message = "Test response")
                 }
             }
 
-        // Create the service using the AlternateServerBuilder
-        val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+        // Create the service using the PartialServerBuilder
+        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
@@ -303,7 +303,7 @@ class AlternateServerExampleTest {
         )
 
         // Verify that the service was created successfully
-        assert(alternateService != null) { "Alternate service should be created successfully" }
+        assert(partialService != null) { "Partial service should be created successfully" }
     }
 
     @Test
@@ -311,37 +311,37 @@ class AlternateServerExampleTest {
         // This test verifies that we can set up the gRPC server and client without making gRPC calls
 
         // Define the service implementation functions
-        val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
                 GetPersonResponseKt(person = PersonKt(name = "Test Person", age = 30))
             }
 
-        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
                 com.google.protobuf.Empty.getDefaultInstance()
             }
 
-        val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
                 flow {
                     emit(ListPersonsResponseKt(person = PersonKt(name = "Test Person", age = 30)))
                 }
             }
 
-        val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true)
             }
 
-        val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
                 requests.map { request ->
                     ChatResponseKt(message = "Test response")
                 }
             }
 
-        // Create the service using the AlternateServerBuilder
-        val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+        // Create the service using the PartialServerBuilder
+        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
@@ -349,10 +349,10 @@ class AlternateServerExampleTest {
             chatWithPerson = chatWithPerson
         )
 
-        // Start the gRPC server with the alternate service
+        // Start the gRPC server with the partial service
         val testPort = 50054
         val server = ServerBuilder.forPort(testPort)
-            .addService(alternateService)
+            .addService(partialService)
             .build()
             .start()
 
@@ -385,35 +385,35 @@ class AlternateServerExampleTest {
         // This test makes a very simple unary gRPC call to see if that works
 
         // Define the service implementation functions - only implement getPerson for this test
-        val getPerson: PersonServiceGrpcAlternateKt.GetPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.GetPersonGrpcMethod { request ->
+        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
                 println("[DEBUG_LOG] Server received getPerson request for id: ${request.id}")
                 GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25))
             }
 
         // Create empty implementations for the other methods
-        val deletePerson: PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.DeletePersonGrpcMethod { request ->
+        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
                 com.google.protobuf.Empty.getDefaultInstance()
             }
 
-        val listPersons: PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcAlternateKt.ListPersonsGrpcMethod { request ->
+        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
                 flow { }
             }
 
-        val updatePerson: PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.UpdatePersonGrpcMethod { requests ->
+        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
                 UpdatePersonResponseKt(success = true)
             }
 
-        val chatWithPerson: PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcAlternateKt.ChatWithPersonGrpcMethod { requests ->
+        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
                 flow { }
             }
 
-        // Create the service using the AlternateServerBuilder
-        val alternateService = PersonServiceGrpcAlternateKt.PersonServiceCoroutineImplAlternate(
+        // Create the service using the PartialServerBuilder
+        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
@@ -421,10 +421,10 @@ class AlternateServerExampleTest {
             chatWithPerson = chatWithPerson
         )
 
-        // Start the gRPC server with the alternate service
+        // Start the gRPC server with the partial service
         val testPort = 50055
         val server = ServerBuilder.forPort(testPort)
-            .addService(alternateService)
+            .addService(partialService)
             .build()
             .start()
 
@@ -460,23 +460,23 @@ class AlternateServerExampleTest {
     }
 
     @Test
-    fun `test direct use of AlternateServerExample`() {
-        // This test directly uses the AlternateServerExample.demonstrateAlternateGrpcService method
+    fun `test direct use of PartialServerExample`() {
+        // This test directly uses the PartialServerExample.demonstratePartialGrpcService method
         // to see if our changes fixed the issue
 
         // We're just checking that the method doesn't throw an exception
         // We don't need to verify any specific behavior
         try {
-            println("[DEBUG_LOG] Starting direct use of AlternateServerExample")
-            AlternateServerExample.demonstrateAlternateGrpcService()
-            println("[DEBUG_LOG] Completed direct use of AlternateServerExample")
+            println("[DEBUG_LOG] Starting direct use of PartialServerExample")
+            PartialServerExample.demonstratePartialGrpcService()
+            println("[DEBUG_LOG] Completed direct use of PartialServerExample")
             // If we get here, the test passed
             assert(true)
         } catch (e: Exception) {
             // If we get an exception, the test failed
-            println("[DEBUG_LOG] Exception during direct use of AlternateServerExample: ${e.message}")
+            println("[DEBUG_LOG] Exception during direct use of PartialServerExample: ${e.message}")
             e.printStackTrace()
-            assert(false) { "Exception during direct use of AlternateServerExample: ${e.message}" }
+            assert(false) { "Exception during direct use of PartialServerExample: ${e.message}" }
         }
     }
 }
