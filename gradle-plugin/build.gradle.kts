@@ -38,6 +38,39 @@ dependencies {
     implementation(localGroovy())
 }
 
+// Create a properties file with version during build
+val generateVersionProperties = tasks.register("generateVersionProperties") {
+    val outputDir = layout.buildDirectory.dir("generated/sources/version")
+    val versionFile = outputDir.map { it.file("version.properties") }
+
+    outputs.file(versionFile)
+
+    doLast {
+        val outputFile = versionFile.get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.writeText("version=${project.version}")
+    }
+}
+
+// Make sure the version file is generated before resources processing
+tasks.named("processResources") {
+    dependsOn(generateVersionProperties)
+}
+
+// Make sure the version file is generated before sources jar (if exists)
+tasks.matching { it.name == "sourcesJar" }.configureEach {
+    dependsOn(generateVersionProperties)
+}
+
+// Add generated resources to the source set
+sourceSets {
+    main {
+        resources {
+            srcDir(layout.buildDirectory.dir("generated/sources/version"))
+        }
+    }
+}
+
 gradlePlugin {
     website = "https://github.com/imonja/grpc-kt"
     vcsUrl = "https://github.com/imonja/grpc-kt"

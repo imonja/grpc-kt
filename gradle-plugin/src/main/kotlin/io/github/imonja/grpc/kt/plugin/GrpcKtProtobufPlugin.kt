@@ -30,7 +30,16 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
 
         // Add dependencies
         project.dependencies {
-            add("implementation", "io.github.imonja:grpc-kt-common:${getPluginVersion()}")
+            // Check if we're in a multi-project build with a common module
+            val commonProject = project.rootProject.findProject(":common")
+            if (commonProject != null) {
+                // Use local project dependency for development
+                add("implementation", project.dependencies.project(mapOf("path" to ":common")))
+            } else {
+                // Use published artifact with the same version as this plugin
+                add("implementation", "io.github.imonja:grpc-kt-common:${getPluginVersion()}")
+            }
+
             add("implementation", "io.grpc:grpc-stub:$javaGrpcVersion")
             add("implementation", "io.grpc:grpc-protobuf:$javaGrpcVersion")
             add("implementation", "io.grpc:grpc-kotlin-stub:$kotlinGrpcVersion")
@@ -134,12 +143,24 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
     }
 
     private fun getPluginVersion(): String {
-        // Get version from plugin's resources or manifest
-        val pluginVersion = this::class.java.`package`.implementationVersion
-        return if (pluginVersion != null && pluginVersion != "unspecified") {
-            pluginVersion
-        } else {
-            // Fallback to reading from gradle.properties or default
+        return try {
+            // Read version from embedded properties file
+            val propertiesStream = this::class.java.classLoader.getResourceAsStream("version.properties")
+            if (propertiesStream != null) {
+                val properties = java.util.Properties()
+                propertiesStream.use { properties.load(it) }
+                properties.getProperty("version", "1.1.0")
+            } else {
+                // Fallback to package implementation version
+                val packageVersion = this::class.java.`package`.implementationVersion
+                if (packageVersion != null && packageVersion != "unspecified") {
+                    packageVersion
+                } else {
+                    "1.1.0"
+                }
+            }
+        } catch (_: Exception) {
+            // Ultimate fallback
             "1.1.0"
         }
     }
