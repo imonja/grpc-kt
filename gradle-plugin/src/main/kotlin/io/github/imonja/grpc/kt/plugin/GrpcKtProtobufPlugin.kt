@@ -143,6 +143,7 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
     }
 
     private fun getPluginVersion(): String {
+        val fallbackVersion = "1.1.4"
         return try {
             // Read version from embedded properties file
             val propertiesStream = this::class.java.classLoader.getResourceAsStream("version.properties")
@@ -156,12 +157,11 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
                 if (packageVersion != null && packageVersion != "unspecified") {
                     packageVersion
                 } else {
-                    "1.1.0"
+                    fallbackVersion
                 }
             }
         } catch (_: Exception) {
-            // Ultimate fallback
-            "1.1.0"
+            fallbackVersion
         }
     }
 }
