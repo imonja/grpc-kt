@@ -198,6 +198,11 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
 
     private fun generateBindFunSpec(): FunSpec {
         val bindFunSpec = FunSpec.builder("bind")
+            .addAnnotation(
+                AnnotationSpec.builder(Suppress::class)
+                    .addMember("%S", "UNCHECKED_CAST")
+                    .build()
+            )
             .addModifiers(KModifier.PUBLIC)
             .receiver(ClassName("io.grpc.ServerServiceDefinition", "Builder"))
             .addTypeVariable(TypeVariableName("ReqT"))
@@ -240,7 +245,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 CodeBlock.of(
                                     """
                                             implementation = { req ->
-                                            val reqKt = toKotlinProto(req as ReqT)
+                                            val reqKt = toKotlinProto(req)
                                             val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)
                                             toJavaProto(respKt)
                                             }
@@ -266,7 +271,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 CodeBlock.of(
                                     """
                                             implementation = { req ->
-                                            val reqKt = toKotlinProto(req as ReqT)
+                                            val reqKt = toKotlinProto(req)
                                             (implementationRaw as (ReqKotlin) -> %T<RespKotlin>)
                                             .invoke(reqKt)
                                             .map(toJavaProto)
@@ -294,12 +299,11 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 CodeBlock.of(
                                     """
                                             implementation = { reqFlow ->
-                                            val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
+                                            val adaptedFlow = reqFlow.map(toKotlinProto)
                                             val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)
                                             toJavaProto(resultKt)
                                             }
                                     """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow"),
                                     ClassName("kotlinx.coroutines.flow", "Flow")
                                 )
                             )
@@ -322,11 +326,10 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 CodeBlock.of(
                                     """
                                             implementation = { reqFlow ->
-                                            val adaptedFlow = (reqFlow as %T<ReqT>).map(toKotlinProto)
+                                            val adaptedFlow = reqFlow.map(toKotlinProto)
                                             (implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)
                                             }
                                     """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow"),
                                     ClassName("kotlinx.coroutines.flow", "Flow"),
                                     ClassName("kotlinx.coroutines.flow", "Flow")
                                 )

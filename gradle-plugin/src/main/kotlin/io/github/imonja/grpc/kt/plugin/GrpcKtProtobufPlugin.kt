@@ -109,23 +109,6 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
             val protoSourceDir = extension.sourceDir.protoSourceDir.get()
             project.configure<org.gradle.api.tasks.SourceSetContainer> {
                 named("main") {
-                    java {
-                        srcDir(
-                            "${project.layout.buildDirectory.get()}/generated/source/proto/main/${
-                            extension.generateSource.grpcJavaOutputSubDir.get()
-                            }"
-                        )
-                        srcDir(
-                            "${project.layout.buildDirectory.get()}/generated/source/proto/main/${
-                            extension.generateSource.grpcKtOutputSubDir.get()
-                            }"
-                        )
-                        srcDir(
-                            "${project.layout.buildDirectory.get()}/generated/source/proto/main/${
-                            extension.generateSource.javaPgvOutputSubDir.get()
-                            }"
-                        )
-                    }
                     proto {
                         srcDir(protoSourceDir)
                     }
@@ -150,7 +133,7 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
             if (propertiesStream != null) {
                 val properties = java.util.Properties()
                 propertiesStream.use { properties.load(it) }
-                properties.getProperty("version", "1.1.0")
+                properties.getProperty("version", fallbackVersion)
             } else {
                 // Fallback to package implementation version
                 val packageVersion = this::class.java.`package`.implementationVersion
