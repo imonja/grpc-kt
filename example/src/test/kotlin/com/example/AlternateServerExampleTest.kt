@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 class PartialServerExampleTest {
 
-    private val serverPort = 50053
+    private val serverPort = (60_000..65_000).random()
     private var server: io.grpc.Server? = null
     private var channel: io.grpc.ManagedChannel? = null
 
@@ -252,11 +252,11 @@ class PartialServerExampleTest {
         val method = PartialServerExample::class.java.getDeclaredMethod("demonstratePartialGrpcService")
         assert(method != null) { "demonstratePartialGrpcService method should exist" }
 
-        // Verify that the SERVER_PORT constant exists and has the expected value
+        // Verify that the SERVER_PORT constant exists and is in valid range
         val serverPortField = PartialServerExample::class.java.getDeclaredField("SERVER_PORT")
         serverPortField.isAccessible = true
         val serverPort = serverPortField.get(PartialServerExample) as Int
-        assert(serverPort == 50052) { "SERVER_PORT should be 50052" }
+        assert(serverPort in 60000..65000) { "SERVER_PORT should be in range 60000-65000, but was $serverPort" }
     }
 
     @Test

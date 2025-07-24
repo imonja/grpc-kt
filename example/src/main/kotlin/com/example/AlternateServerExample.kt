@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 object PartialServerExample {
 
-    private const val SERVER_PORT = 50052
+    private val SERVER_PORT = (60000..65000).random()
 
     @JvmStatic
     fun main(args: Array<String>) {
