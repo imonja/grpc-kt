@@ -20,7 +20,6 @@ import io.github.imonja.grpc.kt.toolkit.javaFieldName
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
 import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
 import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
-import io.github.imonja.grpc.kt.toolkit.shortNames
 import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
@@ -48,17 +47,16 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 val (template, downStreamImports) = transformCodeTemplate(field)
                 val oneOfDataClassName = ClassName(
                     oneOf.file.kotlinPackage,
-                    *descriptor.shortNames.toMutableList().apply {
-                        add(oneOfJsonName.capitalize())
-                        add(field.jsonName.capitalize())
-                    }.toTypedArray()
+                    generatedType.simpleName,
+                    oneOfJsonName.capitalize(),
+                    field.jsonName.capitalize()
                 )
                 functionBuilder.addStatement(
                     "%L.%LCase.%L -> %L( %L = %L )".trimIndent(),
                     protoType,
                     oneOfJsonName.capitalize(),
                     field.name.uppercase(),
-                    oneOfDataClassName.canonicalName,
+                    oneOfDataClassName,
                     dataClassFieldName.escapeIfNecessary(),
                     template.safeCall(protoFieldName.escapeIfNecessary())
                 )
@@ -156,7 +154,6 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 }
 
                 else -> TransformTemplateWithImports.Companion.of("%L.toKotlinProto()")
-//                TransformTemplateWithImports.of("%L.toKotlinProto()", setOf(descriptor.toKotlinProtoImport))
             }
         }
 

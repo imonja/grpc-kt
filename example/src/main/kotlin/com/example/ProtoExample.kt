@@ -31,7 +31,10 @@ object ProtoExample {
         // Example 1: Creating and serializing Person message
         demonstrateProtobufSerialization()
 
-        // Example 2: gRPC service interaction
+        // Example 2: Oneof message examples
+        demonstrateOneofMessages()
+
+        // Example 3: gRPC service interaction
         demonstrateGrpcService()
 
         println("Proto Example completed")
@@ -85,6 +88,122 @@ object ProtoExample {
 
         // Verify the parsed object matches the original
         println("Person parsed from JSON equals original: ${person == fromJson}")
+    }
+
+    /**
+     * Demonstrates how to work with oneof fields in Protocol Buffer messages.
+     */
+    private fun demonstrateOneofMessages() {
+        println("\n=== Oneof Messages Example ===")
+
+        // Example 1: ContactInfo with string oneof
+        println("\n--- ContactInfo (String Oneof) ---")
+
+        // Create ContactInfo with email
+        val contactInfoEmail = ContactInfoKt(
+            name = "Alice Smith",
+            contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
+            tags = listOf("customer", "vip"),
+            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+        )
+        println("ContactInfo with email: $contactInfoEmail")
+
+        // Create ContactInfo with phone
+        val contactInfoPhone = ContactInfoKt(
+            name = "Bob Johnson",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            tags = listOf("lead"),
+            preference = ContactInfo.ContactPreference.PHONE_ONLY
+        )
+        println("ContactInfo with phone: $contactInfoPhone")
+
+        // Create ContactInfo with username
+        val contactInfoUsername = ContactInfoKt(
+            name = "Charlie Brown",
+            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
+            tags = listOf("partner"),
+            preference = ContactInfo.ContactPreference.ANY_METHOD
+        )
+        println("ContactInfo with username: $contactInfoUsername")
+
+        // Demonstrate serialization/deserialization with oneof
+        val emailJavaProto = contactInfoEmail.toJavaProto()
+        val emailBytes = emailJavaProto.toByteArray()
+        val deserializedEmail = ContactInfo.parseFrom(emailBytes).toKotlinProto()
+        println("Email contact info serialization works: ${contactInfoEmail == deserializedEmail}")
+
+        // Example 2: NotificationSettings with message oneof
+        println("\n--- NotificationSettings (Message Oneof) ---")
+
+        // Create NotificationSettings with email settings
+        val emailSettings = NotificationSettingsKt.EmailSettingsKt(
+            emailAddress = "user@example.com",
+            dailyDigest = true,
+            categories = listOf("orders", "promotions", "news")
+        )
+        val notificationSettingsEmail = NotificationSettingsKt(
+            userId = "user123",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+                emailSettings = emailSettings
+            ),
+            notificationsEnabled = true
+        )
+        println("NotificationSettings with email: $notificationSettingsEmail")
+
+        // Create NotificationSettings with SMS settings
+        val smsSettings = NotificationSettingsKt.SmsSettingsKt(
+            phoneNumber = "+1-555-0456",
+            urgentOnly = true
+        )
+        val notificationSettingsSms = NotificationSettingsKt(
+            userId = "user456",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+                smsSettings = smsSettings
+            ),
+            notificationsEnabled = true
+        )
+        println("NotificationSettings with SMS: $notificationSettingsSms")
+
+        // Create NotificationSettings with push settings
+        val pushSettings = NotificationSettingsKt.PushSettingsKt(
+            deviceToken = "abc123def456",
+            soundEnabled = true,
+            soundName = "notification_sound.wav"
+        )
+        val notificationSettingsPush = NotificationSettingsKt(
+            userId = "user789",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                pushSettings = pushSettings
+            ),
+            notificationsEnabled = false
+        )
+        println("NotificationSettings with push: $notificationSettingsPush")
+
+        // Demonstrate serialization/deserialization with message oneof
+        val emailNotificationJavaProto = notificationSettingsEmail.toJavaProto()
+        val emailNotificationBytes = emailNotificationJavaProto.toByteArray()
+        val deserializedEmailNotification = NotificationSettings.parseFrom(emailNotificationBytes).toKotlinProto()
+        println("Email notification settings serialization works: ${notificationSettingsEmail == deserializedEmailNotification}")
+
+        // Demonstrate accessing oneof fields
+        println("\n--- Accessing Oneof Fields ---")
+        println(
+            "Contact method type: ${when (contactInfoEmail.contactMethod) {
+                is ContactInfoKt.ContactMethod.Email -> "Email: ${contactInfoEmail.contactMethod.email}"
+                is ContactInfoKt.ContactMethod.Phone -> "Phone: ${contactInfoEmail.contactMethod.phone}"
+                is ContactInfoKt.ContactMethod.Username -> "Username: ${contactInfoEmail.contactMethod.username}"
+                null -> "No contact method set"
+            }}"
+        )
+
+        println(
+            "Notification channel type: ${when (notificationSettingsEmail.notificationChannel) {
+                is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email notifications to: ${notificationSettingsEmail.notificationChannel.emailSettings?.emailAddress}"
+                is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS notifications to: ${notificationSettingsEmail.notificationChannel.smsSettings?.phoneNumber}"
+                is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push notifications to device: ${notificationSettingsEmail.notificationChannel.pushSettings?.deviceToken}"
+                null -> "No notification channel set"
+            }}"
+        )
     }
 
     /**
@@ -177,6 +296,43 @@ object ProtoExample {
 
             // Wait for the chat to complete
             job.join()
+
+            // Example 5: UpdateContactInfo with oneof
+            println("\n--- UpdateContactInfo Example ---")
+            val contactInfo = ContactInfoKt(
+                name = "Service User",
+                contactMethod = ContactInfoKt.ContactMethod.Email(email = "service@example.com"),
+                tags = listOf("service", "automated"),
+                preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            )
+            val updateContactRequest = UpdateContactInfoRequestKt(
+                personId = "service123",
+                contactInfo = contactInfo
+            )
+            val contactResponse = stub.updateContactInfo(updateContactRequest)
+            println("Contact info update successful: ${contactResponse.success}")
+
+            // Example 6: UpdateNotificationSettings with message oneof
+            println("\n--- UpdateNotificationSettings Example ---")
+            val pushSettings = NotificationSettingsKt.PushSettingsKt(
+                deviceToken = "service_device_token",
+                soundEnabled = false,
+                soundName = "silent"
+            )
+            val notificationSettings = NotificationSettingsKt(
+                userId = "service456",
+                notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                    pushSettings = pushSettings
+                ),
+                notificationsEnabled = true
+            )
+            val updateNotificationRequest = UpdateNotificationSettingsRequestKt(
+                userId = "service456",
+                settings = notificationSettings
+            )
+            val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
+            println("Notification settings update successful: ${notificationResponse.success}")
+            println("Response message: ${notificationResponse.message}")
         } finally {
             // Shutdown the channel and server
             println("\nShutting down client and server")
@@ -251,6 +407,36 @@ object ProtoExample {
                 println("Server received chat message: ${request.message}")
                 ChatResponseKt(message = "Server received: ${request.message}")
             }
+        }
+
+        override suspend fun updateContactInfo(request: UpdateContactInfoRequestKt): UpdateContactInfoResponseKt {
+            println("Server received updateContactInfo request for person: ${request.personId}")
+            println("Contact info: ${request.contactInfo}")
+            println(
+                "Contact method: ${when (request.contactInfo?.contactMethod) {
+                    is ContactInfoKt.ContactMethod.Email -> "Email: ${request.contactInfo.contactMethod.email}"
+                    is ContactInfoKt.ContactMethod.Phone -> "Phone: ${request.contactInfo.contactMethod.phone}"
+                    is ContactInfoKt.ContactMethod.Username -> "Username: ${request.contactInfo.contactMethod.username}"
+                    null -> "None"
+                }}"
+            )
+
+            return UpdateContactInfoResponseKt(success = true)
+        }
+
+        override suspend fun updateNotificationSettings(request: UpdateNotificationSettingsRequestKt): UpdateNotificationSettingsResponseKt {
+            println("Server received updateNotificationSettings request for user: ${request.userId}")
+            println("Settings: ${request.settings}")
+            println(
+                "Notification channel: ${when (request.settings?.notificationChannel) {
+                    is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
+                    is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
+                    is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
+                    null -> "None"
+                }}"
+            )
+
+            return UpdateNotificationSettingsResponseKt(success = true, message = "Notification settings updated successfully")
         }
     }
 }

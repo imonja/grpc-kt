@@ -87,13 +87,27 @@ class PartialServerExampleTest {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                println("Test server received updateContactInfo request for person: ${request.personId}")
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                println("Test server received updateNotificationSettings request for user: ${request.userId}")
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test settings updated")
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings
         )
 
         // Start the gRPC server with the partial service
@@ -239,6 +253,147 @@ class PartialServerExampleTest {
                 "Expected response $i to contain 'Hello $i from test client'"
             }
         }
+    }
+
+    @Test
+    fun `test updateContactInfo with string oneof`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test with email contact method
+        val contactInfoEmail = ContactInfoKt(
+            name = "John Email",
+            contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@test.com"),
+            tags = listOf("test", "email"),
+            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+        )
+        val requestEmail = UpdateContactInfoRequestKt(
+            personId = "test123",
+            contactInfo = contactInfoEmail
+        )
+        val responseEmail = stub.updateContactInfo(requestEmail)
+        assert(responseEmail.success) { "Expected email contact info update to be successful" }
+
+        // Test with phone contact method
+        val contactInfoPhone = ContactInfoKt(
+            name = "Jane Phone",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            tags = listOf("test", "phone"),
+            preference = ContactInfo.ContactPreference.PHONE_ONLY
+        )
+        val requestPhone = UpdateContactInfoRequestKt(
+            personId = "test456",
+            contactInfo = contactInfoPhone
+        )
+        val responsePhone = stub.updateContactInfo(requestPhone)
+        assert(responsePhone.success) { "Expected phone contact info update to be successful" }
+
+        // Test with username contact method
+        val contactInfoUsername = ContactInfoKt(
+            name = "Bob Username",
+            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@bobtest"),
+            tags = listOf("test", "username"),
+            preference = ContactInfo.ContactPreference.ANY_METHOD
+        )
+        val requestUsername = UpdateContactInfoRequestKt(
+            personId = "test789",
+            contactInfo = contactInfoUsername
+        )
+        val responseUsername = stub.updateContactInfo(requestUsername)
+        assert(responseUsername.success) { "Expected username contact info update to be successful" }
+
+        // Test with null contact method
+        val contactInfoNull = ContactInfoKt(
+            name = "Charlie None",
+            contactMethod = null,
+            tags = listOf("test", "null"),
+            preference = ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
+        )
+        val requestNull = UpdateContactInfoRequestKt(
+            personId = "test000",
+            contactInfo = contactInfoNull
+        )
+        val responseNull = stub.updateContactInfo(requestNull)
+        assert(responseNull.success) { "Expected null contact info update to be successful" }
+    }
+
+    @Test
+    fun `test updateNotificationSettings with message oneof`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test with email settings
+        val emailSettings = NotificationSettingsKt.EmailSettingsKt(
+            emailAddress = "test@example.com",
+            dailyDigest = true,
+            categories = listOf("orders", "news")
+        )
+        val settingsEmail = NotificationSettingsKt(
+            userId = "user123",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+                emailSettings = emailSettings
+            ),
+            notificationsEnabled = true
+        )
+        val requestEmail = UpdateNotificationSettingsRequestKt(
+            userId = "user123",
+            settings = settingsEmail
+        )
+        val responseEmail = stub.updateNotificationSettings(requestEmail)
+        assert(responseEmail.success) { "Expected email notification settings update to be successful" }
+        assert(responseEmail.message == "Test settings updated") { "Expected specific response message" }
+
+        // Test with SMS settings
+        val smsSettings = NotificationSettingsKt.SmsSettingsKt(
+            phoneNumber = "+1-555-0789",
+            urgentOnly = true
+        )
+        val settingsSms = NotificationSettingsKt(
+            userId = "user456",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+                smsSettings = smsSettings
+            ),
+            notificationsEnabled = false
+        )
+        val requestSms = UpdateNotificationSettingsRequestKt(
+            userId = "user456",
+            settings = settingsSms
+        )
+        val responseSms = stub.updateNotificationSettings(requestSms)
+        assert(responseSms.success) { "Expected SMS notification settings update to be successful" }
+
+        // Test with push settings
+        val pushSettings = NotificationSettingsKt.PushSettingsKt(
+            deviceToken = "test_device_token_xyz",
+            soundEnabled = false,
+            soundName = "silent.wav"
+        )
+        val settingsPush = NotificationSettingsKt(
+            userId = "user789",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                pushSettings = pushSettings
+            ),
+            notificationsEnabled = true
+        )
+        val requestPush = UpdateNotificationSettingsRequestKt(
+            userId = "user789",
+            settings = settingsPush
+        )
+        val responsePush = stub.updateNotificationSettings(requestPush)
+        assert(responsePush.success) { "Expected push notification settings update to be successful" }
+
+        // Test with null notification channel
+        val settingsNull = NotificationSettingsKt(
+            userId = "user000",
+            notificationChannel = null,
+            notificationsEnabled = false
+        )
+        val requestNull = UpdateNotificationSettingsRequestKt(
+            userId = "user000",
+            settings = settingsNull
+        )
+        val responseNull = stub.updateNotificationSettings(requestNull)
+        assert(responseNull.success) { "Expected null notification settings update to be successful" }
     }
 
     @Test

@@ -14,6 +14,8 @@ service PersonService {
     rpc ListPersons(ListPersonsRequest) returns (stream ListPersonsResponse) {}
     rpc UpdatePerson(stream UpdatePersonRequest) returns (UpdatePersonResponse) {}
     rpc ChatWithPerson(stream ChatRequest) returns (stream ChatResponse) {}
+    rpc UpdateContactInfo(UpdateContactInfoRequest) returns (UpdateContactInfoResponse) {}
+    rpc UpdateNotificationSettings(UpdateNotificationSettingsRequest) returns (UpdateNotificationSettingsResponse) {}
 }
 
 message GetPersonRequest {
@@ -47,4 +49,21 @@ message ChatRequest {
 }
 message ChatResponse {
     string message = 1;
+}
+
+message UpdateContactInfoRequest {
+    string person_id = 1;
+    ContactInfo contact_info = 2;
+}
+message UpdateContactInfoResponse {
+    bool success = 1;
+}
+
+message UpdateNotificationSettingsRequest {
+    string user_id = 1;
+    NotificationSettings settings = 2;
+}
+message UpdateNotificationSettingsResponse {
+    bool success = 1;
+    string message = 2;
 }
