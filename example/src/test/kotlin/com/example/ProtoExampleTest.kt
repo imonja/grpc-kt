@@ -198,6 +198,184 @@ class ProtoExampleTest {
         assert(responses.size == 5) { "Expected to receive 5 chat responses" }
     }
 
+    @Test
+    fun `test ContactInfo string oneof serialization`() {
+        // Test ContactInfo with email
+        val contactInfoEmail = ContactInfoKt(
+            name = "Alice Smith",
+            contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
+            tags = listOf("customer", "vip"),
+            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+        )
+
+        // Serialize and deserialize
+        val emailJavaProto = contactInfoEmail.toJavaProto()
+        val emailBytes = emailJavaProto.toByteArray()
+        val deserializedEmail = ContactInfo.parseFrom(emailBytes).toKotlinProto()
+        assert(contactInfoEmail == deserializedEmail) { "Email contact info serialization should work" }
+
+        // Test ContactInfo with phone
+        val contactInfoPhone = ContactInfoKt(
+            name = "Bob Johnson",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            tags = listOf("lead"),
+            preference = ContactInfo.ContactPreference.PHONE_ONLY
+        )
+
+        val phoneJavaProto = contactInfoPhone.toJavaProto()
+        val phoneBytes = phoneJavaProto.toByteArray()
+        val deserializedPhone = ContactInfo.parseFrom(phoneBytes).toKotlinProto()
+        assert(contactInfoPhone == deserializedPhone) { "Phone contact info serialization should work" }
+
+        // Test ContactInfo with username
+        val contactInfoUsername = ContactInfoKt(
+            name = "Charlie Brown",
+            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
+            tags = listOf("partner"),
+            preference = ContactInfo.ContactPreference.ANY_METHOD
+        )
+
+        val usernameJavaProto = contactInfoUsername.toJavaProto()
+        val usernameBytes = usernameJavaProto.toByteArray()
+        val deserializedUsername = ContactInfo.parseFrom(usernameBytes).toKotlinProto()
+        assert(contactInfoUsername == deserializedUsername) { "Username contact info serialization should work" }
+
+        // Test ContactInfo with null oneof
+        val contactInfoNull = ContactInfoKt(
+            name = "David None",
+            contactMethod = null,
+            tags = listOf("test"),
+            preference = ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
+        )
+
+        val nullJavaProto = contactInfoNull.toJavaProto()
+        val nullBytes = nullJavaProto.toByteArray()
+        val deserializedNull = ContactInfo.parseFrom(nullBytes).toKotlinProto()
+        assert(contactInfoNull == deserializedNull) { "Null contact info serialization should work" }
+    }
+
+    @Test
+    fun `test NotificationSettings message oneof serialization`() {
+        // Test NotificationSettings with email settings
+        val emailSettings = NotificationSettingsKt.EmailSettingsKt(
+            emailAddress = "user@example.com",
+            dailyDigest = true,
+            categories = listOf("orders", "promotions", "news")
+        )
+        val notificationSettingsEmail = NotificationSettingsKt(
+            userId = "user123",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+                emailSettings = emailSettings
+            ),
+            notificationsEnabled = true
+        )
+
+        val emailNotificationJavaProto = notificationSettingsEmail.toJavaProto()
+        val emailNotificationBytes = emailNotificationJavaProto.toByteArray()
+        val deserializedEmailNotification = NotificationSettings.parseFrom(emailNotificationBytes).toKotlinProto()
+        assert(notificationSettingsEmail == deserializedEmailNotification) { "Email notification settings serialization should work" }
+
+        // Test NotificationSettings with SMS settings
+        val smsSettings = NotificationSettingsKt.SmsSettingsKt(
+            phoneNumber = "+1-555-0456",
+            urgentOnly = true
+        )
+        val notificationSettingsSms = NotificationSettingsKt(
+            userId = "user456",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+                smsSettings = smsSettings
+            ),
+            notificationsEnabled = true
+        )
+
+        val smsNotificationJavaProto = notificationSettingsSms.toJavaProto()
+        val smsNotificationBytes = smsNotificationJavaProto.toByteArray()
+        val deserializedSmsNotification = NotificationSettings.parseFrom(smsNotificationBytes).toKotlinProto()
+        assert(notificationSettingsSms == deserializedSmsNotification) { "SMS notification settings serialization should work" }
+
+        // Test NotificationSettings with push settings
+        val pushSettings = NotificationSettingsKt.PushSettingsKt(
+            deviceToken = "abc123def456",
+            soundEnabled = true,
+            soundName = "notification_sound.wav"
+        )
+        val notificationSettingsPush = NotificationSettingsKt(
+            userId = "user789",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                pushSettings = pushSettings
+            ),
+            notificationsEnabled = false
+        )
+
+        val pushNotificationJavaProto = notificationSettingsPush.toJavaProto()
+        val pushNotificationBytes = pushNotificationJavaProto.toByteArray()
+        val deserializedPushNotification = NotificationSettings.parseFrom(pushNotificationBytes).toKotlinProto()
+        assert(notificationSettingsPush == deserializedPushNotification) { "Push notification settings serialization should work" }
+
+        // Test NotificationSettings with null oneof
+        val notificationSettingsNull = NotificationSettingsKt(
+            userId = "user000",
+            notificationChannel = null,
+            notificationsEnabled = false
+        )
+
+        val nullNotificationJavaProto = notificationSettingsNull.toJavaProto()
+        val nullNotificationBytes = nullNotificationJavaProto.toByteArray()
+        val deserializedNullNotification = NotificationSettings.parseFrom(nullNotificationBytes).toKotlinProto()
+        assert(notificationSettingsNull == deserializedNullNotification) { "Null notification settings serialization should work" }
+    }
+
+    @Test
+    fun `test updateContactInfo gRPC call`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create contact info with email
+        val contactInfo = ContactInfoKt(
+            name = "Test User",
+            contactMethod = ContactInfoKt.ContactMethod.Email(email = "test@example.com"),
+            tags = listOf("test", "grpc"),
+            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+        )
+
+        val request = UpdateContactInfoRequestKt(
+            personId = "test123",
+            contactInfo = contactInfo
+        )
+
+        val response = stub.updateContactInfo(request)
+        assert(response.success) { "Expected contact info update to be successful" }
+    }
+
+    @Test
+    fun `test updateNotificationSettings gRPC call`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create notification settings with push
+        val pushSettings = NotificationSettingsKt.PushSettingsKt(
+            deviceToken = "test_device_token",
+            soundEnabled = false,
+            soundName = "silent"
+        )
+        val notificationSettings = NotificationSettingsKt(
+            userId = "test456",
+            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                pushSettings = pushSettings
+            ),
+            notificationsEnabled = true
+        )
+
+        val request = UpdateNotificationSettingsRequestKt(
+            userId = "test456",
+            settings = notificationSettings
+        )
+
+        val response = stub.updateNotificationSettings(request)
+        assert(response.success) { "Expected notification settings update to be successful" }
+        assert(response.message == "Test notification settings updated successfully") { "Expected specific response message" }
+    }
+
     /**
      * Implementation of the PersonService for testing.
      */
@@ -251,6 +429,19 @@ class ProtoExampleTest {
                 println("Received chat message: ${request.message}")
                 ChatResponseKt(message = "Server received: ${request.message}")
             }
+        }
+
+        override suspend fun updateContactInfo(request: UpdateContactInfoRequestKt): UpdateContactInfoResponseKt {
+            println("Test server received updateContactInfo request for person: ${request.personId}")
+            return UpdateContactInfoResponseKt(success = true)
+        }
+
+        override suspend fun updateNotificationSettings(request: UpdateNotificationSettingsRequestKt): UpdateNotificationSettingsResponseKt {
+            println("Test server received updateNotificationSettings request for user: ${request.userId}")
+            return UpdateNotificationSettingsResponseKt(
+                success = true,
+                message = "Test notification settings updated successfully"
+            )
         }
     }
 }

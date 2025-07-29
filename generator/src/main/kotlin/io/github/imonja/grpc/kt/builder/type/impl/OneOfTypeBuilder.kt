@@ -37,10 +37,11 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
     fun build(oneOf: OneofDescriptor, parentDescriptor: Descriptor): OneOfResult {
         val imports = mutableSetOf<Import>()
         val oneOfJsonName = fieldNameToJsonName(oneOf.name)
+        val interfaceSimpleName = oneOfJsonName.capitalize()
         val interfaceClassName = ClassName(
             oneOf.file.kotlinPackage,
             *parentDescriptor.shortNames.toMutableList().apply {
-                add(oneOfJsonName.capitalize())
+                add(interfaceSimpleName)
             }.toTypedArray()
         )
 
@@ -79,7 +80,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
                             )
                         }
                     }
-                    .addSuperinterface(interfaceClassName)
+                    .addSuperinterface(ClassName("", interfaceSimpleName))
                     .build()
             )
         }
@@ -88,7 +89,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
             listOf(builder.build()),
             imports,
             oneOfJsonName,
-            interfaceClassName
+            ClassName("", interfaceSimpleName)
         )
     }
 }

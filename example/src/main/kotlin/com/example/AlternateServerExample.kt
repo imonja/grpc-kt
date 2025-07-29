@@ -102,13 +102,45 @@ object PartialServerExample {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                println("Partial server received updateContactInfo request for person: ${request.personId}")
+                println(
+                    "Contact method: ${when (request.contactInfo?.contactMethod) {
+                        is ContactInfoKt.ContactMethod.Email -> "Email: ${request.contactInfo.contactMethod.email}"
+                        is ContactInfoKt.ContactMethod.Phone -> "Phone: ${request.contactInfo.contactMethod.phone}"
+                        is ContactInfoKt.ContactMethod.Username -> "Username: ${request.contactInfo.contactMethod.username}"
+                        null -> "None"
+                    }}"
+                )
+
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                println("Partial server received updateNotificationSettings request for user: ${request.userId}")
+                println(
+                    "Notification channel: ${when (request.settings?.notificationChannel) {
+                        is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
+                        is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
+                        is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
+                        null -> "None"
+                    }}"
+                )
+
+                UpdateNotificationSettingsResponseKt(success = true, message = "Settings updated successfully")
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings
         )
 
         // Start the gRPC server with the partial service
@@ -205,6 +237,43 @@ object PartialServerExample {
 
             // Wait for the chat to complete
             job.join()
+
+            // Example 5: UpdateContactInfo with string oneof
+            println("\n--- Update Contact Info Example (String Oneof) ---")
+            val contactInfo = ContactInfoKt(
+                name = "John Doe",
+                contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@example.com"),
+                tags = listOf("customer", "premium"),
+                preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            )
+            val updateContactRequest = UpdateContactInfoRequestKt(
+                personId = "person123",
+                contactInfo = contactInfo
+            )
+            val contactResponse = stub.updateContactInfo(updateContactRequest)
+            println("Contact info update successful: ${contactResponse.success}")
+
+            // Example 6: UpdateNotificationSettings with message oneof
+            println("\n--- Update Notification Settings Example (Message Oneof) ---")
+            val emailSettings = NotificationSettingsKt.EmailSettingsKt(
+                emailAddress = "notifications@example.com",
+                dailyDigest = true,
+                categories = listOf("orders", "promotions")
+            )
+            val notificationSettings = NotificationSettingsKt(
+                userId = "user456",
+                notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+                    emailSettings = emailSettings
+                ),
+                notificationsEnabled = true
+            )
+            val updateNotificationRequest = UpdateNotificationSettingsRequestKt(
+                userId = "user456",
+                settings = notificationSettings
+            )
+            val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
+            println("Notification settings update successful: ${notificationResponse.success}")
+            println("Response message: ${notificationResponse.message}")
         } finally {
             // Shutdown the channel and server
             println("\nShutting down partial client and server")

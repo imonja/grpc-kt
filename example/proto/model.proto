@@ -27,3 +27,53 @@ message Person {
 
     Address address = 5;
 }
+
+message ContactInfo {
+    string name = 1;
+
+    oneof contact_method {
+        string email = 2;
+        string phone = 3;
+        string username = 4;
+    }
+
+    repeated string tags = 6;
+
+    enum ContactPreference {
+        UNKNOWN_PREFERENCE = 0;
+        EMAIL_ONLY = 1;
+        PHONE_ONLY = 2;
+        ANY_METHOD = 3;
+    }
+
+    ContactPreference preference = 5;
+}
+
+message NotificationSettings {
+    string user_id = 1;
+    
+    oneof notification_channel {
+        EmailSettings email_settings = 2;
+        SmsSettings sms_settings = 3;
+        PushSettings push_settings = 4;
+    }
+    
+    message EmailSettings {
+        string email_address = 1;
+        bool daily_digest = 2;
+        repeated string categories = 3;
+    }
+    
+    message SmsSettings {
+        string phone_number = 1;
+        bool urgent_only = 2;
+    }
+    
+    message PushSettings {
+        string device_token = 1;
+        bool sound_enabled = 2;
+        string sound_name = 3;
+    }
+    
+    bool notifications_enabled = 5;
+}

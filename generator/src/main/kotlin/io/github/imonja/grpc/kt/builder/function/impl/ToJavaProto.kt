@@ -19,7 +19,6 @@ import io.github.imonja.grpc.kt.toolkit.javaFieldName
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
 import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
 import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
-import io.github.imonja.grpc.kt.toolkit.shortNames
 import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
@@ -43,13 +42,12 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
             for (field in oneOf.fields) {
                 val oneOfFieldDataClassName = ClassName(
                     oneOf.file.kotlinPackage,
-                    *descriptor.shortNames.toMutableList().apply {
-                        add(oneOfJsonName.capitalize())
-                        add(field.jsonName.capitalize())
-                    }.toTypedArray()
+                    generatedType.simpleName,
+                    oneOfJsonName.capitalize(),
+                    field.jsonName.capitalize()
                 )
                 functionBuilder.beginControlFlow("is %L ->", oneOfFieldDataClassName)
-                val (template, downStreamImports) = transformCodeTemplate(field)
+                val (template, downStreamImports) = transformCodeTemplateForOneOf(field)
                 functionBuilder.addStatement(
                     "set${field.javaFieldName.capitalize()}(%L)",
                     CodeBlock.of(
@@ -140,12 +138,29 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
         }
     }
 
+    private fun transformCodeTemplateForOneOf(field: FieldDescriptor): TransformTemplateWithImports {
+        return when (field.type) {
+            FieldDescriptor.Type.MESSAGE -> {
+                messageTypeTransformCodeTemplateForOneOf(field.messageType)
+            }
+
+            else -> TransformTemplateWithImports.Companion.of("%L")
+        }
+    }
+
     companion object {
         fun messageTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
             return when {
                 descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
                 else -> TransformTemplateWithImports.Companion.of("%L.toJavaProto()")
 //                 TransformTemplateWithImports.of("%L.toJavaProto()", setOf(descriptor.toJavaProtoImport))
+            }
+        }
+
+        fun messageTypeTransformCodeTemplateForOneOf(descriptor: Descriptor): TransformTemplateWithImports {
+            return when {
+                descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
+                else -> TransformTemplateWithImports.Companion.of("%L?.toJavaProto()")
             }
         }
 
