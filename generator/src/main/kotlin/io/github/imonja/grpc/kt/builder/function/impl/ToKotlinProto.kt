@@ -154,7 +154,6 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 }
 
                 else -> TransformTemplateWithImports.Companion.of("%L.toKotlinProto()")
-//                TransformTemplateWithImports.of("%L.toKotlinProto()", setOf(descriptor.toKotlinProtoImport))
             }
         }
 

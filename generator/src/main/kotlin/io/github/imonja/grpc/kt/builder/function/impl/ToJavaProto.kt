@@ -152,8 +152,8 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
         fun messageTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
             return when {
                 descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
+
                 else -> TransformTemplateWithImports.Companion.of("%L.toJavaProto()")
-//                 TransformTemplateWithImports.of("%L.toJavaProto()", setOf(descriptor.toJavaProtoImport))
             }
         }
 
