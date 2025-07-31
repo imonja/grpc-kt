@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class PartialServerExampleTest {
@@ -99,6 +100,30 @@ class PartialServerExampleTest {
                 UpdateNotificationSettingsResponseKt(success = true, message = "Test settings updated")
             }
 
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                println("Test server received getSchedule request for person: ${request.personId}")
+
+                // Create sample schedule items (now nested ScheduleItem type)
+                val scheduleItems = listOf(
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "test_schedule1",
+                        title = "Test Meeting",
+                        description = "Test meeting description"
+                    ),
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "test_schedule2",
+                        title = "Test Review",
+                        description = "Test code review session"
+                    )
+                )
+
+                GetScheduleResponseKt(
+                    items = scheduleItems,
+                    `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+                )
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
@@ -107,7 +132,8 @@ class PartialServerExampleTest {
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson,
             updateContactInfo = updateContactInfo,
-            updateNotificationSettings = updateNotificationSettings
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule
         )
 
         // Start the gRPC server with the partial service
@@ -397,6 +423,34 @@ class PartialServerExampleTest {
     }
 
     @Test
+    fun `test getSchedule with Kotlin keywords`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create request (no longer has 'when' field)
+        val request = GetScheduleRequestKt(
+            personId = "test_person_789"
+        )
+
+        val response = stub.getSchedule(request)
+
+        // Verify response has items and timestamp (with Kotlin keyword field)
+        assert(response.items.isNotEmpty()) { "Expected schedule items in response" }
+        assert(response.`when` != null) { "Expected timestamp in response using Kotlin keyword 'when'" }
+
+        // Verify item properties (now nested ScheduleItem type)
+        val firstItem = response.items.first()
+        assert(firstItem.id.isNotEmpty()) { "Expected schedule item to have ID" }
+        assert(firstItem.title.isNotEmpty()) { "Expected schedule item to have title" }
+        assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
+
+        // Verify we got the expected test data
+        assert(response.items.size == 2) { "Expected 2 schedule items" }
+        assert(firstItem.id == "test_schedule1") { "Expected first item ID to be 'test_schedule1'" }
+        assert(firstItem.title == "Test Meeting") { "Expected first item title to be 'Test Meeting'" }
+    }
+
+    @Test
     fun `test structure of PartialServerExample`() {
         // This test verifies the structure of the PartialServerExample without making gRPC calls
 
@@ -448,13 +502,34 @@ class PartialServerExampleTest {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule
         )
 
         // Verify that the service was created successfully
@@ -495,13 +570,34 @@ class PartialServerExampleTest {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule
         )
 
         // Start the gRPC server with the partial service
@@ -567,13 +663,34 @@ class PartialServerExampleTest {
                 flow { }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule
         )
 
         // Start the gRPC server with the partial service

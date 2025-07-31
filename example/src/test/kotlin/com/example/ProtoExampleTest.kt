@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 /**
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit
  */
 class ProtoExampleTest {
 
-    private val serverPort = 50051
+    private val serverPort = (60_000..65_000).random()
     private var server: io.grpc.Server? = null
     private var channel: io.grpc.ManagedChannel? = null
 
@@ -376,6 +377,92 @@ class ProtoExampleTest {
         assert(response.message == "Test notification settings updated successfully") { "Expected specific response message" }
     }
 
+    @Test
+    fun `test Kotlin keyword field serialization`() {
+        // Create a schedule request (no longer has 'when' field)
+        val scheduleRequest = GetScheduleRequestKt(
+            personId = "user123"
+        )
+
+        // Test serialization/deserialization
+        val requestJavaProto = scheduleRequest.toJavaProto()
+        val requestBytes = requestJavaProto.toByteArray()
+        val deserializedRequest = GetScheduleRequest.parseFrom(requestBytes).toKotlinProto()
+        assert(scheduleRequest == deserializedRequest) { "Schedule request should serialize correctly" }
+
+        // Create a schedule item (now nested in response) and response with timestamp
+        val scheduleItem = GetScheduleResponseKt.ScheduleItemKt(
+            id = "item1",
+            title = "Team Meeting",
+            description = "Weekly team sync"
+        )
+
+        val scheduleResponse = GetScheduleResponseKt(
+            items = listOf(scheduleItem),
+            `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+        )
+
+        // Test response serialization/deserialization
+        val responseJavaProto = scheduleResponse.toJavaProto()
+        val responseBytes = responseJavaProto.toByteArray()
+        val deserializedResponse = GetScheduleResponse.parseFrom(responseBytes).toKotlinProto()
+        assert(scheduleResponse == deserializedResponse) { "Schedule response with Kotlin keyword should serialize correctly" }
+
+        // Test field access with backticks
+        assert(scheduleRequest.personId == "user123") { "Should be able to access personId field" }
+        assert(scheduleResponse.`when` != null) { "Should be able to access response 'when' timestamp field with backticks" }
+    }
+
+    @Test
+    fun `test Kotlin keyword field check functions`() {
+        // Test personId field access
+        val scheduleRequest = GetScheduleRequestKt(
+            personId = "user123"
+        )
+        assert(scheduleRequest.personId == "user123") { "Should be able to access personId field value" }
+
+        val scheduleRequestEmpty = GetScheduleRequestKt(
+            personId = ""
+        )
+        assert(scheduleRequestEmpty.personId == "") { "Should be able to access empty personId field value" }
+
+        // Test hasWhen() function for response with Kotlin keyword field
+        val scheduleResponseWithWhen = GetScheduleResponseKt(
+            items = listOf(),
+            `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+        )
+        assert(scheduleResponseWithWhen.hasWhen()) { "Should have 'when' timestamp field set" }
+
+        val scheduleResponseWithoutWhen = GetScheduleResponseKt(
+            items = listOf(),
+            `when` = null
+        )
+        assert(!scheduleResponseWithoutWhen.hasWhen()) { "Should not have 'when' timestamp field set" }
+    }
+
+    @Test
+    fun `test getSchedule gRPC call with Kotlin keywords`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create request (no longer has 'when' field)
+        val request = GetScheduleRequestKt(
+            personId = "test789"
+        )
+
+        val response = stub.getSchedule(request)
+
+        // Verify response has items and timestamp (with Kotlin keyword field)
+        assert(response.items.isNotEmpty()) { "Expected schedule items in response" }
+        assert(response.`when` != null) { "Expected timestamp in response using Kotlin keyword 'when'" }
+
+        // Verify item properties (now nested ScheduleItem type)
+        val firstItem = response.items.first()
+        assert(firstItem.id.isNotEmpty()) { "Expected schedule item to have ID" }
+        assert(firstItem.title.isNotEmpty()) { "Expected schedule item to have title" }
+        assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
+    }
+
     /**
      * Implementation of the PersonService for testing.
      */
@@ -441,6 +528,29 @@ class ProtoExampleTest {
             return UpdateNotificationSettingsResponseKt(
                 success = true,
                 message = "Test notification settings updated successfully"
+            )
+        }
+
+        override suspend fun getSchedule(request: GetScheduleRequestKt): GetScheduleResponseKt {
+            println("Test server received getSchedule request for person: ${request.personId}")
+
+            // Create sample schedule items (now nested ScheduleItem type)
+            val scheduleItems = listOf(
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "test_meeting1",
+                    title = "Product Planning",
+                    description = "Quarterly product roadmap discussion"
+                ),
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "test_break1",
+                    title = "Coffee Break",
+                    description = "Team coffee break"
+                )
+            )
+
+            return GetScheduleResponseKt(
+                items = scheduleItems,
+                `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
             )
         }
     }

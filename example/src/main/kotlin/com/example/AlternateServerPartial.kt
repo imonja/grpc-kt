@@ -132,6 +132,30 @@ object PartialServerExample {
                 UpdateNotificationSettingsResponseKt(success = true, message = "Settings updated successfully")
             }
 
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                println("Partial server received getSchedule request for person: ${request.personId}")
+
+                // Create sample schedule items (now nested ScheduleItem type)
+                val scheduleItems = listOf(
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "schedule1",
+                        title = "Morning Meeting",
+                        description = "Team standup meeting with ${request.personId}"
+                    ),
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "schedule2",
+                        title = "Code Review",
+                        description = "Review pull request for Kotlin keywords feature"
+                    )
+                )
+
+                GetScheduleResponseKt(
+                    items = scheduleItems,
+                    `when` = java.time.LocalDateTime.now()
+                )
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
@@ -140,7 +164,8 @@ object PartialServerExample {
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson,
             updateContactInfo = updateContactInfo,
-            updateNotificationSettings = updateNotificationSettings
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule
         )
 
         // Start the gRPC server with the partial service
@@ -274,6 +299,17 @@ object PartialServerExample {
             val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
             println("Notification settings update successful: ${notificationResponse.success}")
             println("Response message: ${notificationResponse.message}")
+
+            // Example 7: GetSchedule with Kotlin keyword field in response
+            println("\n--- Get Schedule Example (Kotlin keyword field) ---")
+            val getScheduleRequest = GetScheduleRequestKt(
+                personId = "person789"
+            )
+            val scheduleResponse = stub.getSchedule(getScheduleRequest)
+            println("Schedule response received at: ${scheduleResponse.`when`}")
+            scheduleResponse.items.forEach { item ->
+                println("Schedule item: ${item.id} - ${item.title}: ${item.description}")
+            }
         } finally {
             // Shutdown the channel and server
             println("\nShutting down partial client and server")

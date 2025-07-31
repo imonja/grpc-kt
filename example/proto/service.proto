@@ -17,6 +17,7 @@ service PersonService {
     rpc ChatWithPerson(stream ChatRequest) returns (stream ChatResponse) {}
     rpc UpdateContactInfo(UpdateContactInfoRequest) returns (UpdateContactInfoResponse) {}
     rpc UpdateNotificationSettings(UpdateNotificationSettingsRequest) returns (UpdateNotificationSettingsResponse) {}
+    rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse) {}
 }
 
 message GetPersonRequest {
@@ -24,7 +25,6 @@ message GetPersonRequest {
 }
 message GetPersonResponse {
     Person person = 1;
-    google.protobuf.Timestamp when = 2;
 }
 
 message DeletePersonRequest {
@@ -68,4 +68,17 @@ message UpdateNotificationSettingsRequest {
 message UpdateNotificationSettingsResponse {
     bool success = 1;
     string message = 2;
+}
+
+message GetScheduleRequest {
+    string person_id = 1;
+}
+message GetScheduleResponse {
+    message ScheduleItem {
+        string id = 1;
+        string title = 2;
+        string description = 3;
+    }
+    repeated ScheduleItem items = 1;
+    google.protobuf.Timestamp when = 2;
 }
