@@ -135,7 +135,10 @@ subprojects {
 
         // Only publish to Maven Central for non-SNAPSHOT versions
         if (!version.toString().contains("SNAPSHOT")) {
-            publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+            publishToMavenCentral(
+                host = com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL,
+                automaticRelease = true
+            )
             signAllPublications()
         }
     }

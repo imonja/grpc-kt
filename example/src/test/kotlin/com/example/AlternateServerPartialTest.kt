@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class PartialServerExampleTest {
@@ -99,6 +100,43 @@ class PartialServerExampleTest {
                 UpdateNotificationSettingsResponseKt(success = true, message = "Test settings updated")
             }
 
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                println("Test server received getSchedule request for person: ${request.personId}")
+
+                // Create sample schedule items (now nested ScheduleItem type)
+                val scheduleItems = listOf(
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "test_schedule1",
+                        title = "Test Meeting",
+                        description = "Test meeting description"
+                    ),
+                    GetScheduleResponseKt.ScheduleItemKt(
+                        id = "test_schedule2",
+                        title = "Test Review",
+                        description = "Test code review session"
+                    )
+                )
+
+                GetScheduleResponseKt(
+                    items = scheduleItems,
+                    `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+                )
+            }
+
+        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                println("Test server received testOptionalField request")
+
+                // Check if the optional field is present using hasField() method
+                val hasField = request.hasField()
+                val fieldValue = if (hasField) request.field else "null"
+
+                println("Test server - Field present: $hasField, field value: '$fieldValue'")
+
+                TestOptionalFieldResponseKt(hasField = hasField)
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
@@ -107,7 +145,9 @@ class PartialServerExampleTest {
             updatePerson = updatePerson,
             chatWithPerson = chatWithPerson,
             updateContactInfo = updateContactInfo,
-            updateNotificationSettings = updateNotificationSettings
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule,
+            testOptionalField = testOptionalField
         )
 
         // Start the gRPC server with the partial service
@@ -397,6 +437,34 @@ class PartialServerExampleTest {
     }
 
     @Test
+    fun `test getSchedule with Kotlin keywords`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create request (no longer has 'when' field)
+        val request = GetScheduleRequestKt(
+            personId = "test_person_789"
+        )
+
+        val response = stub.getSchedule(request)
+
+        // Verify response has items and timestamp (with Kotlin keyword field)
+        assert(response.items.isNotEmpty()) { "Expected schedule items in response" }
+        assert(response.`when` != null) { "Expected timestamp in response using Kotlin keyword 'when'" }
+
+        // Verify item properties (now nested ScheduleItem type)
+        val firstItem = response.items.first()
+        assert(firstItem.id.isNotEmpty()) { "Expected schedule item to have ID" }
+        assert(firstItem.title.isNotEmpty()) { "Expected schedule item to have title" }
+        assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
+
+        // Verify we got the expected test data
+        assert(response.items.size == 2) { "Expected 2 schedule items" }
+        assert(firstItem.id == "test_schedule1") { "Expected first item ID to be 'test_schedule1'" }
+        assert(firstItem.title == "Test Meeting") { "Expected first item title to be 'Test Meeting'" }
+    }
+
+    @Test
     fun `test structure of PartialServerExample`() {
         // This test verifies the structure of the PartialServerExample without making gRPC calls
 
@@ -448,13 +516,40 @@ class PartialServerExampleTest {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
+        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                TestOptionalFieldResponseKt(hasField = request.hasField())
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule,
+            testOptionalField = testOptionalField
         )
 
         // Verify that the service was created successfully
@@ -495,13 +590,40 @@ class PartialServerExampleTest {
                 }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
+        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                TestOptionalFieldResponseKt(hasField = request.hasField())
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule,
+            testOptionalField = testOptionalField
         )
 
         // Start the gRPC server with the partial service
@@ -567,13 +689,40 @@ class PartialServerExampleTest {
                 flow { }
             }
 
+        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                UpdateContactInfoResponseKt(success = true)
+            }
+
+        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+            }
+
+        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                GetScheduleResponseKt(
+                    items = listOf(),
+                    `when` = LocalDateTime.now()
+                )
+            }
+
+        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                TestOptionalFieldResponseKt(hasField = request.hasField())
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
             deletePerson = deletePerson,
             listPersons = listPersons,
             updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson
+            chatWithPerson = chatWithPerson,
+            updateContactInfo = updateContactInfo,
+            updateNotificationSettings = updateNotificationSettings,
+            getSchedule = getSchedule,
+            testOptionalField = testOptionalField
         )
 
         // Start the gRPC server with the partial service
@@ -633,5 +782,80 @@ class PartialServerExampleTest {
             e.printStackTrace()
             assert(false) { "Exception during direct use of PartialServerExample: ${e.message}" }
         }
+    }
+
+    @Test
+    fun `test TestOptionalField - field not set`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 1: Field NOT set
+        println("Testing TestOptionalField - field not set")
+        val request = TestOptionalFieldRequestKt()
+        val response = stub.testOptionalField(request)
+
+        // Should return false for hasField when field is not set
+        assert(!response.hasField) { "Expected hasField to be false when field is not set" }
+        println("✓ Field not set test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to empty string`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 2: Field SET to empty string
+        println("Testing TestOptionalField - field set to empty string")
+        val request = TestOptionalFieldRequestKt(field = "")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to empty string
+        assert(response.hasField) { "Expected hasField to be true when field is set to empty string" }
+        println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to John`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 3: Field SET to "John"
+        println("Testing TestOptionalField - field set to 'John'")
+        val request = TestOptionalFieldRequestKt(field = "John")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to "John"
+        assert(response.hasField) { "Expected hasField to be true when field is set to 'John'" }
+        println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - comprehensive scenarios`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        println("\n=== Comprehensive TestOptionalField Tests ===")
+
+        // Test various scenarios
+        val testCases = listOf(
+            Triple("Field not set", TestOptionalFieldRequestKt(), false),
+            Triple("Field set to empty string", TestOptionalFieldRequestKt(field = ""), true),
+            Triple("Field set to 'John'", TestOptionalFieldRequestKt(field = "John"), true),
+            Triple("Field set to whitespace", TestOptionalFieldRequestKt(field = " "), true),
+            Triple("Field set to null string", TestOptionalFieldRequestKt(field = "null"), true),
+            Triple("Field set to long string", TestOptionalFieldRequestKt(field = "This is a very long string to test"), true)
+        )
+
+        testCases.forEach { (description, request, expectedHasField) ->
+            println("\nTesting: $description")
+            val response = stub.testOptionalField(request)
+
+            assert(response.hasField == expectedHasField) { "Expected hasField to be $expectedHasField for case: $description" }
+
+            val fieldValue = if (request.hasField()) request.field else "<not set>"
+            println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
+        }
+
+        println("\n=== All comprehensive tests passed! ===")
     }
 }

@@ -34,7 +34,10 @@ object ProtoExample {
         // Example 2: Oneof message examples
         demonstrateOneofMessages()
 
-        // Example 3: gRPC service interaction
+        // Example 3: Kotlin keywords demonstration
+        demonstrateKotlinKeywords()
+
+        // Example 4: gRPC service interaction
         demonstrateGrpcService()
 
         println("Proto Example completed")
@@ -207,6 +210,50 @@ object ProtoExample {
     }
 
     /**
+     * Demonstrates handling of Kotlin keywords in protobuf fields
+     */
+    private fun demonstrateKotlinKeywords() {
+        println("\n=== Kotlin Keywords Example ===")
+
+        // Create a schedule request (no longer has 'when' field)
+        val scheduleRequest = GetScheduleRequestKt(
+            personId = "user123"
+        )
+        println("Created schedule request: $scheduleRequest")
+        println("Person ID: ${scheduleRequest.personId}")
+
+        // Create a schedule item (now nested in response)
+        val scheduleItem = GetScheduleResponseKt.ScheduleItemKt(
+            id = "item1",
+            title = "Team Meeting",
+            description = "Weekly team sync"
+        )
+
+        // Create a schedule response with 'when' field (Kotlin keyword)
+        val scheduleResponse = GetScheduleResponseKt(
+            items = listOf(scheduleItem),
+            `when` = java.time.LocalDateTime.now() // Using backticks for Kotlin keyword
+        )
+        println("Created schedule response: $scheduleResponse")
+        println("Response timestamp (when field): ${scheduleResponse.`when`}")
+
+        // Demonstrate serialization/deserialization with Kotlin keywords
+        val requestJavaProto = scheduleRequest.toJavaProto()
+        val requestBytes = requestJavaProto.toByteArray()
+        val deserializedRequest = GetScheduleRequest.parseFrom(requestBytes).toKotlinProto()
+        println("Schedule request serialization works: ${scheduleRequest == deserializedRequest}")
+
+        val responseJavaProto = scheduleResponse.toJavaProto()
+        val responseBytes = responseJavaProto.toByteArray()
+        val deserializedResponse = GetScheduleResponse.parseFrom(responseBytes).toKotlinProto()
+        println("Schedule response serialization works: ${scheduleResponse == deserializedResponse}")
+
+        // Show how to check if field is set using generated helper functions
+        println("Person ID: '${scheduleRequest.personId}'")
+        println("Has timestamp when field set: ${scheduleResponse.hasWhen()}")
+    }
+
+    /**
      * Demonstrates how to use gRPC services with the generated code.
      */
     private fun demonstrateGrpcService() = runBlocking {
@@ -333,6 +380,40 @@ object ProtoExample {
             val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
             println("Notification settings update successful: ${notificationResponse.success}")
             println("Response message: ${notificationResponse.message}")
+
+            // Example 7: GetSchedule with Kotlin keyword field in response
+            println("\n--- GetSchedule Example (Kotlin keywords) ---")
+            val getScheduleRequest = GetScheduleRequestKt(
+                personId = "service789"
+            )
+            val scheduleResponse = stub.getSchedule(getScheduleRequest)
+            println("Schedule response received at: ${scheduleResponse.`when`}") // Using backticks for Kotlin keyword
+            println("Number of schedule items: ${scheduleResponse.items.size}")
+            scheduleResponse.items.forEach { item ->
+                println("Schedule item: ${item.id} - ${item.title}")
+                println("  Description: ${item.description}")
+            }
+
+            // Example 8: TestOptionalField - Test optional field behavior
+            println("\n--- TestOptionalField Example ---")
+
+            // Test 1: Field not set
+            println("Test 1: Field not set")
+            val requestNoField = TestOptionalFieldRequestKt()
+            val responseNoField = stub.testOptionalField(requestNoField)
+            println("Has field: ${responseNoField.hasField}")
+
+            // Test 2: Field set to empty string
+            println("Test 2: Field set to empty string")
+            val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+            val responseEmptyField = stub.testOptionalField(requestEmptyField)
+            println("Has field: ${responseEmptyField.hasField}")
+
+            // Test 3: Field set to "John"
+            println("Test 3: Field set to 'John'")
+            val requestWithField = TestOptionalFieldRequestKt(field = "John")
+            val responseWithField = stub.testOptionalField(requestWithField)
+            println("Has field: ${responseWithField.hasField}")
         } finally {
             // Shutdown the channel and server
             println("\nShutting down client and server")
@@ -437,6 +518,41 @@ object ProtoExample {
             )
 
             return UpdateNotificationSettingsResponseKt(success = true, message = "Notification settings updated successfully")
+        }
+
+        override suspend fun getSchedule(request: GetScheduleRequestKt): GetScheduleResponseKt {
+            println("Server received getSchedule request for person: ${request.personId}")
+
+            // Create sample schedule items (now nested ScheduleItem type)
+            val scheduleItems = listOf(
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "meeting1",
+                    title = "Product Planning",
+                    description = "Quarterly product roadmap discussion"
+                ),
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "break1",
+                    title = "Coffee Break",
+                    description = "Team coffee break"
+                )
+            )
+
+            return GetScheduleResponseKt(
+                items = scheduleItems,
+                `when` = java.time.LocalDateTime.now() // Using backticks for Kotlin keyword
+            )
+        }
+
+        override suspend fun testOptionalField(request: TestOptionalFieldRequestKt): TestOptionalFieldResponseKt {
+            println("Server received testOptionalField request")
+
+            // Check if the optional field is present using hasField() method
+            val hasField = request.hasField()
+            val fieldValue = if (hasField) request.field else "null"
+
+            println("Field present: $hasField, field value: '$fieldValue'")
+
+            return TestOptionalFieldResponseKt(hasField = hasField)
         }
     }
 }

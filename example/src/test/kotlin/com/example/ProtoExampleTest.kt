@@ -13,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 /**
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit
  */
 class ProtoExampleTest {
 
-    private val serverPort = 50051
+    private val serverPort = (60_000..65_000).random()
     private var server: io.grpc.Server? = null
     private var channel: io.grpc.ManagedChannel? = null
 
@@ -376,6 +377,218 @@ class ProtoExampleTest {
         assert(response.message == "Test notification settings updated successfully") { "Expected specific response message" }
     }
 
+    @Test
+    fun `test Kotlin keyword field serialization`() {
+        // Create a schedule request (no longer has 'when' field)
+        val scheduleRequest = GetScheduleRequestKt(
+            personId = "user123"
+        )
+
+        // Test serialization/deserialization
+        val requestJavaProto = scheduleRequest.toJavaProto()
+        val requestBytes = requestJavaProto.toByteArray()
+        val deserializedRequest = GetScheduleRequest.parseFrom(requestBytes).toKotlinProto()
+        assert(scheduleRequest == deserializedRequest) { "Schedule request should serialize correctly" }
+
+        // Create a schedule item (now nested in response) and response with timestamp
+        val scheduleItem = GetScheduleResponseKt.ScheduleItemKt(
+            id = "item1",
+            title = "Team Meeting",
+            description = "Weekly team sync"
+        )
+
+        val scheduleResponse = GetScheduleResponseKt(
+            items = listOf(scheduleItem),
+            `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+        )
+
+        // Test response serialization/deserialization
+        val responseJavaProto = scheduleResponse.toJavaProto()
+        val responseBytes = responseJavaProto.toByteArray()
+        val deserializedResponse = GetScheduleResponse.parseFrom(responseBytes).toKotlinProto()
+        assert(scheduleResponse == deserializedResponse) { "Schedule response with Kotlin keyword should serialize correctly" }
+
+        // Test field access with backticks
+        assert(scheduleRequest.personId == "user123") { "Should be able to access personId field" }
+        assert(scheduleResponse.`when` != null) { "Should be able to access response 'when' timestamp field with backticks" }
+    }
+
+    @Test
+    fun `test Kotlin keyword field check functions`() {
+        // Test personId field access
+        val scheduleRequest = GetScheduleRequestKt(
+            personId = "user123"
+        )
+        assert(scheduleRequest.personId == "user123") { "Should be able to access personId field value" }
+
+        val scheduleRequestEmpty = GetScheduleRequestKt(
+            personId = ""
+        )
+        assert(scheduleRequestEmpty.personId == "") { "Should be able to access empty personId field value" }
+
+        // Test hasWhen() function for response with Kotlin keyword field
+        val scheduleResponseWithWhen = GetScheduleResponseKt(
+            items = listOf(),
+            `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+        )
+        assert(scheduleResponseWithWhen.hasWhen()) { "Should have 'when' timestamp field set" }
+
+        val scheduleResponseWithoutWhen = GetScheduleResponseKt(
+            items = listOf(),
+            `when` = null
+        )
+        assert(!scheduleResponseWithoutWhen.hasWhen()) { "Should not have 'when' timestamp field set" }
+    }
+
+    @Test
+    fun `test getSchedule gRPC call with Kotlin keywords`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Create request (no longer has 'when' field)
+        val request = GetScheduleRequestKt(
+            personId = "test789"
+        )
+
+        val response = stub.getSchedule(request)
+
+        // Verify response has items and timestamp (with Kotlin keyword field)
+        assert(response.items.isNotEmpty()) { "Expected schedule items in response" }
+        assert(response.`when` != null) { "Expected timestamp in response using Kotlin keyword 'when'" }
+
+        // Verify item properties (now nested ScheduleItem type)
+        val firstItem = response.items.first()
+        assert(firstItem.id.isNotEmpty()) { "Expected schedule item to have ID" }
+        assert(firstItem.title.isNotEmpty()) { "Expected schedule item to have title" }
+        assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
+    }
+
+    @Test
+    fun `test TestOptionalField - field not set`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 1: Field NOT set
+        println("Testing TestOptionalField - field not set")
+        val request = TestOptionalFieldRequestKt()
+        val response = stub.testOptionalField(request)
+
+        // Should return false for hasField when field is not set
+        assert(!response.hasField) { "Expected hasField to be false when field is not set" }
+        println("✓ Field not set test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to empty string`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 2: Field SET to empty string
+        println("Testing TestOptionalField - field set to empty string")
+        val request = TestOptionalFieldRequestKt(field = "")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to empty string
+        assert(response.hasField) { "Expected hasField to be true when field is set to empty string" }
+        println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to John`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 3: Field SET to "John"
+        println("Testing TestOptionalField - field set to 'John'")
+        val request = TestOptionalFieldRequestKt(field = "John")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to "John"
+        assert(response.hasField) { "Expected hasField to be true when field is set to 'John'" }
+        println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - comprehensive scenarios`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        println("\n=== Comprehensive TestOptionalField Tests ===")
+
+        // Test various scenarios
+        val testCases = listOf(
+            Triple("Field not set", TestOptionalFieldRequestKt(), false),
+            Triple("Field set to empty string", TestOptionalFieldRequestKt(field = ""), true),
+            Triple("Field set to 'John'", TestOptionalFieldRequestKt(field = "John"), true),
+            Triple("Field set to whitespace", TestOptionalFieldRequestKt(field = " "), true),
+            Triple("Field set to null string", TestOptionalFieldRequestKt(field = "null"), true),
+            Triple("Field set to long string", TestOptionalFieldRequestKt(field = "This is a very long string to test"), true)
+        )
+
+        testCases.forEach { (description, request, expectedHasField) ->
+            println("\nTesting: $description")
+            val response = stub.testOptionalField(request)
+
+            assert(response.hasField == expectedHasField) { "Expected hasField to be $expectedHasField for case: $description" }
+
+            val fieldValue = if (request.hasField()) request.field else "<not set>"
+            println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
+        }
+
+        println("\n=== All comprehensive tests passed! ===")
+    }
+
+    @Test
+    fun `test TestOptionalField serialization`() {
+        // Test serialization/deserialization of TestOptionalFieldRequest with optional field
+
+        // Test case 1: Field not set
+        val requestNoField = TestOptionalFieldRequestKt()
+        val javaProtoNoField = requestNoField.toJavaProto()
+        val bytesNoField = javaProtoNoField.toByteArray()
+        val deserializedNoField = TestOptionalFieldRequest.parseFrom(bytesNoField).toKotlinProto()
+
+        assert(requestNoField == deserializedNoField) { "Request with no field should serialize correctly" }
+        assert(!deserializedNoField.hasField()) { "Deserialized request should not have field set" }
+
+        // Test case 2: Field set to empty string
+        val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+        val javaProtoEmptyField = requestEmptyField.toJavaProto()
+        val bytesEmptyField = javaProtoEmptyField.toByteArray()
+        val deserializedEmptyField = TestOptionalFieldRequest.parseFrom(bytesEmptyField).toKotlinProto()
+
+        assert(requestEmptyField == deserializedEmptyField) { "Request with empty field should serialize correctly" }
+        assert(deserializedEmptyField.hasField()) { "Deserialized request should have field set" }
+        assert(deserializedEmptyField.field == "") { "Deserialized field should be empty string" }
+
+        // Test case 3: Field set to "John"
+        val requestWithField = TestOptionalFieldRequestKt(field = "John")
+        val javaProtoWithField = requestWithField.toJavaProto()
+        val bytesWithField = javaProtoWithField.toByteArray()
+        val deserializedWithField = TestOptionalFieldRequest.parseFrom(bytesWithField).toKotlinProto()
+
+        assert(requestWithField == deserializedWithField) { "Request with field should serialize correctly" }
+        assert(deserializedWithField.hasField()) { "Deserialized request should have field set" }
+        assert(deserializedWithField.field == "John") { "Deserialized field should be 'John'" }
+
+        // Test TestOptionalFieldResponse
+        val responseTrue = TestOptionalFieldResponseKt(hasField = true)
+        val javaProtoResponseTrue = responseTrue.toJavaProto()
+        val bytesResponseTrue = javaProtoResponseTrue.toByteArray()
+        val deserializedResponseTrue = TestOptionalFieldResponse.parseFrom(bytesResponseTrue).toKotlinProto()
+
+        assert(responseTrue == deserializedResponseTrue) { "Response with true should serialize correctly" }
+        assert(deserializedResponseTrue.hasField) { "Deserialized response should have hasField true" }
+
+        val responseFalse = TestOptionalFieldResponseKt(hasField = false)
+        val javaProtoResponseFalse = responseFalse.toJavaProto()
+        val bytesResponseFalse = javaProtoResponseFalse.toByteArray()
+        val deserializedResponseFalse = TestOptionalFieldResponse.parseFrom(bytesResponseFalse).toKotlinProto()
+
+        assert(responseFalse == deserializedResponseFalse) { "Response with false should serialize correctly" }
+        assert(!deserializedResponseFalse.hasField) { "Deserialized response should have hasField false" }
+    }
+
     /**
      * Implementation of the PersonService for testing.
      */
@@ -442,6 +655,41 @@ class ProtoExampleTest {
                 success = true,
                 message = "Test notification settings updated successfully"
             )
+        }
+
+        override suspend fun getSchedule(request: GetScheduleRequestKt): GetScheduleResponseKt {
+            println("Test server received getSchedule request for person: ${request.personId}")
+
+            // Create sample schedule items (now nested ScheduleItem type)
+            val scheduleItems = listOf(
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "test_meeting1",
+                    title = "Product Planning",
+                    description = "Quarterly product roadmap discussion"
+                ),
+                GetScheduleResponseKt.ScheduleItemKt(
+                    id = "test_break1",
+                    title = "Coffee Break",
+                    description = "Team coffee break"
+                )
+            )
+
+            return GetScheduleResponseKt(
+                items = scheduleItems,
+                `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+            )
+        }
+
+        override suspend fun testOptionalField(request: TestOptionalFieldRequestKt): TestOptionalFieldResponseKt {
+            println("Test server received testOptionalField request")
+
+            // Check if the optional field is present using hasField() method
+            val hasField = request.hasField()
+            val fieldValue = if (hasField) request.field else "null"
+
+            println("Test server - Field present: $hasField, field value: '$fieldValue'")
+
+            return TestOptionalFieldResponseKt(hasField = hasField)
         }
     }
 }
