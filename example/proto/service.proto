@@ -5,6 +5,7 @@ package example;
 option java_package = "com.example.proto";
 option java_multiple_files = true;
 
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 import "model.proto";
 
@@ -23,6 +24,7 @@ message GetPersonRequest {
 }
 message GetPersonResponse {
     Person person = 1;
+    google.protobuf.Timestamp when = 2;
 }
 
 message DeletePersonRequest {

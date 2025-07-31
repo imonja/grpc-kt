@@ -40,7 +40,7 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 val methodBuilder = FunSpec.builder(methodName)
                     .receiver(generatedType)
                     .returns(Boolean::class)
-                    .addStatement("return this.%L != null", fieldName)
+                    .addStatement("return this.%L != null", normalizeFieldName(fieldName))
 
                 if (field.isExplicitlyOptional) {
                     methodBuilder.addKdoc("Checks if the explicitly optional field [%L] was set.", fieldName)
@@ -61,5 +61,26 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
         }
 
         return FunSpecsWithImports(funSpecs, imports)
+    }
+
+    // TODO: refactoring this sometimes
+    val kotlinKeywords = setOf(
+        "as", "break", "class", "continue", "do", "else", "false", "for",
+        "fun", "if", "in", "interface", "is", "null", "object", "package",
+        "return", "super", "this", "throw", "true", "try", "typealias",
+        "typeof", "val", "var", "when", "while", "by", "catch", "constructor",
+        "delegate", "dynamic", "field", "file", "finally", "get", "import",
+        "init", "param", "property", "receiver", "set", "setparam", "where",
+        "actual", "abstract", "annotation", "companion", "const", "crossinline",
+        "data", "enum", "expect", "external", "final", "infix", "inline",
+        "inner", "internal", "lateinit", "noinline", "open", "operator",
+        "out", "override", "private", "protected", "public", "reified",
+        "sealed", "suspend", "tailrec", "vararg"
+    )
+
+    fun normalizeFieldName(fieldName: String): String = if (fieldName in kotlinKeywords) {
+        "`$fieldName`"
+    } else {
+        fieldName
     }
 }
