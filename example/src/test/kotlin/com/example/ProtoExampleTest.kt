@@ -463,6 +463,132 @@ class ProtoExampleTest {
         assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
     }
 
+    @Test
+    fun `test TestOptionalField - field not set`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 1: Field NOT set
+        println("Testing TestOptionalField - field not set")
+        val request = TestOptionalFieldRequestKt()
+        val response = stub.testOptionalField(request)
+
+        // Should return false for hasField when field is not set
+        assert(!response.hasField) { "Expected hasField to be false when field is not set" }
+        println("✓ Field not set test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to empty string`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 2: Field SET to empty string
+        println("Testing TestOptionalField - field set to empty string")
+        val request = TestOptionalFieldRequestKt(field = "")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to empty string
+        assert(response.hasField) { "Expected hasField to be true when field is set to empty string" }
+        println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - field set to John`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        // Test scenario 3: Field SET to "John"
+        println("Testing TestOptionalField - field set to 'John'")
+        val request = TestOptionalFieldRequestKt(field = "John")
+        val response = stub.testOptionalField(request)
+
+        // Should return true for hasField when field is set to "John"
+        assert(response.hasField) { "Expected hasField to be true when field is set to 'John'" }
+        println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
+    }
+
+    @Test
+    fun `test TestOptionalField - comprehensive scenarios`() = runBlocking {
+        // Create a client stub
+        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+        println("\n=== Comprehensive TestOptionalField Tests ===")
+
+        // Test various scenarios
+        val testCases = listOf(
+            Triple("Field not set", TestOptionalFieldRequestKt(), false),
+            Triple("Field set to empty string", TestOptionalFieldRequestKt(field = ""), true),
+            Triple("Field set to 'John'", TestOptionalFieldRequestKt(field = "John"), true),
+            Triple("Field set to whitespace", TestOptionalFieldRequestKt(field = " "), true),
+            Triple("Field set to null string", TestOptionalFieldRequestKt(field = "null"), true),
+            Triple("Field set to long string", TestOptionalFieldRequestKt(field = "This is a very long string to test"), true)
+        )
+
+        testCases.forEach { (description, request, expectedHasField) ->
+            println("\nTesting: $description")
+            val response = stub.testOptionalField(request)
+
+            assert(response.hasField == expectedHasField) { "Expected hasField to be $expectedHasField for case: $description" }
+
+            val fieldValue = if (request.hasField()) request.field else "<not set>"
+            println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
+        }
+
+        println("\n=== All comprehensive tests passed! ===")
+    }
+
+    @Test
+    fun `test TestOptionalField serialization`() {
+        // Test serialization/deserialization of TestOptionalFieldRequest with optional field
+
+        // Test case 1: Field not set
+        val requestNoField = TestOptionalFieldRequestKt()
+        val javaProtoNoField = requestNoField.toJavaProto()
+        val bytesNoField = javaProtoNoField.toByteArray()
+        val deserializedNoField = TestOptionalFieldRequest.parseFrom(bytesNoField).toKotlinProto()
+
+        assert(requestNoField == deserializedNoField) { "Request with no field should serialize correctly" }
+        assert(!deserializedNoField.hasField()) { "Deserialized request should not have field set" }
+
+        // Test case 2: Field set to empty string
+        val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+        val javaProtoEmptyField = requestEmptyField.toJavaProto()
+        val bytesEmptyField = javaProtoEmptyField.toByteArray()
+        val deserializedEmptyField = TestOptionalFieldRequest.parseFrom(bytesEmptyField).toKotlinProto()
+
+        assert(requestEmptyField == deserializedEmptyField) { "Request with empty field should serialize correctly" }
+        assert(deserializedEmptyField.hasField()) { "Deserialized request should have field set" }
+        assert(deserializedEmptyField.field == "") { "Deserialized field should be empty string" }
+
+        // Test case 3: Field set to "John"
+        val requestWithField = TestOptionalFieldRequestKt(field = "John")
+        val javaProtoWithField = requestWithField.toJavaProto()
+        val bytesWithField = javaProtoWithField.toByteArray()
+        val deserializedWithField = TestOptionalFieldRequest.parseFrom(bytesWithField).toKotlinProto()
+
+        assert(requestWithField == deserializedWithField) { "Request with field should serialize correctly" }
+        assert(deserializedWithField.hasField()) { "Deserialized request should have field set" }
+        assert(deserializedWithField.field == "John") { "Deserialized field should be 'John'" }
+
+        // Test TestOptionalFieldResponse
+        val responseTrue = TestOptionalFieldResponseKt(hasField = true)
+        val javaProtoResponseTrue = responseTrue.toJavaProto()
+        val bytesResponseTrue = javaProtoResponseTrue.toByteArray()
+        val deserializedResponseTrue = TestOptionalFieldResponse.parseFrom(bytesResponseTrue).toKotlinProto()
+
+        assert(responseTrue == deserializedResponseTrue) { "Response with true should serialize correctly" }
+        assert(deserializedResponseTrue.hasField) { "Deserialized response should have hasField true" }
+
+        val responseFalse = TestOptionalFieldResponseKt(hasField = false)
+        val javaProtoResponseFalse = responseFalse.toJavaProto()
+        val bytesResponseFalse = javaProtoResponseFalse.toByteArray()
+        val deserializedResponseFalse = TestOptionalFieldResponse.parseFrom(bytesResponseFalse).toKotlinProto()
+
+        assert(responseFalse == deserializedResponseFalse) { "Response with false should serialize correctly" }
+        assert(!deserializedResponseFalse.hasField) { "Deserialized response should have hasField false" }
+    }
+
     /**
      * Implementation of the PersonService for testing.
      */
@@ -552,6 +678,18 @@ class ProtoExampleTest {
                 items = scheduleItems,
                 `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
             )
+        }
+
+        override suspend fun testOptionalField(request: TestOptionalFieldRequestKt): TestOptionalFieldResponseKt {
+            println("Test server received testOptionalField request")
+
+            // Check if the optional field is present using hasField() method
+            val hasField = request.hasField()
+            val fieldValue = if (hasField) request.field else "null"
+
+            println("Test server - Field present: $hasField, field value: '$fieldValue'")
+
+            return TestOptionalFieldResponseKt(hasField = hasField)
         }
     }
 }

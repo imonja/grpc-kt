@@ -156,6 +156,19 @@ object PartialServerExample {
                 )
             }
 
+        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                println("Partial server received testOptionalField request")
+
+                // Check if the optional field is present using hasField() method
+                val hasField = request.hasField()
+                val fieldValue = if (hasField) request.field else "null"
+
+                println("Field present: $hasField, field value: '$fieldValue'")
+
+                TestOptionalFieldResponseKt(hasField = hasField)
+            }
+
         // Create the service using the PartialServerBuilder
         val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
             getPerson = getPerson,
@@ -165,7 +178,8 @@ object PartialServerExample {
             chatWithPerson = chatWithPerson,
             updateContactInfo = updateContactInfo,
             updateNotificationSettings = updateNotificationSettings,
-            getSchedule = getSchedule
+            getSchedule = getSchedule,
+            testOptionalField = testOptionalField
         )
 
         // Start the gRPC server with the partial service
@@ -310,6 +324,27 @@ object PartialServerExample {
             scheduleResponse.items.forEach { item ->
                 println("Schedule item: ${item.id} - ${item.title}: ${item.description}")
             }
+
+            // Example 8: TestOptionalField - Test optional field behavior
+            println("\n--- Test Optional Field Example ---")
+
+            // Test 1: Field not set
+            println("Test 1: Field not set")
+            val requestNoField = TestOptionalFieldRequestKt()
+            val responseNoField = stub.testOptionalField(requestNoField)
+            println("Has field: ${responseNoField.hasField}")
+
+            // Test 2: Field set to empty string
+            println("Test 2: Field set to empty string")
+            val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+            val responseEmptyField = stub.testOptionalField(requestEmptyField)
+            println("Has field: ${responseEmptyField.hasField}")
+
+            // Test 3: Field set to "John"
+            println("Test 3: Field set to 'John'")
+            val requestWithField = TestOptionalFieldRequestKt(field = "John")
+            val responseWithField = stub.testOptionalField(requestWithField)
+            println("Has field: ${responseWithField.hasField}")
         } finally {
             // Shutdown the channel and server
             println("\nShutting down partial client and server")

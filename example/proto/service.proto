@@ -18,6 +18,7 @@ service PersonService {
     rpc UpdateContactInfo(UpdateContactInfoRequest) returns (UpdateContactInfoResponse) {}
     rpc UpdateNotificationSettings(UpdateNotificationSettingsRequest) returns (UpdateNotificationSettingsResponse) {}
     rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse) {}
+    rpc TestOptionalField(TestOptionalFieldRequest) returns (TestOptionalFieldResponse) {}
 }
 
 message GetPersonRequest {
@@ -81,4 +82,11 @@ message GetScheduleResponse {
     }
     repeated ScheduleItem items = 1;
     google.protobuf.Timestamp when = 2;
+}
+
+message TestOptionalFieldRequest {
+    optional string field = 1;
+}
+message TestOptionalFieldResponse {
+    bool has_field = 1;
 }

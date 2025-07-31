@@ -393,6 +393,27 @@ object ProtoExample {
                 println("Schedule item: ${item.id} - ${item.title}")
                 println("  Description: ${item.description}")
             }
+
+            // Example 8: TestOptionalField - Test optional field behavior
+            println("\n--- TestOptionalField Example ---")
+
+            // Test 1: Field not set
+            println("Test 1: Field not set")
+            val requestNoField = TestOptionalFieldRequestKt()
+            val responseNoField = stub.testOptionalField(requestNoField)
+            println("Has field: ${responseNoField.hasField}")
+
+            // Test 2: Field set to empty string
+            println("Test 2: Field set to empty string")
+            val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+            val responseEmptyField = stub.testOptionalField(requestEmptyField)
+            println("Has field: ${responseEmptyField.hasField}")
+
+            // Test 3: Field set to "John"
+            println("Test 3: Field set to 'John'")
+            val requestWithField = TestOptionalFieldRequestKt(field = "John")
+            val responseWithField = stub.testOptionalField(requestWithField)
+            println("Has field: ${responseWithField.hasField}")
         } finally {
             // Shutdown the channel and server
             println("\nShutting down client and server")
@@ -520,6 +541,18 @@ object ProtoExample {
                 items = scheduleItems,
                 `when` = java.time.LocalDateTime.now() // Using backticks for Kotlin keyword
             )
+        }
+
+        override suspend fun testOptionalField(request: TestOptionalFieldRequestKt): TestOptionalFieldResponseKt {
+            println("Server received testOptionalField request")
+
+            // Check if the optional field is present using hasField() method
+            val hasField = request.hasField()
+            val fieldValue = if (hasField) request.field else "null"
+
+            println("Field present: $hasField, field value: '$fieldValue'")
+
+            return TestOptionalFieldResponseKt(hasField = hasField)
         }
     }
 }
