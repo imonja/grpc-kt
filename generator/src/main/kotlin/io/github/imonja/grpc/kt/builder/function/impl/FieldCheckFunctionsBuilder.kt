@@ -2,6 +2,7 @@ package io.github.imonja.grpc.kt.builder.function.impl
 
 import com.google.protobuf.Descriptors.Descriptor
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.PropertySpec
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.import.FunSpecsWithImports
 import io.github.imonja.grpc.kt.toolkit.import.Import
@@ -35,12 +36,12 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
 
             if (field.isProtoOptional) {
                 val fieldName = field.jsonName
-                val methodName = "has${fieldName.capitalize()}"
+                val methodName = "has${fieldName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }}"
 
                 val methodBuilder = FunSpec.builder(methodName)
                     .receiver(generatedType)
                     .returns(Boolean::class)
-                    .addStatement("return this.%L != null", normalizeFieldName(fieldName))
+                    .addStatement("return this.%N != null", PropertySpec.builder(fieldName, String::class).build())
 
                 if (field.isExplicitlyOptional) {
                     methodBuilder.addKdoc("Checks if the explicitly optional field [%L] was set.", fieldName)
@@ -61,26 +62,5 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
         }
 
         return FunSpecsWithImports(funSpecs, imports)
-    }
-
-    // TODO: refactoring this sometimes
-    val kotlinKeywords = setOf(
-        "as", "break", "class", "continue", "do", "else", "false", "for",
-        "fun", "if", "in", "interface", "is", "null", "object", "package",
-        "return", "super", "this", "throw", "true", "try", "typealias",
-        "typeof", "val", "var", "when", "while", "by", "catch", "constructor",
-        "delegate", "dynamic", "field", "file", "finally", "get", "import",
-        "init", "param", "property", "receiver", "set", "setparam", "where",
-        "actual", "abstract", "annotation", "companion", "const", "crossinline",
-        "data", "enum", "expect", "external", "final", "infix", "inline",
-        "inner", "internal", "lateinit", "noinline", "open", "operator",
-        "out", "override", "private", "protected", "public", "reified",
-        "sealed", "suspend", "tailrec", "vararg"
-    )
-
-    fun normalizeFieldName(fieldName: String): String = if (fieldName in kotlinKeywords) {
-        "`$fieldName`"
-    } else {
-        fieldName
     }
 }
