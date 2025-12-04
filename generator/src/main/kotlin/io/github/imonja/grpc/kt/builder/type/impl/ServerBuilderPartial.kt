@@ -1,13 +1,19 @@
 package io.github.imonja.grpc.kt.builder.type.impl
 
+import com.google.protobuf.Descriptors
 import com.google.protobuf.Descriptors.ServiceDescriptor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import io.github.imonja.grpc.kt.builder.function.impl.ToJavaProto
+import io.github.imonja.grpc.kt.builder.function.impl.ToKotlinProto
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.grpcClass
 import io.github.imonja.grpc.kt.toolkit.import.Import
 import io.github.imonja.grpc.kt.toolkit.import.TypeSpecsWithImports
+import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
+import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
+import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.grpc.BindableService
 import io.grpc.MethodDescriptor
 import io.grpc.ServerServiceDefinition
@@ -22,6 +28,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         val stubs = descriptor.methods.map {
             ServerBuilder().serviceMethodStub(it)
         }
+        val methodDescriptors = descriptor.methods
 
         val objectName = "${descriptor.name}GrpcPartialKt"
         val objectBuilder = TypeSpec.objectBuilder(objectName)
@@ -36,18 +43,25 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         objectBuilder.addFunction(createBindableFunSpec)
 
         // Create a coroutine-based partial implementation for PersonService binding
-        val coroutineImplPartialFunSpec = generateCoroutineImplPartialFunSpec(descriptor, stubs)
+        val (coroutineImplPartialFunSpec, coroutineImports) = generateCoroutineImplPartialFunSpec(
+            descriptor,
+            stubs,
+            methodDescriptors
+        )
         objectBuilder.addFunction(coroutineImplPartialFunSpec)
 
         // Add an extension function to bind service to ServerServiceDefinition.Builder
         val bindFunSpec = generateBindFunSpec()
         objectBuilder.addFunction(bindFunSpec)
 
+        // Collect all imports from the coroutine implementation function
+        val allImports = stubs.flatMap { it.imports }.toSet() + coroutineImports + setOf(
+            Import("kotlinx.coroutines.flow", listOf("map"))
+        )
+
         return TypeSpecsWithImports(
             typeSpecs = listOf(objectBuilder.build()),
-            imports = stubs.flatMap { it.imports }.toSet() + setOf(
-                Import("kotlinx.coroutines.flow", listOf("map"))
-            )
+            imports = allImports
         )
     }
 
@@ -105,8 +119,9 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
 
     private fun generateCoroutineImplPartialFunSpec(
         descriptor: ServiceDescriptor,
-        stubs: List<ServerBuilder.MethodStub>
-    ): FunSpec {
+        stubs: List<ServerBuilder.MethodStub>,
+        methodDescriptors: List<Descriptors.MethodDescriptor>
+    ): Pair<FunSpec, Set<Import>> {
         val coroutineImplPartialFunSpec = FunSpec.builder("${descriptor.name}CoroutineImplPartial")
             .addAnnotation(
                 AnnotationSpec.builder(Suppress::class)
@@ -132,68 +147,87 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             )
         }
 
+        val allImports = mutableSetOf<Import>()
+
         coroutineImplPartialFunSpec.addCode(
             "return createBindableService(%M()) {\n",
             descriptor.grpcClass.member("getServiceDescriptor")
         )
-        stubs.forEach { stub ->
+
+        stubs.zip(methodDescriptors).forEach { (stub, methodDescriptor) ->
             val name = stub.methodSpec.name
             val methodGetter = descriptor.grpcClass.member("get${name.replaceFirstChar { it.uppercase() }}Method")
 
-            val reqKt = stub.methodSpec.parameters[0].type
             val respKt = stub.methodSpec.returnType
 
-            val reqKtBase = if (reqKt is ParameterizedTypeName && reqKt.rawType.simpleName == "Flow") {
-                reqKt.typeArguments[0]
-            } else {
-                reqKt
-            }
             val respKtBase = if (respKt is ParameterizedTypeName && respKt.rawType.simpleName == "Flow") {
                 respKt.typeArguments[0]
             } else {
                 respKt
             }
 
-            val reqJava = reqKtBase.withoutKtSuffix()
-            val respJava = respKtBase
-
             val isEmptyReturn = respKtBase.copy(nullable = false) == UNIT
 
-            val toJavaProtoExpr = if (isEmptyReturn) {
-                "(fun Unit.(): Empty { return Empty.getDefaultInstance() })"
+            // Get transform templates from centralized builders
+            val (requestTransformTemplate, reqImports) = ToKotlinProto
+                .messageTypeTransformCodeTemplate(methodDescriptor.inputType)
+
+            val (responseTransformTemplate, resImports) = if (isEmptyReturn) {
+                TransformTemplateWithImports.of("{ Empty.getDefaultInstance() }")
             } else {
-                "%T::toJavaProto"
+                ToJavaProto.messageTypeTransformCodeTemplate(methodDescriptor.outputType)
             }
 
-            if (isEmptyReturn) {
-                coroutineImplPartialFunSpec.addCode(
-                    """
-                        bind(
-                            pair = %M() to $name::handle,
-                            toKotlinProto = %T::toKotlinProto,
-                            toJavaProto = $toJavaProtoExpr
-                        )
-                    """.trimIndent() + "\n",
-                    methodGetter,
-                    reqJava
-                )
+            allImports.addAll(reqImports)
+            allImports.addAll(resImports)
+
+            // Generate function references for bind method
+            val requestFunctionRef = if (requestTransformTemplate.value == "%L.toKotlinProto()") {
+                CodeBlock.of("{ %L }", requestTransformTemplate.safeCall("this"))
             } else {
-                coroutineImplPartialFunSpec.addCode(
-                    """
-                        bind(
-                            pair = %M() to $name::handle,
-                            toKotlinProto = %T::toKotlinProto,
-                            toJavaProto = $toJavaProtoExpr
-                        )
-                    """.trimIndent() + "\n",
-                    methodGetter,
-                    reqJava,
-                    respJava
-                )
+                CodeBlock.of("{ %L }", requestTransformTemplate.safeCall("this"))
             }
+
+            val responseFunctionRef = if (isEmptyReturn) {
+                responseTransformTemplate.safeCall("Unit")
+            } else if (responseTransformTemplate.value == "%L.toJavaProto()") {
+                CodeBlock.of("{ %L }", responseTransformTemplate.safeCall("this"))
+            } else {
+                CodeBlock.of("{ %L }", responseTransformTemplate.safeCall("this"))
+            }
+
+            // Get the input and output type names for the bind call
+            // Java protobuf types (without Kt suffix) for ReqT, RespT
+            val inputJavaTypeName = methodDescriptor.inputType.protobufJavaTypeName
+            val outputJavaTypeName = methodDescriptor.outputType.protobufJavaTypeName
+
+            // Kotlin types (with Kt suffix) for ReqKotlin, RespKotlin
+            val inputKtTypeName = methodDescriptor.inputType.protobufKotlinTypeName
+            val outputKtTypeName = if (isEmptyReturn) {
+                UNIT
+            } else {
+                methodDescriptor.outputType.protobufKotlinTypeName
+            }
+
+            coroutineImplPartialFunSpec.addCode(
+                """
+                    bind<%T, %T, %T, %T>(
+                        pair = %M() to $name::handle,
+                        toKotlinProto = %L,
+                        toJavaProto = %L
+                    )
+                """.trimIndent() + "\n",
+                inputJavaTypeName,
+                outputJavaTypeName,
+                inputKtTypeName,
+                outputKtTypeName,
+                methodGetter,
+                requestFunctionRef,
+                responseFunctionRef
+            )
         }
         coroutineImplPartialFunSpec.addCode("}")
-        return coroutineImplPartialFunSpec.build()
+        return coroutineImplPartialFunSpec.build() to allImports
     }
 
     private fun generateBindFunSpec(): FunSpec {
@@ -241,17 +275,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { req ->
-                                            val reqKt = toKotlinProto(req)
-                                            val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)
-                                            toJavaProto(respKt)
-                                            }
-                                    """.trimMargin()
-                                )
-                            )
+                            .add(generateUnaryImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -267,19 +291,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { req ->
-                                            val reqKt = toKotlinProto(req)
-                                            (implementationRaw as (ReqKotlin) -> %T<RespKotlin>)
-                                            .invoke(reqKt)
-                                            .map(toJavaProto)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateServerStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -295,18 +307,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { reqFlow ->
-                                            val adaptedFlow = reqFlow.map(toKotlinProto)
-                                            val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)
-                                            toJavaProto(resultKt)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateClientStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -322,18 +323,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { reqFlow ->
-                                            val adaptedFlow = reqFlow.map(toKotlinProto)
-                                            (implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow"),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateBidiStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -348,20 +338,63 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         return bindFunSpec
     }
 
-    private fun TypeName.withoutKtSuffix(): TypeName = when (this) {
-        is ClassName -> {
-            if (simpleName.endsWith("Kt")) {
-                ClassName(packageName, simpleName.removeSuffix("Kt"))
-            } else {
-                this
-            }
-        }
+    private fun generateUnaryImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { req ->")
+            .indent()
+            .addStatement("val reqKt = toKotlinProto(req)")
+            .addStatement("val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)")
+            .addStatement("toJavaProto(respKt)")
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
 
-        is ParameterizedTypeName -> {
-            (rawType.withoutKtSuffix() as ClassName)
-                .parameterizedBy(*typeArguments.map { it.withoutKtSuffix() }.toTypedArray())
-        }
+    private fun generateServerStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { req ->")
+            .indent()
+            .addStatement("val reqKt = toKotlinProto(req)")
+            .addStatement(
+                "(implementationRaw as (ReqKotlin) -> %T<RespKotlin>)",
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .indent()
+            .addStatement(".invoke(reqKt)")
+            .addStatement(".map(toJavaProto)")
+            .unindent()
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
 
-        else -> this
+    private fun generateClientStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { reqFlow ->")
+            .indent()
+            .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
+            .addStatement(
+                "val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)",
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .addStatement("toJavaProto(resultKt)")
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
+
+    private fun generateBidiStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { reqFlow ->")
+            .indent()
+            .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
+            .addStatement(
+                "(implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)",
+                ClassName("kotlinx.coroutines.flow", "Flow"),
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .unindent()
+            .addStatement("}")
+            .build()
     }
 }

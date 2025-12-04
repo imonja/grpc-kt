@@ -1,0 +1,100 @@
+name: Publish to GitHub Packages and Maven Central
+
+on:
+    push:
+        branches: [ main ]
+        tags:
+            - '*'
+
+jobs:
+    publish-github:
+        runs-on: ubuntu-latest
+        concurrency: publishing-ci
+        permissions:
+            packages: write
+            contents: write
+            actions: read
+            checks: write
+            id-token: write
+        name: Build & Test & Publish
+
+        steps:
+            -   uses: actions/checkout@v6
+                with:
+                    fetch-depth: 0
+            -   name: Setup JDK
+                uses: actions/setup-java@v5.0.0
+                with:
+                    distribution: 'temurin'
+                    java-version: 21
+            -   name: Setup Gradle for a non-wrapper project
+                uses: gradle/actions/setup-gradle@v5
+                with:
+                    gradle-version: wrapper
+
+            -   name: Build lib
+                run: ./gradlew assemble
+
+            -   name: Run tests
+                run: ./gradlew ktlintCheck test --info
+
+            -   uses: paulhatch/semantic-version@v5.4.0
+                id: tag
+                with:
+                    bump_each_commit: true
+                    bump_each_commit_patch_pattern: "(BUMP)"
+                    tag_prefix: ""
+
+            -   name: Get version
+                id: version
+                run: |
+                    if [[ ${GITHUB_REF} == refs/tags/* ]]; then
+                      echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+                      echo "is_tag=true" >> $GITHUB_OUTPUT
+                    else
+                      echo "version=${{ steps.tag.outputs.version }}" >> $GITHUB_OUTPUT
+                      echo "is_tag=false" >> $GITHUB_OUTPUT
+                    fi
+
+            -   name: Publish Main Libraries
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: ./gradlew -Pversion=${{ steps.version.outputs.version }} publish
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Publish Gradle Plugin
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: ./gradlew :gradle-plugin:publish -Pversion=${{ steps.version.outputs.version }}
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Publish to Gradle Plugin Portal
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: ./gradlew :gradle-plugin:publishPlugins -Pversion=${{ steps.version.outputs.version }}
+                env:
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+                    GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+
+            -   uses: actions/create-release@v1.1.4
+                if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}
+                id: create_release
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                    tag_name: ${{ steps.version.outputs.version }}
+                    release_name: ${{ steps.version.outputs.version }}
+                    body: |
+                        Changes in this Release
+                        ${{ steps.notes.outputs.CHANGELOG }}
