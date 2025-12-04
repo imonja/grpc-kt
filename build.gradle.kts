@@ -8,7 +8,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
-    id("com.vanniktech.maven.publish") version "0.29.0" apply false
+    id("com.vanniktech.maven.publish") version "0.35.0" apply false
 }
 
 group = "io.github.imonja"
@@ -133,14 +133,8 @@ subprojects {
             }
         }
 
-        // Only publish to Maven Central for non-SNAPSHOT versions
-        if (!version.toString().contains("SNAPSHOT")) {
-            publishToMavenCentral(
-                host = com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL,
-                automaticRelease = true
-            )
-            signAllPublications()
-        }
+        publishToMavenCentral(automaticRelease = true)
+        signAllPublications()
     }
 
     configure<KtlintExtension> {
