@@ -169,13 +169,13 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             val isEmptyReturn = respKtBase.copy(nullable = false) == UNIT
 
             // Get transform templates from centralized builders
-            val (requestTransformTemplate, reqImports) = ToKotlinProto.Companion
+            val (requestTransformTemplate, reqImports) = ToKotlinProto
                 .messageTypeTransformCodeTemplate(methodDescriptor.inputType)
 
             val (responseTransformTemplate, resImports) = if (isEmptyReturn) {
-                TransformTemplateWithImports.Companion.of("{ Empty.getDefaultInstance() }")
+                TransformTemplateWithImports.of("{ Empty.getDefaultInstance() }")
             } else {
-                ToJavaProto.Companion.messageTypeTransformCodeTemplate(methodDescriptor.outputType)
+                ToJavaProto.messageTypeTransformCodeTemplate(methodDescriptor.outputType)
             }
 
             allImports.addAll(reqImports)
@@ -275,17 +275,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { req ->
-                                            val reqKt = toKotlinProto(req)
-                                            val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)
-                                            toJavaProto(respKt)
-                                            }
-                                    """.trimMargin()
-                                )
-                            )
+                            .add(generateUnaryImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -301,19 +291,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { req ->
-                                            val reqKt = toKotlinProto(req)
-                                            (implementationRaw as (ReqKotlin) -> %T<RespKotlin>)
-                                            .invoke(reqKt)
-                                            .map(toJavaProto)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateServerStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -329,18 +307,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { reqFlow ->
-                                            val adaptedFlow = reqFlow.map(toKotlinProto)
-                                            val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)
-                                            toJavaProto(resultKt)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateClientStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -356,18 +323,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                             .indent()
                             .addStatement("context = %T,", EmptyCoroutineContext::class)
                             .addStatement("descriptor = descriptor,")
-                            .add(
-                                CodeBlock.of(
-                                    """
-                                            implementation = { reqFlow ->
-                                            val adaptedFlow = reqFlow.map(toKotlinProto)
-                                            (implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)
-                                            }
-                                    """.trimMargin(),
-                                    ClassName("kotlinx.coroutines.flow", "Flow"),
-                                    ClassName("kotlinx.coroutines.flow", "Flow")
-                                )
-                            )
+                            .add(generateBidiStreamingImplementation())
                             .unindent()
                             .addStatement(")")
                             .build()
@@ -380,5 +336,65 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             )
             .build()
         return bindFunSpec
+    }
+
+    private fun generateUnaryImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { req ->")
+            .indent()
+            .addStatement("val reqKt = toKotlinProto(req)")
+            .addStatement("val respKt = (implementationRaw as suspend (ReqKotlin) -> RespKotlin).invoke(reqKt)")
+            .addStatement("toJavaProto(respKt)")
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
+
+    private fun generateServerStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { req ->")
+            .indent()
+            .addStatement("val reqKt = toKotlinProto(req)")
+            .addStatement(
+                "(implementationRaw as (ReqKotlin) -> %T<RespKotlin>)",
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .indent()
+            .addStatement(".invoke(reqKt)")
+            .addStatement(".map(toJavaProto)")
+            .unindent()
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
+
+    private fun generateClientStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { reqFlow ->")
+            .indent()
+            .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
+            .addStatement(
+                "val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)",
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .addStatement("toJavaProto(resultKt)")
+            .unindent()
+            .addStatement("}")
+            .build()
+    }
+
+    private fun generateBidiStreamingImplementation(): CodeBlock {
+        return CodeBlock.builder()
+            .addStatement("implementation = { reqFlow ->")
+            .indent()
+            .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
+            .addStatement(
+                "(implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)",
+                ClassName("kotlinx.coroutines.flow", "Flow"),
+                ClassName("kotlinx.coroutines.flow", "Flow")
+            )
+            .unindent()
+            .addStatement("}")
+            .build()
     }
 }
