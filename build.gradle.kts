@@ -133,7 +133,7 @@ subprojects {
             }
         }
 
-        publishToMavenCentral(automaticRelease = true)
+        publishToMavenCentral()
         signAllPublications()
     }
 

@@ -162,7 +162,7 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         }
     }
 
-    publishToMavenCentral(automaticRelease = true)
+    publishToMavenCentral()
     signAllPublications()
 }
 
