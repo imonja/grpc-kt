@@ -66,29 +66,27 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
     }
 
     private fun generateInterfaceTypeSpecs(stubs: List<ServerBuilder.MethodStub>): List<TypeSpec> {
-        val interfacesTypeSpecs = stubs.map { stub ->
+        return stubs.map { stub ->
             val method = stub.methodSpec
             val ifaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
 
-            val methodFun = FunSpec.builder("handle")
-                .addModifiers(KModifier.ABSTRACT)
+            val methodFun = FunSpec.builder("invoke")
+                .addModifiers(KModifier.PUBLIC, KModifier.OPERATOR, KModifier.ABSTRACT)
                 .apply {
-                    if (method.modifiers.contains(KModifier.SUSPEND)) addModifiers(KModifier.SUSPEND)
+                    if (KModifier.SUSPEND in method.modifiers) addModifiers(KModifier.SUSPEND)
                 }
-                .addParameter("request", method.parameters[0].type)
+                .addParameter("request", method.parameters.first().type)
                 .returns(method.returnType)
                 .build()
 
             TypeSpec.funInterfaceBuilder(ifaceName)
-                .addModifiers(KModifier.PUBLIC)
                 .addFunction(methodFun)
                 .build()
         }
-        return interfacesTypeSpecs
     }
 
     private fun generateCreateBindableFunSpec(): FunSpec {
-        val createBindableFunSpec = FunSpec.builder("createBindableService")
+        return FunSpec.builder("createBindableService")
             .addModifiers(KModifier.PRIVATE)
             .addParameter(
                 "serviceDescriptor",
@@ -114,7 +112,6 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                 ServerServiceDefinition::class
             )
             .build()
-        return createBindableFunSpec
     }
 
     private fun generateCoroutineImplPartialFunSpec(
@@ -212,7 +209,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             coroutineImplPartialFunSpec.addCode(
                 """
                     bind<%T, %T, %T, %T>(
-                        pair = %M() to $name::handle,
+                        pair = %M() to $name::invoke,
                         toKotlinProto = %L,
                         toJavaProto = %L
                     )
