@@ -59,16 +59,16 @@ jobs:
                       echo "is_tag=false" >> $GITHUB_OUTPUT
                     fi
 
-#            -   name: Publish Libraries
-#                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-#                run: ./gradlew -PreleaseVersion=${{ steps.version.outputs.version }} publish -x check
-#                env:
-#                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#                    GITHUB_USERNAME: ${{ github.actor }}
-#                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
-#                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
-#                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-#                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+            -   name: Publish Libraries
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: ./gradlew -PreleaseVersion=${{ steps.version.outputs.version }} publish -x check
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
 
             -   name: Publish Gradle Plugin to GitHub Packages and Maven Central
                 if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
