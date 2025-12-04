@@ -7,7 +7,14 @@ on:
             - '*'
 
 jobs:
-    publish-github:
+    ci-checks:
+        uses: ./.github/workflows/ci-checks.yml
+        with:
+            run-ktlint: true
+            run-tests: true
+
+    publish-release:
+        needs: ci-checks
         runs-on: ubuntu-latest
         concurrency: publishing-ci
         permissions:
@@ -16,27 +23,23 @@ jobs:
             actions: read
             checks: write
             id-token: write
-        name: Build & Test & Publish
+        name: Publish Libraries
 
         steps:
             -   uses: actions/checkout@v6
                 with:
                     fetch-depth: 0
+
             -   name: Setup JDK
                 uses: actions/setup-java@v5.0.0
                 with:
                     distribution: 'temurin'
                     java-version: 21
+
             -   name: Setup Gradle for a non-wrapper project
                 uses: gradle/actions/setup-gradle@v5
                 with:
                     gradle-version: wrapper
-
-            -   name: Build lib
-                run: ./gradlew assemble
-
-            -   name: Run tests
-                run: ./gradlew ktlintCheck test --info
 
             -   uses: paulhatch/semantic-version@v5.4.0
                 id: tag
@@ -56,9 +59,9 @@ jobs:
                       echo "is_tag=false" >> $GITHUB_OUTPUT
                     fi
 
-            -   name: Publish Main Libraries
+            -   name: Publish Libraries
                 if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-                run: ./gradlew -Pversion=${{ steps.version.outputs.version }} publish
+                run: ./gradlew -PreleaseVersion=${{ steps.version.outputs.version }} publish
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GITHUB_USERNAME: ${{ github.actor }}
@@ -67,9 +70,9 @@ jobs:
                     ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
 
-            -   name: Publish Gradle Plugin
+            -   name: Publish Gradle Plugin to GitHub Packages and Maven Central
                 if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-                run: ./gradlew :gradle-plugin:publish -Pversion=${{ steps.version.outputs.version }}
+                run: ./gradlew :gradle-plugin:publish -PreleaseVersion=${{ steps.version.outputs.version }}
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GITHUB_USERNAME: ${{ github.actor }}
@@ -78,9 +81,9 @@ jobs:
                     ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
 
-            -   name: Publish to Gradle Plugin Portal
-                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-                run: ./gradlew :gradle-plugin:publishPlugins -Pversion=${{ steps.version.outputs.version }}
+            -   name: Publish Gradle Plugin to Gradle Plugin Portal
+                if: ${{ (steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none') && !contains(steps.version.outputs.version, 'SNAPSHOT') }}
+                run: ./gradlew :gradle-plugin:publishPlugins -PreleaseVersion=${{ steps.version.outputs.version }}
                 env:
                     ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
                     ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}

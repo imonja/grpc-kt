@@ -6,7 +6,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
-    id("com.vanniktech.maven.publish") version "0.29.0"
+    id("com.vanniktech.maven.publish") version "0.35.0"
     id("com.gradle.plugin-publish") version "1.3.0"
 }
 
@@ -162,14 +162,8 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
         }
     }
 
-    // Only publish to Maven Central for non-SNAPSHOT versions
-    if (!version.toString().contains("SNAPSHOT")) {
-        publishToMavenCentral(
-            host = com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL,
-            automaticRelease = true
-        )
-        signAllPublications()
-    }
+    publishToMavenCentral(automaticRelease = true)
+    signAllPublications()
 }
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
