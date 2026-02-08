@@ -19,7 +19,7 @@ class ConversionFunctionsBuilder {
      */
     fun build(descriptor: Descriptor): FunSpecsWithImports {
         if (descriptor.isGooglePackageType() || descriptor.options.mapEntry) {
-            return FunSpecsWithImports.Companion.EMPTY
+            return FunSpecsWithImports.EMPTY
         }
 
         val funSpecs = mutableListOf<FunSpec>()

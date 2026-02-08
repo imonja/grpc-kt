@@ -46,6 +46,72 @@ class ProtoExampleTest {
     }
 
     @Test
+    fun `test Person DSL builder`() {
+        val person = PersonKt {
+            name = "DSL User"
+            age = 25
+            hobbies = listOf("Coding", "Gaming")
+            gender = PersonKt.GenderKt.MALE
+            address = PersonKt.AddressKt {
+                street = "DSL Street"
+                city = "Builder City"
+                country = "Kotlin"
+            }
+        }
+
+        assert(person.name == "DSL User")
+        assert(person.age == 25)
+        assert(person.hobbies.size == 2)
+        assert(person.gender == PersonKt.GenderKt.MALE)
+        assert(person.address?.city == "Builder City")
+
+        // Verify it matches manual construction
+        val manual = PersonKt(
+            name = "DSL User",
+            age = 25,
+            hobbies = listOf("Coding", "Gaming"),
+            gender = PersonKt.GenderKt.MALE,
+            address = PersonKt.AddressKt(
+                street = "DSL Street",
+                city = "Builder City",
+                country = "Kotlin"
+            )
+        )
+        assert(person == manual)
+    }
+
+    @Test
+    fun `test ContactInfo DSL with oneof`() {
+        val contact = ContactInfoKt {
+            name = "Oneof User"
+            contactMethod = ContactInfoKt.ContactMethod.Email(email = "dsl@example.com")
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
+        }
+
+        assert(contact.name == "Oneof User")
+        assert(contact.contactMethod is ContactInfoKt.ContactMethod.Email)
+        assert((contact.contactMethod as ContactInfoKt.ContactMethod.Email).email == "dsl@example.com")
+    }
+
+    @Test
+    fun `test GetScheduleResponse DSL with keyword field`() {
+        val now = LocalDateTime.now()
+        val response = GetScheduleResponseKt {
+            items = listOf(
+                GetScheduleResponseKt.ScheduleItemKt {
+                    id = "1"
+                    title = "DSL Task"
+                }
+            )
+            `when` = now
+        }
+
+        assert(response.items.size == 1)
+        assert(response.`when` == now)
+        assert(response.items[0].title == "DSL Task")
+    }
+
+    @Test
     fun `test creating and serializing Person message`() {
         // Create a Person using the Kotlin data class
         val person = PersonKt(

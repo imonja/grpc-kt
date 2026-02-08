@@ -2,12 +2,16 @@ package io.github.imonja.grpc.kt.builder.type.impl
 
 import com.google.protobuf.Descriptors.Descriptor
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
+import io.github.imonja.grpc.kt.toolkit.escapeIfNecessary
+import io.github.imonja.grpc.kt.toolkit.fieldNameToJsonName
 import io.github.imonja.grpc.kt.toolkit.import.Import
 import io.github.imonja.grpc.kt.toolkit.import.TypeSpecsWithImports
 import io.github.imonja.grpc.kt.toolkit.isExplicitlyOptional
@@ -27,7 +31,7 @@ class DataClassTypeBuilder(
 
     override fun build(descriptor: Descriptor): TypeSpecsWithImports {
         if (descriptor.isGooglePackageType() || descriptor.options.mapEntry) {
-            return TypeSpecsWithImports.Companion.EMPTY
+            return TypeSpecsWithImports.EMPTY
         }
 
         val imports = mutableSetOf<Import>()
@@ -125,7 +129,74 @@ class DataClassTypeBuilder(
         }
 
         dataClassBuilder.primaryConstructor(constructorBuilder.build())
-        dataClassBuilder.addType(TypeSpec.companionObjectBuilder().build())
+
+        // DSL Builder
+        val builderClassName = "Builder"
+        val builderTypeSpec = TypeSpec.classBuilder(builderClassName)
+        FunSpec.constructorBuilder()
+        val buildFunction = FunSpec.builder("build")
+            .returns(className)
+        val buildArgs = mutableListOf<String>()
+
+        // Process oneofs for builder
+        descriptor.realOneofs.forEach { oneOf ->
+            val oneOfJsonName = fieldNameToJsonName(oneOf.name)
+            val oneOfResult = oneOfBuilder.build(oneOf, descriptor)
+            val oneOfType = oneOfResult.oneOfType.copy(nullable = true)
+
+            builderTypeSpec.addProperty(
+                PropertySpec.builder(oneOfJsonName.escapeIfNecessary(), oneOfType)
+                    .mutable(true)
+                    .initializer("null")
+                    .build()
+            )
+            buildArgs.add("${oneOfJsonName.escapeIfNecessary()} = ${oneOfJsonName.escapeIfNecessary()}")
+        }
+
+        // Process regular fields for builder
+        for (field in descriptor.fields) {
+            if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet() || field.isExtension) {
+                continue
+            }
+
+            val fieldName = field.jsonName
+            val (fieldType, default) = typeMapper.mapProtoTypeToKotlinTypeAndDefaultValue(field)
+
+            builderTypeSpec.addProperty(
+                PropertySpec.builder(fieldName.escapeIfNecessary(), fieldType)
+                    .mutable(true)
+                    .initializer(default.code)
+                    .build()
+            )
+            buildArgs.add("${fieldName.escapeIfNecessary()} = ${fieldName.escapeIfNecessary()}")
+        }
+
+        buildFunction.addCode("return %T(\n", className)
+        buildFunction.addCode(buildArgs.joinToString(",\n") + "\n")
+        buildFunction.addCode(")\n")
+        builderTypeSpec.addFunction(buildFunction.build())
+        dataClassBuilder.addType(builderTypeSpec.build())
+
+        // Companion object with invoke operator
+        val companionBuilder = TypeSpec.companionObjectBuilder()
+            .addFunction(
+                FunSpec.builder("invoke")
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter(
+                        ParameterSpec.builder(
+                            "block",
+                            LambdaTypeName.get(
+                                receiver = ClassName("", builderClassName),
+                                returnType = com.squareup.kotlinpoet.UNIT
+                            )
+                        ).build()
+                    )
+                    .returns(className)
+                    .addStatement("return %L().apply(block).build()", builderClassName)
+                    .build()
+            )
+            .build()
+        dataClassBuilder.addType(companionBuilder)
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(dataClassBuilder.build()),
