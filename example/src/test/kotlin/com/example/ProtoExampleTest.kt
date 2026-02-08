@@ -60,21 +60,30 @@ class ProtoExampleTest {
             )
         )
 
-        // Convert to Java protobuf message
-        val javaProto = person.toJavaProto()
-
         // Serialize to binary format
-        val bytes = javaProto.toByteArray()
+        val bytes = person.toByteArray()
         println("Serialized size: ${bytes.size} bytes")
 
         // Deserialize from binary format
-        val deserializedJavaProto = Person.parseFrom(bytes)
-        val deserializedPerson = deserializedJavaProto.toKotlinProto()
+        val deserializedPerson = PersonKt.parseFrom(bytes)
 
         // Verify the deserialized object matches the original
         assert(person == deserializedPerson) { "Deserialized person should match the original" }
 
-        // Convert to JSON
+        // Test ByteString serialization/deserialization
+        val byteString = person.toByteString()
+        val deserializedFromByteString = PersonKt.parseFrom(byteString)
+        assert(person == deserializedFromByteString) { "ByteString serialization should work" }
+
+        // Test OutputStream/InputStream serialization/deserialization
+        val outputStream = java.io.ByteArrayOutputStream()
+        person.writeTo(outputStream)
+        val inputStream = java.io.ByteArrayInputStream(outputStream.toByteArray())
+        val deserializedFromStream = PersonKt.parseFrom(inputStream)
+        assert(person == deserializedFromStream) { "Stream serialization should work" }
+
+        // Convert to JSON (still requires Java proto for now as we use JsonFormat)
+        val javaProto = person.toJavaProto()
         val jsonPrinter = JsonFormat.printer().includingDefaultValueFields()
         val json = jsonPrinter.print(javaProto)
         println("JSON representation:\n$json")
@@ -103,8 +112,8 @@ class ProtoExampleTest {
             )
         )
 
-        val javaProto = person.toJavaProto()
-        val deserialized = javaProto.toKotlinProto()
+        val bytes = person.toByteArray()
+        val deserialized = PersonKt.parseFrom(bytes)
 
         assert(person == deserialized) { "Complex person should match after serialization" }
         assert(deserialized.hobbies.size == 4) { "Should have 4 hobbies" }
@@ -253,9 +262,8 @@ class ProtoExampleTest {
         )
 
         // Serialize and deserialize
-        val emailJavaProto = contactInfoEmail.toJavaProto()
-        val emailBytes = emailJavaProto.toByteArray()
-        val deserializedEmail = ContactInfo.parseFrom(emailBytes).toKotlinProto()
+        val emailBytes = contactInfoEmail.toByteArray()
+        val deserializedEmail = ContactInfoKt.parseFrom(emailBytes)
         assert(contactInfoEmail == deserializedEmail) { "Email contact info serialization should work" }
 
         // Test ContactInfo with phone
@@ -266,9 +274,8 @@ class ProtoExampleTest {
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
 
-        val phoneJavaProto = contactInfoPhone.toJavaProto()
-        val phoneBytes = phoneJavaProto.toByteArray()
-        val deserializedPhone = ContactInfo.parseFrom(phoneBytes).toKotlinProto()
+        val phoneBytes = contactInfoPhone.toByteArray()
+        val deserializedPhone = ContactInfoKt.parseFrom(phoneBytes)
         assert(contactInfoPhone == deserializedPhone) { "Phone contact info serialization should work" }
 
         // Test ContactInfo with username
@@ -314,9 +321,8 @@ class ProtoExampleTest {
             notificationsEnabled = true
         )
 
-        val emailNotificationJavaProto = notificationSettingsEmail.toJavaProto()
-        val emailNotificationBytes = emailNotificationJavaProto.toByteArray()
-        val deserializedEmailNotification = NotificationSettings.parseFrom(emailNotificationBytes).toKotlinProto()
+        val emailNotificationBytes = notificationSettingsEmail.toByteArray()
+        val deserializedEmailNotification = NotificationSettingsKt.parseFrom(emailNotificationBytes)
         assert(notificationSettingsEmail == deserializedEmailNotification) { "Email notification settings serialization should work" }
 
         // Test NotificationSettings with SMS settings

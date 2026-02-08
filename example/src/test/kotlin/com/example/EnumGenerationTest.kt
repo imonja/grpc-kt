@@ -51,8 +51,11 @@ class EnumGenerationTest {
         assertEquals(Person.Gender.UNRECOGNIZED, PersonKt.GenderKt.UNRECOGNIZED.toJavaProto())
 
         // Test "else" branch in toKotlinProto
-        // Person.Gender.forNumber(-1) should return UNRECOGNIZED in Java
-        assertEquals(PersonKt.GenderKt.UNRECOGNIZED, Person.Gender.forNumber(-1).toKotlinProto())
+        // In Java Protobuf, forNumber() returns null for unknown values in some cases,
+        // but getting the field from a message returns UNRECOGNIZED for unknown values.
+        val unknownJava = Person.newBuilder().setGenderValue(-1).build().gender
+        assertEquals(Person.Gender.UNRECOGNIZED, unknownJava)
+        assertEquals(PersonKt.GenderKt.UNRECOGNIZED, unknownJava.toKotlinProto())
     }
 
     @Test
