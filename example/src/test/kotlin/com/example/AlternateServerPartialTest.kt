@@ -32,7 +32,7 @@ class PartialServerExampleTest {
                     name = "Jane Doe",
                     age = 28,
                     hobbies = listOf("Swimming", "Painting"),
-                    gender = Person.Gender.FEMALE,
+                    gender = PersonKt.GenderKt.FEMALE,
                     address = PersonKt.AddressKt(
                         street = "456 Oak St",
                         city = "New York",
@@ -53,9 +53,9 @@ class PartialServerExampleTest {
 
                 // Return test persons
                 val persons = listOf(
-                    PersonKt(name = "David", age = 40, gender = Person.Gender.MALE),
-                    PersonKt(name = "Emma", age = 22, gender = Person.Gender.FEMALE),
-                    PersonKt(name = "Sam", age = 33, gender = Person.Gender.NON_BINARY)
+                    PersonKt(name = "David", age = 40, gender = PersonKt.GenderKt.MALE),
+                    PersonKt(name = "Emma", age = 22, gender = PersonKt.GenderKt.FEMALE),
+                    PersonKt(name = "Sam", age = 33, gender = PersonKt.GenderKt.NON_BINARY)
                 )
 
                 flow {
@@ -182,7 +182,7 @@ class PartialServerExampleTest {
         // Verify the response
         assert(response.person?.name == "Jane Doe") { "Expected name to be 'Jane Doe'" }
         assert(response.person?.age == 28) { "Expected age to be 28" }
-        assert(response.person?.gender == Person.Gender.FEMALE) { "Expected gender to be FEMALE" }
+        assert(response.person?.gender == PersonKt.GenderKt.FEMALE) { "Expected gender to be FEMALE" }
         assert(response.person?.address?.city == "New York") { "Expected city to be 'New York'" }
     }
 
@@ -237,7 +237,7 @@ class PartialServerExampleTest {
                     name = "Updated Person $i",
                     age = 30 + i,
                     hobbies = listOf("Updated Hobby $i"),
-                    gender = Person.Gender.UNKNOWN,
+                    gender = PersonKt.GenderKt.UNKNOWN,
                     address = PersonKt.AddressKt(
                         street = "$i Park Ave",
                         city = "Updated City $i",
@@ -305,7 +305,7 @@ class PartialServerExampleTest {
             name = "John Email",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@test.com"),
             tags = listOf("test", "email"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
         val requestEmail = UpdateContactInfoRequestKt(
             personId = "test123",
@@ -319,7 +319,7 @@ class PartialServerExampleTest {
             name = "Jane Phone",
             contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
             tags = listOf("test", "phone"),
-            preference = ContactInfo.ContactPreference.PHONE_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
         val requestPhone = UpdateContactInfoRequestKt(
             personId = "test456",
@@ -333,7 +333,7 @@ class PartialServerExampleTest {
             name = "Bob Username",
             contactMethod = ContactInfoKt.ContactMethod.Username(username = "@bobtest"),
             tags = listOf("test", "username"),
-            preference = ContactInfo.ContactPreference.ANY_METHOD
+            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
         val requestUsername = UpdateContactInfoRequestKt(
             personId = "test789",
@@ -347,7 +347,7 @@ class PartialServerExampleTest {
             name = "Charlie None",
             contactMethod = null,
             tags = listOf("test", "null"),
-            preference = ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
+            preference = ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE
         )
         val requestNull = UpdateContactInfoRequestKt(
             personId = "test000",

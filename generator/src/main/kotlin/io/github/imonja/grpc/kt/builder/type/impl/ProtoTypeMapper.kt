@@ -19,27 +19,32 @@ class ProtoTypeMapper {
         var (poetType, defaultValue) = when (
             field.javaType ?: throw IllegalStateException("Field $field does not have a java type")
         ) {
-            Descriptors.FieldDescriptor.JavaType.INT -> Pair(INT, CodeWithImports.Companion.of("0"))
-            Descriptors.FieldDescriptor.JavaType.LONG -> Pair(LONG, CodeWithImports.Companion.of("0L"))
-            Descriptors.FieldDescriptor.JavaType.FLOAT -> Pair(FLOAT, CodeWithImports.Companion.of("0.0f"))
-            Descriptors.FieldDescriptor.JavaType.DOUBLE -> Pair(DOUBLE, CodeWithImports.Companion.of("0.0"))
+            Descriptors.FieldDescriptor.JavaType.INT -> Pair(INT, CodeWithImports.of("0"))
+            Descriptors.FieldDescriptor.JavaType.LONG -> Pair(LONG, CodeWithImports.of("0L"))
+            Descriptors.FieldDescriptor.JavaType.FLOAT -> Pair(FLOAT, CodeWithImports.of("0.0f"))
+            Descriptors.FieldDescriptor.JavaType.DOUBLE -> Pair(DOUBLE, CodeWithImports.of("0.0"))
             Descriptors.FieldDescriptor.JavaType.BOOLEAN -> Pair(
                 BOOLEAN,
-                CodeWithImports.Companion.of("false")
+                CodeWithImports.of("false")
             )
 
-            Descriptors.FieldDescriptor.JavaType.STRING -> Pair(STRING, CodeWithImports.Companion.of("\"\""))
+            Descriptors.FieldDescriptor.JavaType.STRING -> Pair(STRING, CodeWithImports.of("\"\""))
             Descriptors.FieldDescriptor.JavaType.BYTE_STRING -> Pair(
                 ClassName("com.google.protobuf", "ByteString"),
-                CodeWithImports.Companion.of("com.google.protobuf.ByteString.EMPTY")
+                CodeWithImports.of("com.google.protobuf.ByteString.EMPTY")
             )
 
             Descriptors.FieldDescriptor.JavaType.ENUM -> {
                 val enumType = field.enumType
                     ?: throw IllegalStateException("Enum field $field does not have an enum type")
                 Pair(
-                    enumType.protobufJavaTypeName,
-                    CodeWithImports.Companion.of("${enumType.protobufJavaTypeName.canonicalName}.values()[0]")
+                    enumType.protobufKotlinTypeName,
+                    CodeWithImports.of(
+                        CodeBlock.of(
+                            "%T.${enumType.values[0].name}",
+                            enumType.protobufKotlinTypeName
+                        )
+                    )
                 )
             }
 
@@ -56,7 +61,7 @@ class ProtoTypeMapper {
                         keyType.copy(nullable = false),
                         valueType.copy(nullable = false)
                     )
-                    Pair(type, CodeWithImports.Companion.of("mapOf()"))
+                    Pair(type, CodeWithImports.of("mapOf()"))
                 } else {
                     getTypeNameAndDefaultValue(field.messageType)
                 }
@@ -64,10 +69,10 @@ class ProtoTypeMapper {
         }
         if (field.isRepeated && !field.isMapField) {
             poetType = LIST.parameterizedBy(poetType.copy(nullable = false))
-            defaultValue = CodeWithImports.Companion.of("listOf()")
+            defaultValue = CodeWithImports.of("listOf()")
         }
         return if (field.isProtoOptional) {
-            Pair(poetType.copy(nullable = true), CodeWithImports.Companion.of("null"))
+            Pair(poetType.copy(nullable = true), CodeWithImports.of("null"))
         } else {
             Pair(poetType.copy(nullable = false), defaultValue)
         }
@@ -83,7 +88,7 @@ class ProtoTypeMapper {
         }
         return Pair(
             generatedTypeName,
-            CodeWithImports.Companion.of("${generatedTypeName.canonicalName}()")
+            CodeWithImports.of("${generatedTypeName.canonicalName}()")
         )
     }
 
@@ -94,13 +99,13 @@ class ProtoTypeMapper {
         descriptor: Descriptors.Descriptor
     ): Pair<TypeName, CodeWithImports> {
         return if (descriptor.isKnownPreDefinedType()) {
-            KnownPreDefinedType.Companion.valueOfByDescriptor(descriptor).let {
+            KnownPreDefinedType.valueOfByDescriptor(descriptor).let {
                 it.kotlinType to it.defaultValue
             }
         } else {
             Pair(
                 descriptor.protobufJavaTypeName,
-                CodeWithImports.Companion.of("${descriptor.protobufJavaTypeName.canonicalName}.getDefaultInstance()")
+                CodeWithImports.of("${descriptor.protobufJavaTypeName.canonicalName}.getDefaultInstance()")
             )
         }
     }

@@ -22,8 +22,10 @@ val EnumDescriptor.protobufJavaTypeName: ClassName
 
 val EnumDescriptor.protobufKotlinTypeName: ClassName
     get() {
-        val simpleNames = this.fullName
+        val names = this.fullName
             .replace(this.file.`package` + ".", "")
             .split('.')
-        return ClassName(this.file.kotlinPackage, simpleNames)
+
+        val kotlinNames = names.map { it.plus("Kt") }
+        return ClassName(this.file.kotlinPackage, kotlinNames)
     }

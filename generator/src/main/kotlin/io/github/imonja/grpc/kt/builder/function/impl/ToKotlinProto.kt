@@ -97,7 +97,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                         template.safeCall("it.value")
                     )
                 }
-                CodeWithImports.Companion.of(mapCodeBlock, downStreamImports)
+                CodeWithImports.of(mapCodeBlock, downStreamImports)
             } else if (field.isRepeated) {
                 val (template, downStreamImports) = transformCodeTemplate(field)
                 val repeatedCodeBlock = if (template.value == "%L") {
@@ -105,10 +105,10 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 } else {
                     CodeBlock.of("%LList.map { %L }", protoFieldName, template.safeCall("it"))
                 }
-                CodeWithImports.Companion.of(repeatedCodeBlock, downStreamImports)
+                CodeWithImports.of(repeatedCodeBlock, downStreamImports)
             } else {
                 val (template, downStreamImports) = transformCodeTemplate(field)
-                CodeWithImports.Companion.of(
+                CodeWithImports.of(
                     template.safeCall(protoFieldName.escapeIfNecessary()),
                     downStreamImports
                 )
@@ -140,8 +140,12 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 messageTypeTransformCodeTemplate(field.messageType)
             }
 
+            FieldDescriptor.Type.ENUM -> {
+                TransformTemplateWithImports.of("%L.toKotlinProto()")
+            }
+
             else -> {
-                TransformTemplateWithImports.Companion.of("%L")
+                TransformTemplateWithImports.of("%L")
             }
         }
     }
@@ -153,7 +157,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                     preDefinedTypeTransformCodeTemplate(descriptor)
                 }
 
-                else -> TransformTemplateWithImports.Companion.of("%L.toKotlinProto()")
+                else -> TransformTemplateWithImports.of("%L.toKotlinProto()")
             }
         }
 
@@ -162,10 +166,10 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
         ): TransformTemplateWithImports {
             return when {
                 descriptor.isKnownPreDefinedType() -> {
-                    KnownPreDefinedType.Companion.valueOfByDescriptor(descriptor).toKotlinProtoTemplate
+                    KnownPreDefinedType.valueOfByDescriptor(descriptor).toKotlinProtoTemplate
                 }
 
-                else -> TransformTemplateWithImports.Companion.of("%L")
+                else -> TransformTemplateWithImports.of("%L")
             }
         }
     }

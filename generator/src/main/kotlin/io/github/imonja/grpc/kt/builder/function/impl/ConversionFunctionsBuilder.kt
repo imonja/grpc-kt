@@ -12,6 +12,7 @@ import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
 class ConversionFunctionsBuilder {
     private val toKotlinProto = ToKotlinProto()
     private val toJavaProto = ToJavaProto()
+    private val enumConversionFunctionsBuilder = EnumConversionFunctionsBuilder()
 
     /**
      * Builds conversion functions for a Protocol Buffer message descriptor.
@@ -39,6 +40,14 @@ class ConversionFunctionsBuilder {
         // Process nested types
         descriptor.nestedTypes.forEach { nestedType ->
             build(nestedType).apply {
+                funSpecs.addAll(this.funSpecs)
+                imports.addAll(this.imports)
+            }
+        }
+
+        // Process nested enums
+        descriptor.enumTypes.forEach { nestedEnum ->
+            enumConversionFunctionsBuilder.build(nestedEnum).apply {
                 funSpecs.addAll(this.funSpecs)
                 imports.addAll(this.imports)
             }

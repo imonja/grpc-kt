@@ -42,7 +42,7 @@ object PartialServerExample {
                     name = "Jane Doe",
                     age = 28,
                     hobbies = listOf("Swimming", "Painting"),
-                    gender = Person.Gender.FEMALE,
+                    gender = PersonKt.GenderKt.FEMALE,
                     address = PersonKt.AddressKt(
                         street = "456 Oak St",
                         city = "New York",
@@ -63,9 +63,9 @@ object PartialServerExample {
 
                 // Simulate fetching a list of persons
                 val persons = listOf(
-                    PersonKt(name = "David", age = 40, gender = Person.Gender.MALE),
-                    PersonKt(name = "Emma", age = 22, gender = Person.Gender.FEMALE),
-                    PersonKt(name = "Sam", age = 33, gender = Person.Gender.NON_BINARY)
+                    PersonKt(name = "David", age = 40, gender = PersonKt.GenderKt.MALE),
+                    PersonKt(name = "Emma", age = 22, gender = PersonKt.GenderKt.FEMALE),
+                    PersonKt(name = "Sam", age = 33, gender = PersonKt.GenderKt.NON_BINARY)
                 )
 
                 // Return a flow of responses
@@ -241,7 +241,7 @@ object PartialServerExample {
                         name = "Updated Person $i",
                         age = 30 + i,
                         hobbies = listOf("Updated Hobby $i"),
-                        gender = Person.Gender.UNKNOWN,
+                        gender = PersonKt.GenderKt.UNKNOWN,
                         address = PersonKt.AddressKt(
                             street = "$i Park Ave",
                             city = "Updated City $i",
@@ -283,7 +283,7 @@ object PartialServerExample {
                 name = "John Doe",
                 contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@example.com"),
                 tags = listOf("customer", "premium"),
-                preference = ContactInfo.ContactPreference.EMAIL_ONLY
+                preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
             )
             val updateContactRequest = UpdateContactInfoRequestKt(
                 personId = "person123",

@@ -54,7 +54,7 @@ object ProtoExample {
             name = "John Doe",
             age = 30,
             hobbies = listOf("Reading", "Hiking", "Coding"),
-            gender = Person.Gender.MALE,
+            gender = PersonKt.GenderKt.MALE,
             address = PersonKt.AddressKt(
                 street = "123 Main St",
                 city = "San Francisco",
@@ -107,7 +107,7 @@ object ProtoExample {
             name = "Alice Smith",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
         println("ContactInfo with email: $contactInfoEmail")
 
@@ -116,7 +116,7 @@ object ProtoExample {
             name = "Bob Johnson",
             contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
             tags = listOf("lead"),
-            preference = ContactInfo.ContactPreference.PHONE_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
         println("ContactInfo with phone: $contactInfoPhone")
 
@@ -125,7 +125,7 @@ object ProtoExample {
             name = "Charlie Brown",
             contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
             tags = listOf("partner"),
-            preference = ContactInfo.ContactPreference.ANY_METHOD
+            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
         println("ContactInfo with username: $contactInfoUsername")
 
@@ -308,7 +308,7 @@ object ProtoExample {
                         name = "Person $i",
                         age = 20 + i,
                         hobbies = listOf("Hobby $i"),
-                        gender = Person.Gender.UNKNOWN,
+                        gender = PersonKt.GenderKt.UNKNOWN,
                         address = PersonKt.AddressKt(
                             street = "$i Main St",
                             city = "City $i",
@@ -350,7 +350,7 @@ object ProtoExample {
                 name = "Service User",
                 contactMethod = ContactInfoKt.ContactMethod.Email(email = "service@example.com"),
                 tags = listOf("service", "automated"),
-                preference = ContactInfo.ContactPreference.EMAIL_ONLY
+                preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
             )
             val updateContactRequest = UpdateContactInfoRequestKt(
                 personId = "service123",
@@ -434,7 +434,7 @@ object ProtoExample {
                 name = "John Doe",
                 age = 30,
                 hobbies = listOf("Reading", "Hiking"),
-                gender = Person.Gender.MALE,
+                gender = PersonKt.GenderKt.MALE,
                 address = PersonKt.AddressKt(
                     street = "123 Main St",
                     city = "San Francisco",
@@ -456,9 +456,9 @@ object ProtoExample {
 
             // Simulate fetching a list of persons
             val persons = listOf(
-                PersonKt(name = "Alice", age = 25, gender = Person.Gender.FEMALE),
-                PersonKt(name = "Bob", age = 30, gender = Person.Gender.MALE),
-                PersonKt(name = "Charlie", age = 35, gender = Person.Gender.NON_BINARY)
+                PersonKt(name = "Alice", age = 25, gender = PersonKt.GenderKt.FEMALE),
+                PersonKt(name = "Bob", age = 30, gender = PersonKt.GenderKt.MALE),
+                PersonKt(name = "Charlie", age = 35, gender = PersonKt.GenderKt.NON_BINARY)
             )
 
             // Emit each person as a separate response

@@ -52,7 +52,7 @@ class ProtoExampleTest {
             name = "John Doe",
             age = 30,
             hobbies = listOf("Reading", "Hiking", "Coding"),
-            gender = Person.Gender.MALE,
+            gender = PersonKt.GenderKt.MALE,
             address = PersonKt.AddressKt(
                 street = "123 Main St",
                 city = "San Francisco",
@@ -151,7 +151,7 @@ class ProtoExampleTest {
                     name = "Person $i",
                     age = 20 + i,
                     hobbies = listOf("Hobby $i"),
-                    gender = Person.Gender.UNKNOWN,
+                    gender = PersonKt.GenderKt.UNKNOWN,
                     address = PersonKt.AddressKt(
                         street = "$i Main St",
                         city = "City $i",
@@ -206,7 +206,7 @@ class ProtoExampleTest {
             name = "Alice Smith",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
 
         // Serialize and deserialize
@@ -220,7 +220,7 @@ class ProtoExampleTest {
             name = "Bob Johnson",
             contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
             tags = listOf("lead"),
-            preference = ContactInfo.ContactPreference.PHONE_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
 
         val phoneJavaProto = contactInfoPhone.toJavaProto()
@@ -233,7 +233,7 @@ class ProtoExampleTest {
             name = "Charlie Brown",
             contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
             tags = listOf("partner"),
-            preference = ContactInfo.ContactPreference.ANY_METHOD
+            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
 
         val usernameJavaProto = contactInfoUsername.toJavaProto()
@@ -246,7 +246,7 @@ class ProtoExampleTest {
             name = "David None",
             contactMethod = null,
             tags = listOf("test"),
-            preference = ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
+            preference = ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE
         )
 
         val nullJavaProto = contactInfoNull.toJavaProto()
@@ -336,7 +336,7 @@ class ProtoExampleTest {
             name = "Test User",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "test@example.com"),
             tags = listOf("test", "grpc"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
 
         val request = UpdateContactInfoRequestKt(
@@ -599,7 +599,7 @@ class ProtoExampleTest {
                 name = "John Doe",
                 age = 30,
                 hobbies = listOf("Reading", "Hiking"),
-                gender = Person.Gender.MALE,
+                gender = PersonKt.GenderKt.MALE,
                 address = PersonKt.AddressKt(
                     street = "123 Main St",
                     city = "San Francisco",
@@ -615,9 +615,9 @@ class ProtoExampleTest {
         override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> = flow {
             // Simulate fetching a list of persons
             val persons = listOf(
-                PersonKt(name = "Alice", age = 25, gender = Person.Gender.FEMALE),
-                PersonKt(name = "Bob", age = 30, gender = Person.Gender.MALE),
-                PersonKt(name = "Charlie", age = 35, gender = Person.Gender.NON_BINARY)
+                PersonKt(name = "Alice", age = 25, gender = PersonKt.GenderKt.FEMALE),
+                PersonKt(name = "Bob", age = 30, gender = PersonKt.GenderKt.MALE),
+                PersonKt(name = "Charlie", age = 35, gender = PersonKt.GenderKt.NON_BINARY)
             )
 
             // Emit each person as a separate response

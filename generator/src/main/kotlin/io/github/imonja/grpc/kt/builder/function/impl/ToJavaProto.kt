@@ -87,7 +87,7 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
                 } else {
                     CodeBlock.of("%L.mapValues { %L }", fieldName, template.safeCall("it.value"))
                 }
-                CodeWithImports.Companion.of(mapCodeBlock, downStreamImports)
+                CodeWithImports.of(mapCodeBlock, downStreamImports)
             } else if (field.isRepeated) {
                 val (template, downStreamImports) = transformCodeTemplate(field)
                 val repeatedCodeBlock = if (template.value == "%L") {
@@ -95,10 +95,10 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
                 } else {
                     CodeBlock.of("%L.map { %L }", fieldName, template.safeCall("it"))
                 }
-                CodeWithImports.Companion.of(repeatedCodeBlock, downStreamImports)
+                CodeWithImports.of(repeatedCodeBlock, downStreamImports)
             } else {
                 val (template, downStreamImports) = transformCodeTemplate(field)
-                CodeWithImports.Companion.of(
+                CodeWithImports.of(
                     template.safeCall(fieldName),
                     downStreamImports
                 )
@@ -134,7 +134,11 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
                 messageTypeTransformCodeTemplate(field.messageType)
             }
 
-            else -> TransformTemplateWithImports.Companion.of("%L")
+            FieldDescriptor.Type.ENUM -> {
+                TransformTemplateWithImports.of("%L.toJavaProto()")
+            }
+
+            else -> TransformTemplateWithImports.of("%L")
         }
     }
 
@@ -144,7 +148,11 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
                 messageTypeTransformCodeTemplateForOneOf(field.messageType)
             }
 
-            else -> TransformTemplateWithImports.Companion.of("%L")
+            FieldDescriptor.Type.ENUM -> {
+                TransformTemplateWithImports.of("%L.toJavaProto()")
+            }
+
+            else -> TransformTemplateWithImports.of("%L")
         }
     }
 
@@ -153,24 +161,24 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
             return when {
                 descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
 
-                else -> TransformTemplateWithImports.Companion.of("%L.toJavaProto()")
+                else -> TransformTemplateWithImports.of("%L.toJavaProto()")
             }
         }
 
         fun messageTypeTransformCodeTemplateForOneOf(descriptor: Descriptor): TransformTemplateWithImports {
             return when {
                 descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
-                else -> TransformTemplateWithImports.Companion.of("%L?.toJavaProto()")
+                else -> TransformTemplateWithImports.of("%L?.toJavaProto()")
             }
         }
 
         private fun preDefinedTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
             return when {
-                descriptor.isKnownPreDefinedType() -> KnownPreDefinedType.Companion.valueOfByDescriptor(
+                descriptor.isKnownPreDefinedType() -> KnownPreDefinedType.valueOfByDescriptor(
                     descriptor
                 ).toJavaProtoTransformTemplate
 
-                else -> TransformTemplateWithImports.Companion.of("%L")
+                else -> TransformTemplateWithImports.of("%L")
             }
         }
     }
