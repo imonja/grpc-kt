@@ -90,6 +90,46 @@ class ProtoExampleTest {
     }
 
     @Test
+    fun `test creating complex Person message`() {
+        val person = PersonKt(
+            name = "Jane Smith",
+            age = 25,
+            hobbies = listOf("Art", "Music", "Photography", "Travel"),
+            gender = PersonKt.GenderKt.FEMALE,
+            address = PersonKt.AddressKt(
+                street = "Park Avenue 45",
+                city = "New York",
+                country = "USA"
+            )
+        )
+
+        val javaProto = person.toJavaProto()
+        val deserialized = javaProto.toKotlinProto()
+
+        assert(person == deserialized) { "Complex person should match after serialization" }
+        assert(deserialized.hobbies.size == 4) { "Should have 4 hobbies" }
+        assert(deserialized.gender == PersonKt.GenderKt.FEMALE) { "Should be female" }
+    }
+
+    @Test
+    fun `test ContactInfo phone oneof serialization`() {
+        val contactInfo = ContactInfoKt(
+            name = "Bob",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+123456789"),
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
+        )
+
+        val javaProto = contactInfo.toJavaProto()
+        assert(javaProto.hasPhone()) { "Java proto should have phone set" }
+        assert(javaProto.phone == "+123456789") { "Phone number should match" }
+
+        val deserialized = javaProto.toKotlinProto()
+        assert(contactInfo == deserialized) { "Contact info should match after serialization" }
+        assert(deserialized.contactMethod is ContactInfoKt.ContactMethod.Phone) { "Contact method should be Phone" }
+        assert(deserialized.preference == ContactInfoKt.ContactPreferenceKt.PHONE_ONLY) { "Preference should be phone only" }
+    }
+
+    @Test
     fun `test gRPC unary call`() = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
@@ -132,11 +172,14 @@ class ProtoExampleTest {
         val responses = mutableListOf<PersonKt?>()
         stub.listPersons(request).collect { response ->
             responses.add(response.person)
-            println("Received person: ${response.person?.name}")
+            println("Received person: ${response.person?.name}, gender: ${response.person?.gender}")
         }
 
-        // Verify we received the expected number of responses
+        // Verify we received the expected number of responses and their data
         assert(responses.size == 3) { "Expected to receive 3 persons" }
+        assert(responses[0]?.gender == PersonKt.GenderKt.FEMALE) { "First person should be female" }
+        assert(responses[1]?.gender == PersonKt.GenderKt.MALE) { "Second person should be male" }
+        assert(responses[2]?.gender == PersonKt.GenderKt.NON_BINARY) { "Third person should be non-binary" }
     }
 
     @Test
@@ -331,21 +374,27 @@ class ProtoExampleTest {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Create contact info with email
-        val contactInfo = ContactInfoKt(
-            name = "Test User",
+        // Test with EMAIL preference
+        val contactInfoEmail = ContactInfoKt(
+            name = "Test User Email",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "test@example.com"),
-            tags = listOf("test", "grpc"),
+            tags = listOf("test", "email"),
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
+        val requestEmail = UpdateContactInfoRequestKt(personId = "test_email", contactInfo = contactInfoEmail)
+        val responseEmail = stub.updateContactInfo(requestEmail)
+        assert(responseEmail.success)
 
-        val request = UpdateContactInfoRequestKt(
-            personId = "test123",
-            contactInfo = contactInfo
+        // Test with PHONE preference
+        val contactInfoPhone = ContactInfoKt(
+            name = "Test User Phone",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "123-456"),
+            tags = listOf("test", "phone"),
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
-
-        val response = stub.updateContactInfo(request)
-        assert(response.success) { "Expected contact info update to be successful" }
+        val requestPhone = UpdateContactInfoRequestKt(personId = "test_phone", contactInfo = contactInfoPhone)
+        val responsePhone = stub.updateContactInfo(requestPhone)
+        assert(responsePhone.success)
     }
 
     @Test
