@@ -52,7 +52,7 @@ class ProtoExampleTest {
             name = "John Doe",
             age = 30,
             hobbies = listOf("Reading", "Hiking", "Coding"),
-            gender = Person.Gender.MALE,
+            gender = PersonKt.GenderKt.MALE,
             address = PersonKt.AddressKt(
                 street = "123 Main St",
                 city = "San Francisco",
@@ -60,21 +60,30 @@ class ProtoExampleTest {
             )
         )
 
-        // Convert to Java protobuf message
-        val javaProto = person.toJavaProto()
-
         // Serialize to binary format
-        val bytes = javaProto.toByteArray()
+        val bytes = person.toByteArray()
         println("Serialized size: ${bytes.size} bytes")
 
         // Deserialize from binary format
-        val deserializedJavaProto = Person.parseFrom(bytes)
-        val deserializedPerson = deserializedJavaProto.toKotlinProto()
+        val deserializedPerson = PersonKt.parseFrom(bytes)
 
         // Verify the deserialized object matches the original
         assert(person == deserializedPerson) { "Deserialized person should match the original" }
 
-        // Convert to JSON
+        // Test ByteString serialization/deserialization
+        val byteString = person.toByteString()
+        val deserializedFromByteString = PersonKt.parseFrom(byteString)
+        assert(person == deserializedFromByteString) { "ByteString serialization should work" }
+
+        // Test OutputStream/InputStream serialization/deserialization
+        val outputStream = java.io.ByteArrayOutputStream()
+        person.writeTo(outputStream)
+        val inputStream = java.io.ByteArrayInputStream(outputStream.toByteArray())
+        val deserializedFromStream = PersonKt.parseFrom(inputStream)
+        assert(person == deserializedFromStream) { "Stream serialization should work" }
+
+        // Convert to JSON (still requires Java proto for now as we use JsonFormat)
+        val javaProto = person.toJavaProto()
         val jsonPrinter = JsonFormat.printer().includingDefaultValueFields()
         val json = jsonPrinter.print(javaProto)
         println("JSON representation:\n$json")
@@ -87,6 +96,46 @@ class ProtoExampleTest {
 
         // Verify the parsed object matches the original
         assert(person == fromJson) { "Person parsed from JSON should match the original" }
+    }
+
+    @Test
+    fun `test creating complex Person message`() {
+        val person = PersonKt(
+            name = "Jane Smith",
+            age = 25,
+            hobbies = listOf("Art", "Music", "Photography", "Travel"),
+            gender = PersonKt.GenderKt.FEMALE,
+            address = PersonKt.AddressKt(
+                street = "Park Avenue 45",
+                city = "New York",
+                country = "USA"
+            )
+        )
+
+        val bytes = person.toByteArray()
+        val deserialized = PersonKt.parseFrom(bytes)
+
+        assert(person == deserialized) { "Complex person should match after serialization" }
+        assert(deserialized.hobbies.size == 4) { "Should have 4 hobbies" }
+        assert(deserialized.gender == PersonKt.GenderKt.FEMALE) { "Should be female" }
+    }
+
+    @Test
+    fun `test ContactInfo phone oneof serialization`() {
+        val contactInfo = ContactInfoKt(
+            name = "Bob",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+123456789"),
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
+        )
+
+        val javaProto = contactInfo.toJavaProto()
+        assert(javaProto.hasPhone()) { "Java proto should have phone set" }
+        assert(javaProto.phone == "+123456789") { "Phone number should match" }
+
+        val deserialized = javaProto.toKotlinProto()
+        assert(contactInfo == deserialized) { "Contact info should match after serialization" }
+        assert(deserialized.contactMethod is ContactInfoKt.ContactMethod.Phone) { "Contact method should be Phone" }
+        assert(deserialized.preference == ContactInfoKt.ContactPreferenceKt.PHONE_ONLY) { "Preference should be phone only" }
     }
 
     @Test
@@ -132,11 +181,14 @@ class ProtoExampleTest {
         val responses = mutableListOf<PersonKt?>()
         stub.listPersons(request).collect { response ->
             responses.add(response.person)
-            println("Received person: ${response.person?.name}")
+            println("Received person: ${response.person?.name}, gender: ${response.person?.gender}")
         }
 
-        // Verify we received the expected number of responses
+        // Verify we received the expected number of responses and their data
         assert(responses.size == 3) { "Expected to receive 3 persons" }
+        assert(responses[0]?.gender == PersonKt.GenderKt.FEMALE) { "First person should be female" }
+        assert(responses[1]?.gender == PersonKt.GenderKt.MALE) { "Second person should be male" }
+        assert(responses[2]?.gender == PersonKt.GenderKt.NON_BINARY) { "Third person should be non-binary" }
     }
 
     @Test
@@ -151,7 +203,7 @@ class ProtoExampleTest {
                     name = "Person $i",
                     age = 20 + i,
                     hobbies = listOf("Hobby $i"),
-                    gender = Person.Gender.UNKNOWN,
+                    gender = PersonKt.GenderKt.UNKNOWN,
                     address = PersonKt.AddressKt(
                         street = "$i Main St",
                         city = "City $i",
@@ -206,13 +258,12 @@ class ProtoExampleTest {
             name = "Alice Smith",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
 
         // Serialize and deserialize
-        val emailJavaProto = contactInfoEmail.toJavaProto()
-        val emailBytes = emailJavaProto.toByteArray()
-        val deserializedEmail = ContactInfo.parseFrom(emailBytes).toKotlinProto()
+        val emailBytes = contactInfoEmail.toByteArray()
+        val deserializedEmail = ContactInfoKt.parseFrom(emailBytes)
         assert(contactInfoEmail == deserializedEmail) { "Email contact info serialization should work" }
 
         // Test ContactInfo with phone
@@ -220,12 +271,11 @@ class ProtoExampleTest {
             name = "Bob Johnson",
             contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
             tags = listOf("lead"),
-            preference = ContactInfo.ContactPreference.PHONE_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
 
-        val phoneJavaProto = contactInfoPhone.toJavaProto()
-        val phoneBytes = phoneJavaProto.toByteArray()
-        val deserializedPhone = ContactInfo.parseFrom(phoneBytes).toKotlinProto()
+        val phoneBytes = contactInfoPhone.toByteArray()
+        val deserializedPhone = ContactInfoKt.parseFrom(phoneBytes)
         assert(contactInfoPhone == deserializedPhone) { "Phone contact info serialization should work" }
 
         // Test ContactInfo with username
@@ -233,7 +283,7 @@ class ProtoExampleTest {
             name = "Charlie Brown",
             contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
             tags = listOf("partner"),
-            preference = ContactInfo.ContactPreference.ANY_METHOD
+            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
 
         val usernameJavaProto = contactInfoUsername.toJavaProto()
@@ -246,7 +296,7 @@ class ProtoExampleTest {
             name = "David None",
             contactMethod = null,
             tags = listOf("test"),
-            preference = ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
+            preference = ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE
         )
 
         val nullJavaProto = contactInfoNull.toJavaProto()
@@ -271,9 +321,8 @@ class ProtoExampleTest {
             notificationsEnabled = true
         )
 
-        val emailNotificationJavaProto = notificationSettingsEmail.toJavaProto()
-        val emailNotificationBytes = emailNotificationJavaProto.toByteArray()
-        val deserializedEmailNotification = NotificationSettings.parseFrom(emailNotificationBytes).toKotlinProto()
+        val emailNotificationBytes = notificationSettingsEmail.toByteArray()
+        val deserializedEmailNotification = NotificationSettingsKt.parseFrom(emailNotificationBytes)
         assert(notificationSettingsEmail == deserializedEmailNotification) { "Email notification settings serialization should work" }
 
         // Test NotificationSettings with SMS settings
@@ -331,21 +380,27 @@ class ProtoExampleTest {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Create contact info with email
-        val contactInfo = ContactInfoKt(
-            name = "Test User",
+        // Test with EMAIL preference
+        val contactInfoEmail = ContactInfoKt(
+            name = "Test User Email",
             contactMethod = ContactInfoKt.ContactMethod.Email(email = "test@example.com"),
-            tags = listOf("test", "grpc"),
-            preference = ContactInfo.ContactPreference.EMAIL_ONLY
+            tags = listOf("test", "email"),
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
+        val requestEmail = UpdateContactInfoRequestKt(personId = "test_email", contactInfo = contactInfoEmail)
+        val responseEmail = stub.updateContactInfo(requestEmail)
+        assert(responseEmail.success)
 
-        val request = UpdateContactInfoRequestKt(
-            personId = "test123",
-            contactInfo = contactInfo
+        // Test with PHONE preference
+        val contactInfoPhone = ContactInfoKt(
+            name = "Test User Phone",
+            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "123-456"),
+            tags = listOf("test", "phone"),
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
-
-        val response = stub.updateContactInfo(request)
-        assert(response.success) { "Expected contact info update to be successful" }
+        val requestPhone = UpdateContactInfoRequestKt(personId = "test_phone", contactInfo = contactInfoPhone)
+        val responsePhone = stub.updateContactInfo(requestPhone)
+        assert(responsePhone.success)
     }
 
     @Test
@@ -599,7 +654,7 @@ class ProtoExampleTest {
                 name = "John Doe",
                 age = 30,
                 hobbies = listOf("Reading", "Hiking"),
-                gender = Person.Gender.MALE,
+                gender = PersonKt.GenderKt.MALE,
                 address = PersonKt.AddressKt(
                     street = "123 Main St",
                     city = "San Francisco",
@@ -615,9 +670,9 @@ class ProtoExampleTest {
         override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> = flow {
             // Simulate fetching a list of persons
             val persons = listOf(
-                PersonKt(name = "Alice", age = 25, gender = Person.Gender.FEMALE),
-                PersonKt(name = "Bob", age = 30, gender = Person.Gender.MALE),
-                PersonKt(name = "Charlie", age = 35, gender = Person.Gender.NON_BINARY)
+                PersonKt(name = "Alice", age = 25, gender = PersonKt.GenderKt.FEMALE),
+                PersonKt(name = "Bob", age = 30, gender = PersonKt.GenderKt.MALE),
+                PersonKt(name = "Charlie", age = 35, gender = PersonKt.GenderKt.NON_BINARY)
             )
 
             // Emit each person as a separate response

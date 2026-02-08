@@ -21,7 +21,8 @@ import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
  */
 class DataClassTypeBuilder(
     private val typeMapper: ProtoTypeMapper,
-    private val oneOfBuilder: OneOfTypeBuilder
+    private val oneOfBuilder: OneOfTypeBuilder,
+    private val enumTypeBuilder: EnumTypeBuilder = EnumTypeBuilder()
 ) : TypeSpecsBuilder<Descriptor> {
 
     override fun build(descriptor: Descriptor): TypeSpecsWithImports {
@@ -55,8 +56,9 @@ class DataClassTypeBuilder(
 
         // Process nested enums
         for (nestedEnum in descriptor.enumTypes) {
-            val enumJavaTypeName = nestedEnum.protobufJavaTypeName
-            imports.add(Import(enumJavaTypeName.packageName, enumJavaTypeName.simpleNames))
+            val result = enumTypeBuilder.build(nestedEnum)
+            imports.addAll(result.imports)
+            result.typeSpecs.forEach { dataClassBuilder.addType(it) }
         }
 
         // Process oneofs
