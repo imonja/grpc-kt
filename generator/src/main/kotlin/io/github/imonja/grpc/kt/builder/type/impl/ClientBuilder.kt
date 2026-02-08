@@ -2,17 +2,9 @@ package io.github.imonja.grpc.kt.builder.type.impl
 
 import com.google.protobuf.Descriptors.MethodDescriptor
 import com.google.protobuf.Descriptors.ServiceDescriptor
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.MemberName.Companion.member
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.asClassName
 import io.github.imonja.grpc.kt.builder.function.impl.ToJavaProto
 import io.github.imonja.grpc.kt.builder.function.impl.ToKotlinProto
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
@@ -106,10 +98,10 @@ class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             if (method.isClientStreaming) CLIENT_STREAMING_CMD else UNARY_CMD
         }
 
-        val (toKotlinProtoTemplate, toKotlinProtoImports) = ToKotlinProto.Companion.messageTypeTransformCodeTemplate(
+        val (toKotlinProtoTemplate, toKotlinProtoImports) = ToKotlinProto.messageTypeTransformCodeTemplate(
             method.outputType
         )
-        val (toJavaProtoTemplate, toJavaProtoImports) = ToJavaProto.Companion.messageTypeTransformCodeTemplate(
+        val (toJavaProtoTemplate, toJavaProtoImports) = ToJavaProto.messageTypeTransformCodeTemplate(
             method.inputType
         )
         imports.addAll(toKotlinProtoImports)

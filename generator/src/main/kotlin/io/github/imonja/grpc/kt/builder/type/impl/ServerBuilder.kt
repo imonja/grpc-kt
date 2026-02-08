@@ -135,9 +135,9 @@ class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             if (method.isClientStreaming) CLIENT_STREAMING_SMD else UNARY_SMD
         }
 
-        val (requestTransformTemplate, reqImports) = ToKotlinProto.Companion
+        val (requestTransformTemplate, reqImports) = ToKotlinProto
             .messageTypeTransformCodeTemplate(method.inputType)
-        val (responseTransformTemplate, resImports) = ToJavaProto.Companion
+        val (responseTransformTemplate, resImports) = ToJavaProto
             .messageTypeTransformCodeTemplate(method.outputType)
         imports.addAll(reqImports)
         imports.addAll(resImports)
