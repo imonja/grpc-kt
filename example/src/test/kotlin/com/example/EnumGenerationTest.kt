@@ -1,7 +1,7 @@
 package com.example
 
 import com.example.proto.*
-import org.junit.jupiter.api.Assertions.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class EnumGenerationTest {
@@ -9,37 +9,31 @@ class EnumGenerationTest {
     @Test
     fun `test nested enum conversion - PersonKt GenderKt`() {
         // Kotlin to Java
-        assertEquals(Person.Gender.MALE, PersonKt.GenderKt.MALE.toJavaProto())
-        assertEquals(Person.Gender.FEMALE, PersonKt.GenderKt.FEMALE.toJavaProto())
-        assertEquals(Person.Gender.UNKNOWN, PersonKt.GenderKt.UNKNOWN.toJavaProto())
-        assertEquals(Person.Gender.UNRECOGNIZED, PersonKt.GenderKt.UNRECOGNIZED.toJavaProto())
+        PersonKt.GenderKt.MALE.toJavaProto() shouldBe Person.Gender.MALE
+        PersonKt.GenderKt.FEMALE.toJavaProto() shouldBe Person.Gender.FEMALE
+        PersonKt.GenderKt.UNKNOWN.toJavaProto() shouldBe Person.Gender.UNKNOWN
+        PersonKt.GenderKt.UNRECOGNIZED.toJavaProto() shouldBe Person.Gender.UNRECOGNIZED
 
         // Java to Kotlin
-        assertEquals(PersonKt.GenderKt.MALE, Person.Gender.MALE.toKotlinProto())
-        assertEquals(PersonKt.GenderKt.FEMALE, Person.Gender.FEMALE.toKotlinProto())
-        assertEquals(PersonKt.GenderKt.UNKNOWN, Person.Gender.UNKNOWN.toKotlinProto())
-        assertEquals(PersonKt.GenderKt.UNRECOGNIZED, Person.Gender.UNRECOGNIZED.toKotlinProto())
+        Person.Gender.MALE.toKotlinProto() shouldBe PersonKt.GenderKt.MALE
+        Person.Gender.FEMALE.toKotlinProto() shouldBe PersonKt.GenderKt.FEMALE
+        Person.Gender.UNKNOWN.toKotlinProto() shouldBe PersonKt.GenderKt.UNKNOWN
+        Person.Gender.UNRECOGNIZED.toKotlinProto() shouldBe PersonKt.GenderKt.UNRECOGNIZED
     }
 
     @Test
     fun `test nested enum conversion - ContactInfoKt ContactPreferenceKt`() {
         // Kotlin to Java
-        assertEquals(ContactInfo.ContactPreference.EMAIL_ONLY, ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY.toJavaProto())
-        assertEquals(ContactInfo.ContactPreference.PHONE_ONLY, ContactInfoKt.ContactPreferenceKt.PHONE_ONLY.toJavaProto())
-        assertEquals(ContactInfo.ContactPreference.ANY_METHOD, ContactInfoKt.ContactPreferenceKt.ANY_METHOD.toJavaProto())
-        assertEquals(
-            ContactInfo.ContactPreference.UNKNOWN_PREFERENCE,
-            ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE.toJavaProto()
-        )
+        ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY.toJavaProto() shouldBe ContactInfo.ContactPreference.EMAIL_ONLY
+        ContactInfoKt.ContactPreferenceKt.PHONE_ONLY.toJavaProto() shouldBe ContactInfo.ContactPreference.PHONE_ONLY
+        ContactInfoKt.ContactPreferenceKt.ANY_METHOD.toJavaProto() shouldBe ContactInfo.ContactPreference.ANY_METHOD
+        ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE.toJavaProto() shouldBe ContactInfo.ContactPreference.UNKNOWN_PREFERENCE
 
         // Java to Kotlin
-        assertEquals(ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY, ContactInfo.ContactPreference.EMAIL_ONLY.toKotlinProto())
-        assertEquals(ContactInfoKt.ContactPreferenceKt.PHONE_ONLY, ContactInfo.ContactPreference.PHONE_ONLY.toKotlinProto())
-        assertEquals(ContactInfoKt.ContactPreferenceKt.ANY_METHOD, ContactInfo.ContactPreference.ANY_METHOD.toKotlinProto())
-        assertEquals(
-            ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE,
-            ContactInfo.ContactPreference.UNKNOWN_PREFERENCE.toKotlinProto()
-        )
+        ContactInfo.ContactPreference.EMAIL_ONLY.toKotlinProto() shouldBe ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
+        ContactInfo.ContactPreference.PHONE_ONLY.toKotlinProto() shouldBe ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
+        ContactInfo.ContactPreference.ANY_METHOD.toKotlinProto() shouldBe ContactInfoKt.ContactPreferenceKt.ANY_METHOD
+        ContactInfo.ContactPreference.UNKNOWN_PREFERENCE.toKotlinProto() shouldBe ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE
     }
 
     @Test
@@ -47,15 +41,15 @@ class EnumGenerationTest {
         // In gRPC/Proto3, if a Java client receives a value it doesn't know, it maps it to UNRECOGNIZED.
         // Our toKotlinProto should also handle this gracefully.
 
-        assertEquals(PersonKt.GenderKt.UNRECOGNIZED, Person.Gender.UNRECOGNIZED.toKotlinProto())
-        assertEquals(Person.Gender.UNRECOGNIZED, PersonKt.GenderKt.UNRECOGNIZED.toJavaProto())
+        Person.Gender.UNRECOGNIZED.toKotlinProto() shouldBe PersonKt.GenderKt.UNRECOGNIZED
+        PersonKt.GenderKt.UNRECOGNIZED.toJavaProto() shouldBe Person.Gender.UNRECOGNIZED
 
         // Test "else" branch in toKotlinProto
         // In Java Protobuf, forNumber() returns null for unknown values in some cases,
         // but getting the field from a message returns UNRECOGNIZED for unknown values.
         val unknownJava = Person.newBuilder().setGenderValue(-1).build().gender
-        assertEquals(Person.Gender.UNRECOGNIZED, unknownJava)
-        assertEquals(PersonKt.GenderKt.UNRECOGNIZED, unknownJava.toKotlinProto())
+        unknownJava shouldBe Person.Gender.UNRECOGNIZED
+        unknownJava.toKotlinProto() shouldBe PersonKt.GenderKt.UNRECOGNIZED
     }
 
     @Test
@@ -66,10 +60,10 @@ class EnumGenerationTest {
         )
 
         val javaProto = original.toJavaProto()
-        assertEquals(Person.Gender.FEMALE, javaProto.gender)
+        javaProto.gender shouldBe Person.Gender.FEMALE
 
         val deserialized = javaProto.toKotlinProto()
-        assertEquals(PersonKt.GenderKt.FEMALE, deserialized.gender)
-        assertEquals(original, deserialized)
+        deserialized.gender shouldBe PersonKt.GenderKt.FEMALE
+        deserialized shouldBe original
     }
 }

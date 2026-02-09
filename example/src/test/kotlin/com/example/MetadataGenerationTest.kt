@@ -9,11 +9,11 @@ import com.example.proto.PersonServiceGrpcKt
 import io.github.imonja.grpc.kt.common.grpcMetadata
 import io.github.imonja.grpc.kt.common.metadataServerInterceptor
 import io.grpc.*
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
@@ -73,7 +73,7 @@ class MetadataGenerationTest {
         stub.getPerson(request, metadata)
 
         val headers = receivedMetadata.get()
-        assertEquals("test-value", headers.get(TEST_KEY))
+        headers.get(TEST_KEY) shouldBe "test-value"
     }
 
     @Test
@@ -86,7 +86,7 @@ class MetadataGenerationTest {
         stub.listPersons(request, metadata).collect { }
 
         val headers = receivedMetadata.get()
-        assertEquals("streaming-value", headers.get(TEST_KEY))
+        headers.get(TEST_KEY) shouldBe "streaming-value"
     }
 
     @Test
@@ -98,7 +98,7 @@ class MetadataGenerationTest {
 
         val response = stub.getPerson(request, metadata)
 
-        assertEquals("server-visible-value", response.person?.name)
+        response.person?.name shouldBe "server-visible-value"
     }
 
     @Test
@@ -110,7 +110,7 @@ class MetadataGenerationTest {
 
         val response = stub.listPersons(request, metadata).first()
 
-        assertEquals("streaming-server-value", response.person?.name)
+        response.person?.name shouldBe "streaming-server-value"
     }
 
     private class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {

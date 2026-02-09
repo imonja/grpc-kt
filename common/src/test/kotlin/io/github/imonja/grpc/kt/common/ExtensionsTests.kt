@@ -11,7 +11,7 @@ import com.google.protobuf.StringValue
 import com.google.protobuf.Timestamp
 import com.google.protobuf.UInt32Value
 import com.google.protobuf.UInt64Value
-import org.junit.jupiter.api.Assertions.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
@@ -25,7 +25,7 @@ class ExtensionsTests {
     fun `test converting Timestamp to LocalDateTime`() {
         val timestamp = Timestamp.newBuilder().setSeconds(1633046400L).build()
         val expectedDateTime = LocalDateTime.of(2021, 10, 1, 0, 0)
-        assertEquals(expectedDateTime, timestamp.toLocalDateTime())
+        timestamp.toLocalDateTime() shouldBe expectedDateTime
     }
 
     @Test
@@ -33,14 +33,14 @@ class ExtensionsTests {
         val timestamp = Timestamp.newBuilder().setSeconds(1633046400L).build()
         val zone = ZoneId.of("America/New_York")
         val expectedDateTime = LocalDateTime.of(2021, 9, 30, 20, 0)
-        assertEquals(expectedDateTime, timestamp.toLocalDateTime(zone))
+        timestamp.toLocalDateTime(zone) shouldBe expectedDateTime
     }
 
     @Test
     fun `test converting LocalDateTime to Timestamp`() {
         val dateTime = LocalDateTime.of(2021, 10, 1, 0, 0)
         val expectedTimestamp = Timestamp.newBuilder().setSeconds(1633046400L).build()
-        assertEquals(expectedTimestamp, dateTime.toProtoTimestamp())
+        dateTime.toProtoTimestamp() shouldBe expectedTimestamp
     }
 
     @Test
@@ -48,21 +48,21 @@ class ExtensionsTests {
         val dateTime = LocalDateTime.of(2021, 10, 1, 0, 0)
         val zone = ZoneId.of("America/New_York")
         val expectedTimestamp = Timestamp.newBuilder().setSeconds(1633060800L).build() // 4 hours later in UTC
-        assertEquals(expectedTimestamp, dateTime.toProtoTimestamp(zone))
+        dateTime.toProtoTimestamp(zone) shouldBe expectedTimestamp
     }
 
     @Test
     fun `test converting Instant to Timestamp`() {
         val instant = Instant.ofEpochSecond(1633036800L)
         val expectedTimestamp = Timestamp.newBuilder().setSeconds(1633036800L).build()
-        assertEquals(expectedTimestamp, instant.toProtoTimestamp())
+        instant.toProtoTimestamp() shouldBe expectedTimestamp
     }
 
     @Test
     fun `test converting Timestamp to Instant`() {
         val timestamp = Timestamp.newBuilder().setSeconds(1633036800L).build()
         val expectedInstant = Instant.ofEpochSecond(1633036800L)
-        assertEquals(expectedInstant, timestamp.toInstant())
+        timestamp.toInstant() shouldBe expectedInstant
     }
 
     @Test
@@ -72,7 +72,7 @@ class ExtensionsTests {
             .setNanos(1_000_000)
             .build()
         val expectedDuration = Duration.ofSeconds(3600, 1_000_000)
-        assertEquals(expectedDuration, protoDuration.toDuration())
+        protoDuration.toDuration() shouldBe expectedDuration
     }
 
     @Test
@@ -82,70 +82,70 @@ class ExtensionsTests {
             .setSeconds(3600)
             .setNanos(1_000_000)
             .build()
-        assertEquals(expectedProtoDuration, duration.toProtoDuration())
+        duration.toProtoDuration() shouldBe expectedProtoDuration
     }
 
     @Test
     fun `test Double to DoubleValue`() {
         val value = 1.23
         val expected = DoubleValue.newBuilder().setValue(1.23).build()
-        assertEquals(expected, value.toDoubleValue())
+        value.toDoubleValue() shouldBe expected
     }
 
     @Test
     fun `test Float to FloatValue`() {
         val value = 1.23f
         val expected = FloatValue.newBuilder().setValue(1.23f).build()
-        assertEquals(expected, value.toFloatValue())
+        value.toFloatValue() shouldBe expected
     }
 
     @Test
     fun `test Long to Int64Value`() {
         val value = 123456789L
         val expected = Int64Value.newBuilder().setValue(123456789L).build()
-        assertEquals(expected, value.toInt64Value())
+        value.toInt64Value() shouldBe expected
     }
 
     @Test
     fun `test Long to UInt64Value`() {
         val value = 123456789L
         val expected = UInt64Value.newBuilder().setValue(123456789L).build()
-        assertEquals(expected, value.toUInt64Value())
+        value.toUInt64Value() shouldBe expected
     }
 
     @Test
     fun `test Int to Int32Value`() {
         val value = 123456789
         val expected = Int32Value.newBuilder().setValue(123456789).build()
-        assertEquals(expected, value.toInt32Value())
+        value.toInt32Value() shouldBe expected
     }
 
     @Test
     fun `test Int to UInt32Value`() {
         val value = 123456789
         val expected = UInt32Value.newBuilder().setValue(123456789).build()
-        assertEquals(expected, value.toUInt32Value())
+        value.toUInt32Value() shouldBe expected
     }
 
     @Test
     fun `test Boolean to BoolValue`() {
         val value = true
         val expected = BoolValue.newBuilder().setValue(true).build()
-        assertEquals(expected, value.toBoolValue())
+        value.toBoolValue() shouldBe expected
     }
 
     @Test
     fun `test String to StringValue`() {
         val value = "Test String"
         val expected = StringValue.newBuilder().setValue("Test String").build()
-        assertEquals(expected, value.toStringValue())
+        value.toStringValue() shouldBe expected
     }
 
     @Test
     fun `test ByteString to BytesValue`() {
         val value = ByteString.copyFromUtf8("Test ByteString")
         val expected = BytesValue.newBuilder().setValue(value).build()
-        assertEquals(expected, value.toBytesValue())
+        value.toBytesValue() shouldBe expected
     }
 
     @Test
@@ -154,8 +154,8 @@ class ExtensionsTests {
 
         val timestamp = date.toProtoTimestamp()
 
-        assertEquals(date.time / 1000, timestamp.seconds)
-        assertEquals((date.time % 1000).toInt() * 1_000_000, timestamp.nanos)
+        timestamp.seconds shouldBe date.time / 1000
+        timestamp.nanos shouldBe (date.time % 1000).toInt() * 1_000_000
     }
 
     @Test
@@ -169,7 +169,7 @@ class ExtensionsTests {
 
         val date = timestamp.toDate()
 
-        assertEquals(seconds * 1000 + nanos / 1_000_000, date.time)
+        date.time shouldBe seconds * 1000 + nanos / 1_000_000
     }
 
     @Test
@@ -179,7 +179,7 @@ class ExtensionsTests {
         val timestamp = originalDate.toProtoTimestamp()
         val convertedDate = timestamp.toDate()
 
-        assertEquals(originalDate, convertedDate)
+        convertedDate shouldBe originalDate
     }
 
     @Test
@@ -192,6 +192,6 @@ class ExtensionsTests {
         val date = originalTimestamp.toDate()
         val convertedTimestamp = date.toProtoTimestamp()
 
-        assertEquals(originalTimestamp, convertedTimestamp)
+        convertedTimestamp shouldBe originalTimestamp
     }
 }

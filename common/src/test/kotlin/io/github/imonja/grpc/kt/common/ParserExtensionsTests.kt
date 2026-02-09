@@ -3,7 +3,7 @@ package io.github.imonja.grpc.kt.common
 import com.google.protobuf.CodedInputStream
 import com.google.protobuf.ExtensionRegistryLite
 import com.google.protobuf.StringValue
-import org.junit.jupiter.api.Assertions.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
@@ -20,90 +20,88 @@ class ParserExtensionsTests {
         val kotlinParser = javaParser.toKotlinParser { it.value }
 
         // ByteArray
-        assertEquals(testValue, kotlinParser.parseFrom(bytes))
-        assertEquals(testValue, kotlinParser.parseFrom(bytes, 0, bytes.size))
-        assertEquals(testValue, kotlinParser.parseFrom(bytes, ExtensionRegistryLite.getEmptyRegistry()))
-        assertEquals(
-            testValue,
-            kotlinParser.parseFrom(bytes, 0, bytes.size, ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseFrom(bytes) shouldBe testValue
+        kotlinParser.parseFrom(bytes, 0, bytes.size) shouldBe testValue
+        kotlinParser.parseFrom(bytes, ExtensionRegistryLite.getEmptyRegistry()) shouldBe testValue
+        kotlinParser.parseFrom(
+            bytes,
+            0,
+            bytes.size,
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // ByteString
-        assertEquals(testValue, kotlinParser.parseFrom(byteString))
-        assertEquals(
-            testValue,
-            kotlinParser.parseFrom(byteString, ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseFrom(byteString) shouldBe testValue
+        kotlinParser.parseFrom(
+            byteString,
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // InputStream
-        assertEquals(testValue, kotlinParser.parseFrom(ByteArrayInputStream(bytes)))
-        assertEquals(
-            testValue,
-            kotlinParser.parseFrom(ByteArrayInputStream(bytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseFrom(ByteArrayInputStream(bytes)) shouldBe testValue
+        kotlinParser.parseFrom(
+            ByteArrayInputStream(bytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // CodedInputStream
-        assertEquals(testValue, kotlinParser.parseFrom(CodedInputStream.newInstance(bytes)))
-        assertEquals(
-            testValue,
-            kotlinParser.parseFrom(CodedInputStream.newInstance(bytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseFrom(CodedInputStream.newInstance(bytes)) shouldBe testValue
+        kotlinParser.parseFrom(
+            CodedInputStream.newInstance(bytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // ByteBuffer
-        assertEquals(testValue, kotlinParser.parseFrom(ByteBuffer.wrap(bytes)))
-        assertEquals(
-            testValue,
-            kotlinParser.parseFrom(ByteBuffer.wrap(bytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseFrom(ByteBuffer.wrap(bytes)) shouldBe testValue
+        kotlinParser.parseFrom(
+            ByteBuffer.wrap(bytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // Delimited
         val out = java.io.ByteArrayOutputStream()
         proto.writeDelimitedTo(out)
         val delimitedBytes = out.toByteArray()
-        assertEquals(testValue, kotlinParser.parseDelimitedFrom(ByteArrayInputStream(delimitedBytes)))
-        assertEquals(
-            testValue,
-            kotlinParser.parseDelimitedFrom(ByteArrayInputStream(delimitedBytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parseDelimitedFrom(ByteArrayInputStream(delimitedBytes)) shouldBe testValue
+        kotlinParser.parseDelimitedFrom(
+            ByteArrayInputStream(delimitedBytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // Partial
-        assertEquals(testValue, kotlinParser.parsePartialFrom(bytes))
-        assertEquals(testValue, kotlinParser.parsePartialFrom(bytes, 0, bytes.size))
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(bytes, ExtensionRegistryLite.getEmptyRegistry())
-        )
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(bytes, 0, bytes.size, ExtensionRegistryLite.getEmptyRegistry())
-        )
-        assertEquals(testValue, kotlinParser.parsePartialFrom(byteString))
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(byteString, ExtensionRegistryLite.getEmptyRegistry())
-        )
-        assertEquals(testValue, kotlinParser.parsePartialFrom(ByteArrayInputStream(bytes)))
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(ByteArrayInputStream(bytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(CodedInputStream.newInstance(bytes))
-        )
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialFrom(CodedInputStream.newInstance(bytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parsePartialFrom(bytes) shouldBe testValue
+        kotlinParser.parsePartialFrom(bytes, 0, bytes.size) shouldBe testValue
+        kotlinParser.parsePartialFrom(
+            bytes,
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
+        kotlinParser.parsePartialFrom(
+            bytes,
+            0,
+            bytes.size,
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
+        kotlinParser.parsePartialFrom(byteString) shouldBe testValue
+        kotlinParser.parsePartialFrom(
+            byteString,
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
+        kotlinParser.parsePartialFrom(ByteArrayInputStream(bytes)) shouldBe testValue
+        kotlinParser.parsePartialFrom(
+            ByteArrayInputStream(bytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
+        kotlinParser.parsePartialFrom(CodedInputStream.newInstance(bytes)) shouldBe testValue
+        kotlinParser.parsePartialFrom(
+            CodedInputStream.newInstance(bytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
 
         // Partial Delimited
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialDelimitedFrom(ByteArrayInputStream(delimitedBytes))
-        )
-        assertEquals(
-            testValue,
-            kotlinParser.parsePartialDelimitedFrom(ByteArrayInputStream(delimitedBytes), ExtensionRegistryLite.getEmptyRegistry())
-        )
+        kotlinParser.parsePartialDelimitedFrom(ByteArrayInputStream(delimitedBytes)) shouldBe testValue
+        kotlinParser.parsePartialDelimitedFrom(
+            ByteArrayInputStream(delimitedBytes),
+            ExtensionRegistryLite.getEmptyRegistry()
+        ) shouldBe testValue
     }
 }

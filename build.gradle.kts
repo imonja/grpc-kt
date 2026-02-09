@@ -26,7 +26,8 @@ mapOf(
     "protobufVersion" to "4.30.2",
     "coroutinesVersion" to "1.10.2",
     "kotlinPoetVersion" to "2.1.0",
-    "jupiterVersion" to "5.11.4"
+    "jupiterVersion" to "5.11.4",
+    "kotestVersion" to "5.9.1"
 ).forEach({ (key, value) -> ext[key] = value })
 
 repositories {
@@ -64,6 +65,7 @@ subprojects {
         // Common test dependencies
         "testImplementation"("org.junit.jupiter:junit-jupiter-api:${rootProject.ext["jupiterVersion"]}")
         "testImplementation"("org.junit.jupiter:junit-jupiter-engine:${rootProject.ext["jupiterVersion"]}")
+        "testImplementation"("io.kotest:kotest-assertions-core:${rootProject.ext["kotestVersion"]}")
     }
 
     tasks.withType<JavaCompile> {

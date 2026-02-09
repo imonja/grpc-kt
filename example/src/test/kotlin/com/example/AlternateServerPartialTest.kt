@@ -3,6 +3,9 @@ package com.example
 import com.example.proto.*
 import io.grpc.ManagedChannelBuilder
 import io.grpc.ServerBuilder
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -169,7 +172,7 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test partial server unary call`() = runBlocking {
+    fun `test partial server unary call`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -180,10 +183,10 @@ class PartialServerExampleTest {
         val response = stub.getPerson(request)
 
         // Verify the response
-        assert(response.person?.name == "Jane Doe") { "Expected name to be 'Jane Doe'" }
-        assert(response.person?.age == 28) { "Expected age to be 28" }
-        assert(response.person?.gender == PersonKt.GenderKt.FEMALE) { "Expected gender to be FEMALE" }
-        assert(response.person?.address?.city == "New York") { "Expected city to be 'New York'" }
+        response.person?.name shouldBe "Jane Doe"
+        response.person?.age shouldBe 28
+        response.person?.gender shouldBe PersonKt.GenderKt.FEMALE
+        response.person?.address?.city shouldBe "New York"
     }
 
     @Test
@@ -202,7 +205,7 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test partial server streaming`() = runBlocking {
+    fun `test partial server streaming`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -217,16 +220,16 @@ class PartialServerExampleTest {
         }
 
         // Verify we received the expected number of responses
-        assert(responses.size == 3) { "Expected to receive 3 persons" }
+        responses.size shouldBe 3
 
         // Verify the content of the responses
-        assert(responses[0]?.name == "David") { "Expected first person to be 'David'" }
-        assert(responses[1]?.name == "Emma") { "Expected second person to be 'Emma'" }
-        assert(responses[2]?.name == "Sam") { "Expected third person to be 'Sam'" }
+        responses[0]?.name shouldBe "David"
+        responses[1]?.name shouldBe "Emma"
+        responses[2]?.name shouldBe "Sam"
     }
 
     @Test
-    fun `test partial client streaming`() = runBlocking {
+    fun `test partial client streaming`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -254,11 +257,11 @@ class PartialServerExampleTest {
         val response = stub.updatePerson(requests)
 
         // Verify the response
-        assert(response.success) { "Expected update to be successful" }
+        response.success shouldBe true
     }
 
     @Test
-    fun `test partial bidirectional streaming`() = runBlocking {
+    fun `test partial bidirectional streaming`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -285,18 +288,16 @@ class PartialServerExampleTest {
         job.join()
 
         // Verify we received the expected number of responses
-        assert(responses.size == 5) { "Expected to receive 5 chat responses" }
+        responses.size shouldBe 5
 
         // Verify the content of the responses
         for (i in 1..5) {
-            assert(responses[i - 1].contains("Hello $i from test client")) {
-                "Expected response $i to contain 'Hello $i from test client'"
-            }
+            responses[i - 1] shouldContain "Hello $i from test client"
         }
     }
 
     @Test
-    fun `test updateContactInfo with string oneof`() = runBlocking {
+    fun `test updateContactInfo with string oneof`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -312,7 +313,7 @@ class PartialServerExampleTest {
             contactInfo = contactInfoEmail
         )
         val responseEmail = stub.updateContactInfo(requestEmail)
-        assert(responseEmail.success) { "Expected email contact info update to be successful" }
+        responseEmail.success shouldBe true
 
         // Test with phone contact method
         val contactInfoPhone = ContactInfoKt(
@@ -326,7 +327,7 @@ class PartialServerExampleTest {
             contactInfo = contactInfoPhone
         )
         val responsePhone = stub.updateContactInfo(requestPhone)
-        assert(responsePhone.success) { "Expected phone contact info update to be successful" }
+        responsePhone.success shouldBe true
 
         // Test with username contact method
         val contactInfoUsername = ContactInfoKt(
@@ -340,7 +341,7 @@ class PartialServerExampleTest {
             contactInfo = contactInfoUsername
         )
         val responseUsername = stub.updateContactInfo(requestUsername)
-        assert(responseUsername.success) { "Expected username contact info update to be successful" }
+        responseUsername.success shouldBe true
 
         // Test with null contact method
         val contactInfoNull = ContactInfoKt(
@@ -354,11 +355,11 @@ class PartialServerExampleTest {
             contactInfo = contactInfoNull
         )
         val responseNull = stub.updateContactInfo(requestNull)
-        assert(responseNull.success) { "Expected null contact info update to be successful" }
+        responseNull.success shouldBe true
     }
 
     @Test
-    fun `test updateNotificationSettings with message oneof`() = runBlocking {
+    fun `test updateNotificationSettings with message oneof`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -380,8 +381,8 @@ class PartialServerExampleTest {
             settings = settingsEmail
         )
         val responseEmail = stub.updateNotificationSettings(requestEmail)
-        assert(responseEmail.success) { "Expected email notification settings update to be successful" }
-        assert(responseEmail.message == "Test settings updated") { "Expected specific response message" }
+        responseEmail.success shouldBe true
+        responseEmail.message shouldBe "Test settings updated"
 
         // Test with SMS settings
         val smsSettings = NotificationSettingsKt.SmsSettingsKt(
@@ -400,7 +401,7 @@ class PartialServerExampleTest {
             settings = settingsSms
         )
         val responseSms = stub.updateNotificationSettings(requestSms)
-        assert(responseSms.success) { "Expected SMS notification settings update to be successful" }
+        responseSms.success shouldBe true
 
         // Test with push settings
         val pushSettings = NotificationSettingsKt.PushSettingsKt(
@@ -420,7 +421,7 @@ class PartialServerExampleTest {
             settings = settingsPush
         )
         val responsePush = stub.updateNotificationSettings(requestPush)
-        assert(responsePush.success) { "Expected push notification settings update to be successful" }
+        responsePush.success shouldBe true
 
         // Test with null notification channel
         val settingsNull = NotificationSettingsKt(
@@ -433,11 +434,11 @@ class PartialServerExampleTest {
             settings = settingsNull
         )
         val responseNull = stub.updateNotificationSettings(requestNull)
-        assert(responseNull.success) { "Expected null notification settings update to be successful" }
+        responseNull.success shouldBe true
     }
 
     @Test
-    fun `test getSchedule with Kotlin keywords`() = runBlocking {
+    fun `test getSchedule with Kotlin keywords`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -449,19 +450,19 @@ class PartialServerExampleTest {
         val response = stub.getSchedule(request)
 
         // Verify response has items and timestamp (with Kotlin keyword field)
-        assert(response.items.isNotEmpty()) { "Expected schedule items in response" }
-        assert(response.`when` != null) { "Expected timestamp in response using Kotlin keyword 'when'" }
+        response.items.isNotEmpty() shouldBe true
+        response.`when` shouldNotBe null
 
         // Verify item properties (now nested ScheduleItem type)
         val firstItem = response.items.first()
-        assert(firstItem.id.isNotEmpty()) { "Expected schedule item to have ID" }
-        assert(firstItem.title.isNotEmpty()) { "Expected schedule item to have title" }
-        assert(firstItem.description.isNotEmpty()) { "Expected schedule item to have description" }
+        firstItem.id.isNotEmpty() shouldBe true
+        firstItem.title.isNotEmpty() shouldBe true
+        firstItem.description.isNotEmpty() shouldBe true
 
         // Verify we got the expected test data
-        assert(response.items.size == 2) { "Expected 2 schedule items" }
-        assert(firstItem.id == "test_schedule1") { "Expected first item ID to be 'test_schedule1'" }
-        assert(firstItem.title == "Test Meeting") { "Expected first item title to be 'Test Meeting'" }
+        response.items.size shouldBe 2
+        firstItem.id shouldBe "test_schedule1"
+        firstItem.title shouldBe "Test Meeting"
     }
 
     @Test
@@ -469,17 +470,17 @@ class PartialServerExampleTest {
         // This test verifies the structure of the PartialServerExample without making gRPC calls
 
         // Verify that the PartialServerExample object exists
-        assert(PartialServerExample != null) { "PartialServerExample should exist" }
+        PartialServerExample shouldNotBe null
 
         // Verify that the demonstratePartialGrpcService method exists
         val method = PartialServerExample::class.java.getDeclaredMethod("demonstratePartialGrpcService")
-        assert(method != null) { "demonstratePartialGrpcService method should exist" }
+        method shouldNotBe null
 
         // Verify that the SERVER_PORT constant exists and is in valid range
         val serverPortField = PartialServerExample::class.java.getDeclaredField("SERVER_PORT")
         serverPortField.isAccessible = true
         val serverPort = serverPortField.get(PartialServerExample) as Int
-        assert(serverPort in 60000..65000) { "SERVER_PORT should be in range 60000-65000, but was $serverPort" }
+        (serverPort in 60000..65000) shouldBe true
     }
 
     @Test
@@ -553,7 +554,7 @@ class PartialServerExampleTest {
         )
 
         // Verify that the service was created successfully
-        assert(partialService != null) { "Partial service should be created successfully" }
+        partialService shouldNotBe null
     }
 
     @Test
@@ -644,7 +645,7 @@ class PartialServerExampleTest {
                 val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
                 // Verify that the stub was created successfully
-                assert(stub != null) { "Client stub should be created successfully" }
+                stub shouldNotBe null
 
                 // We don't actually make any gRPC calls here
             } finally {
@@ -658,7 +659,7 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test simple unary call`() = runBlocking {
+    fun `test simple unary call`(): Unit = runBlocking {
         // This test makes a very simple unary gRPC call to see if that works
 
         // Define the service implementation functions - only implement getPerson for this test
@@ -751,8 +752,8 @@ class PartialServerExampleTest {
 
                 // Verify the response
                 println("[DEBUG_LOG] Received response: ${response.person?.name}, age: ${response.person?.age}")
-                assert(response.person?.name == "Simple Test Person") { "Expected name to be 'Simple Test Person'" }
-                assert(response.person?.age == 25) { "Expected age to be 25" }
+                response.person?.name shouldBe "Simple Test Person"
+                response.person?.age shouldBe 25
             } finally {
                 // Shutdown the channel
                 channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
@@ -770,22 +771,13 @@ class PartialServerExampleTest {
 
         // We're just checking that the method doesn't throw an exception
         // We don't need to verify any specific behavior
-        try {
-            println("[DEBUG_LOG] Starting direct use of PartialServerExample")
-            PartialServerExample.demonstratePartialGrpcService()
-            println("[DEBUG_LOG] Completed direct use of PartialServerExample")
-            // If we get here, the test passed
-            assert(true)
-        } catch (e: Exception) {
-            // If we get an exception, the test failed
-            println("[DEBUG_LOG] Exception during direct use of PartialServerExample: ${e.message}")
-            e.printStackTrace()
-            assert(false) { "Exception during direct use of PartialServerExample: ${e.message}" }
-        }
+        println("[DEBUG_LOG] Starting direct use of PartialServerExample")
+        PartialServerExample.demonstratePartialGrpcService()
+        println("[DEBUG_LOG] Completed direct use of PartialServerExample")
     }
 
     @Test
-    fun `test TestOptionalField - field not set`() = runBlocking {
+    fun `test TestOptionalField - field not set`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -795,12 +787,12 @@ class PartialServerExampleTest {
         val response = stub.testOptionalField(request)
 
         // Should return false for hasField when field is not set
-        assert(!response.hasField) { "Expected hasField to be false when field is not set" }
+        response.hasField shouldBe false
         println("✓ Field not set test passed: hasField = ${response.hasField}")
     }
 
     @Test
-    fun `test TestOptionalField - field set to empty string`() = runBlocking {
+    fun `test TestOptionalField - field set to empty string`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -810,12 +802,12 @@ class PartialServerExampleTest {
         val response = stub.testOptionalField(request)
 
         // Should return true for hasField when field is set to empty string
-        assert(response.hasField) { "Expected hasField to be true when field is set to empty string" }
+        response.hasField shouldBe true
         println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
     }
 
     @Test
-    fun `test TestOptionalField - field set to John`() = runBlocking {
+    fun `test TestOptionalField - field set to John`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -825,12 +817,12 @@ class PartialServerExampleTest {
         val response = stub.testOptionalField(request)
 
         // Should return true for hasField when field is set to "John"
-        assert(response.hasField) { "Expected hasField to be true when field is set to 'John'" }
+        response.hasField shouldBe true
         println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
     }
 
     @Test
-    fun `test TestOptionalField - comprehensive scenarios`() = runBlocking {
+    fun `test TestOptionalField - comprehensive scenarios`(): Unit = runBlocking {
         // Create a client stub
         val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
@@ -850,7 +842,7 @@ class PartialServerExampleTest {
             println("\nTesting: $description")
             val response = stub.testOptionalField(request)
 
-            assert(response.hasField == expectedHasField) { "Expected hasField to be $expectedHasField for case: $description" }
+            response.hasField shouldBe expectedHasField
 
             val fieldValue = if (request.hasField()) request.field else "<not set>"
             println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
