@@ -813,4 +813,31 @@ class ProtoExampleTest {
             return TestOptionalFieldResponseKt(hasField = hasField)
         }
     }
+
+    @Test
+    fun `test message parser`() {
+        val person = PersonKt(
+            name = "Parser User",
+            age = 40,
+            gender = PersonKt.GenderKt.MALE
+        )
+        val bytes = person.toByteArray()
+
+        // Use the generated parser
+        val parser = PersonKt.parser()
+        val deserialized = parser.parseFrom(bytes)
+
+        assert(person == deserialized) { "Parser should correctly deserialize Person" }
+
+        // Test with ContactInfo (has oneof)
+        val contact = ContactInfoKt(
+            name = "Contact Parser",
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "parser@example.com")
+        )
+        val contactBytes = contact.toByteArray()
+        val contactParser = ContactInfoKt.parser()
+        val deserializedContact = contactParser.parseFrom(contactBytes)
+
+        assert(contact == deserializedContact) { "Parser should correctly deserialize ContactInfo" }
+    }
 }

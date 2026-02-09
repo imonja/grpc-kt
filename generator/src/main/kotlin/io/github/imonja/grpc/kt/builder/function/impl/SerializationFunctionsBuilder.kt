@@ -3,6 +3,7 @@ package io.github.imonja.grpc.kt.builder.function.impl
 import com.google.protobuf.Descriptors.Descriptor
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.import.FunSpecsWithImports
 import io.github.imonja.grpc.kt.toolkit.import.Import
@@ -91,6 +92,18 @@ class SerializationFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 .addStatement("return %T.parseFrom(input).toKotlinProto()", javaType)
                 .build()
         )
+
+        // parser()
+        val parserClass = ClassName("com.google.protobuf", "Parser")
+        funSpecs.add(
+            FunSpec.builder("parser")
+                .receiver(companionType)
+                .returns(parserClass.parameterizedBy(kotlinType))
+                .addKdoc("Returns a [%T] for [%T].", parserClass, kotlinType)
+                .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
+                .build()
+        )
+        imports.add(Import("io.github.imonja.grpc.kt.common", listOf("toKotlinParser")))
 
         // Process nested types
         descriptor.nestedTypes.forEach { nestedType ->
