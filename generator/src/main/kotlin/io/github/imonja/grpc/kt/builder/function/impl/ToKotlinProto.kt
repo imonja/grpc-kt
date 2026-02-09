@@ -2,7 +2,6 @@ package io.github.imonja.grpc.kt.builder.function.impl
 
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
@@ -17,7 +16,7 @@ import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
 import io.github.imonja.grpc.kt.toolkit.isKnownPreDefinedType
 import io.github.imonja.grpc.kt.toolkit.isProtoOptional
 import io.github.imonja.grpc.kt.toolkit.javaFieldName
-import io.github.imonja.grpc.kt.toolkit.kotlinPackage
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
 import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
@@ -45,12 +44,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 val dataClassFieldName = field.jsonName
                 val protoFieldName = field.javaFieldName
                 val (template, downStreamImports) = transformCodeTemplate(field)
-                val oneOfDataClassName = ClassName(
-                    oneOf.file.kotlinPackage,
-                    generatedType.simpleName,
-                    oneOfJsonName.capitalize(),
-                    field.jsonName.capitalize()
-                )
+                val oneOfDataClassName = KotlinNames.oneOfVariantClassName(descriptor, oneOf, field)
                 functionBuilder.addStatement(
                     "%L.%LCase.%L -> %L( %L = %L )".trimIndent(),
                     protoType,

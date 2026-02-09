@@ -2,6 +2,7 @@ package io.github.imonja.grpc.kt.toolkit
 
 import com.google.protobuf.Descriptors.EnumDescriptor
 import com.squareup.kotlinpoet.ClassName
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 
 val EnumDescriptor.protobufJavaTypeName: ClassName
     get() {
@@ -26,6 +27,6 @@ val EnumDescriptor.protobufKotlinTypeName: ClassName
             .replace(this.file.`package` + ".", "")
             .split('.')
 
-        val kotlinNames = names.map { it.plus("Kt") }
+        val kotlinNames = names.map { it.plus(KotlinNames.SUFFIX) }
         return ClassName(this.file.kotlinPackage, kotlinNames)
     }

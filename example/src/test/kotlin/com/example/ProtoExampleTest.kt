@@ -84,13 +84,13 @@ class ProtoExampleTest {
     fun `test ContactInfo DSL with oneof`() {
         val contact = ContactInfoKt {
             name = "Oneof User"
-            contactMethod = ContactInfoKt.ContactMethod.Email(email = "dsl@example.com")
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "dsl@example.com")
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         }
 
         assert(contact.name == "Oneof User")
-        assert(contact.contactMethod is ContactInfoKt.ContactMethod.Email)
-        assert((contact.contactMethod as ContactInfoKt.ContactMethod.Email).email == "dsl@example.com")
+        assert(contact.contactMethod is ContactInfoKt.ContactMethodKt.EmailKt)
+        assert((contact.contactMethod as ContactInfoKt.ContactMethodKt.EmailKt).email == "dsl@example.com")
     }
 
     @Test
@@ -190,7 +190,7 @@ class ProtoExampleTest {
     fun `test ContactInfo phone oneof serialization`() {
         val contactInfo = ContactInfoKt(
             name = "Bob",
-            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+123456789"),
+            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+123456789"),
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
 
@@ -200,7 +200,7 @@ class ProtoExampleTest {
 
         val deserialized = javaProto.toKotlinProto()
         assert(contactInfo == deserialized) { "Contact info should match after serialization" }
-        assert(deserialized.contactMethod is ContactInfoKt.ContactMethod.Phone) { "Contact method should be Phone" }
+        assert(deserialized.contactMethod is ContactInfoKt.ContactMethodKt.PhoneKt) { "Contact method should be Phone" }
         assert(deserialized.preference == ContactInfoKt.ContactPreferenceKt.PHONE_ONLY) { "Preference should be phone only" }
     }
 
@@ -322,7 +322,7 @@ class ProtoExampleTest {
         // Test ContactInfo with email
         val contactInfoEmail = ContactInfoKt(
             name = "Alice Smith",
-            contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
@@ -335,7 +335,7 @@ class ProtoExampleTest {
         // Test ContactInfo with phone
         val contactInfoPhone = ContactInfoKt(
             name = "Bob Johnson",
-            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
             tags = listOf("lead"),
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
@@ -347,7 +347,7 @@ class ProtoExampleTest {
         // Test ContactInfo with username
         val contactInfoUsername = ContactInfoKt(
             name = "Charlie Brown",
-            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
+            contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@charlie_b"),
             tags = listOf("partner"),
             preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
@@ -381,7 +381,7 @@ class ProtoExampleTest {
         )
         val notificationSettingsEmail = NotificationSettingsKt(
             userId = "user123",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
                 emailSettings = emailSettings
             ),
             notificationsEnabled = true
@@ -398,7 +398,7 @@ class ProtoExampleTest {
         )
         val notificationSettingsSms = NotificationSettingsKt(
             userId = "user456",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
                 smsSettings = smsSettings
             ),
             notificationsEnabled = true
@@ -417,7 +417,7 @@ class ProtoExampleTest {
         )
         val notificationSettingsPush = NotificationSettingsKt(
             userId = "user789",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
                 pushSettings = pushSettings
             ),
             notificationsEnabled = false
@@ -449,7 +449,7 @@ class ProtoExampleTest {
         // Test with EMAIL preference
         val contactInfoEmail = ContactInfoKt(
             name = "Test User Email",
-            contactMethod = ContactInfoKt.ContactMethod.Email(email = "test@example.com"),
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "test@example.com"),
             tags = listOf("test", "email"),
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
@@ -460,7 +460,7 @@ class ProtoExampleTest {
         // Test with PHONE preference
         val contactInfoPhone = ContactInfoKt(
             name = "Test User Phone",
-            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "123-456"),
+            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "123-456"),
             tags = listOf("test", "phone"),
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
@@ -482,7 +482,7 @@ class ProtoExampleTest {
         )
         val notificationSettings = NotificationSettingsKt(
             userId = "test456",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
                 pushSettings = pushSettings
             ),
             notificationsEnabled = true

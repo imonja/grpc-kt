@@ -105,7 +105,7 @@ object ProtoExample {
         // Create ContactInfo with email
         val contactInfoEmail = ContactInfoKt(
             name = "Alice Smith",
-            contactMethod = ContactInfoKt.ContactMethod.Email(email = "alice@example.com"),
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
@@ -114,7 +114,7 @@ object ProtoExample {
         // Create ContactInfo with phone
         val contactInfoPhone = ContactInfoKt(
             name = "Bob Johnson",
-            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
             tags = listOf("lead"),
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
@@ -123,7 +123,7 @@ object ProtoExample {
         // Create ContactInfo with username
         val contactInfoUsername = ContactInfoKt(
             name = "Charlie Brown",
-            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@charlie_b"),
+            contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@charlie_b"),
             tags = listOf("partner"),
             preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
@@ -146,7 +146,7 @@ object ProtoExample {
         )
         val notificationSettingsEmail = NotificationSettingsKt(
             userId = "user123",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
                 emailSettings = emailSettings
             ),
             notificationsEnabled = true
@@ -160,7 +160,7 @@ object ProtoExample {
         )
         val notificationSettingsSms = NotificationSettingsKt(
             userId = "user456",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
                 smsSettings = smsSettings
             ),
             notificationsEnabled = true
@@ -175,7 +175,7 @@ object ProtoExample {
         )
         val notificationSettingsPush = NotificationSettingsKt(
             userId = "user789",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
                 pushSettings = pushSettings
             ),
             notificationsEnabled = false
@@ -192,18 +192,18 @@ object ProtoExample {
         println("\n--- Accessing Oneof Fields ---")
         println(
             "Contact method type: ${when (contactInfoEmail.contactMethod) {
-                is ContactInfoKt.ContactMethod.Email -> "Email: ${contactInfoEmail.contactMethod.email}"
-                is ContactInfoKt.ContactMethod.Phone -> "Phone: ${contactInfoEmail.contactMethod.phone}"
-                is ContactInfoKt.ContactMethod.Username -> "Username: ${contactInfoEmail.contactMethod.username}"
+                is ContactInfoKt.ContactMethodKt.EmailKt -> "Email: ${contactInfoEmail.contactMethod.email}"
+                is ContactInfoKt.ContactMethodKt.PhoneKt -> "Phone: ${contactInfoEmail.contactMethod.phone}"
+                is ContactInfoKt.ContactMethodKt.UsernameKt -> "Username: ${contactInfoEmail.contactMethod.username}"
                 null -> "No contact method set"
             }}"
         )
 
         println(
             "Notification channel type: ${when (notificationSettingsEmail.notificationChannel) {
-                is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email notifications to: ${notificationSettingsEmail.notificationChannel.emailSettings?.emailAddress}"
-                is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS notifications to: ${notificationSettingsEmail.notificationChannel.smsSettings?.phoneNumber}"
-                is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push notifications to device: ${notificationSettingsEmail.notificationChannel.pushSettings?.deviceToken}"
+                is NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt -> "Email notifications to: ${notificationSettingsEmail.notificationChannel.emailSettings?.emailAddress}"
+                is NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt -> "SMS notifications to: ${notificationSettingsEmail.notificationChannel.smsSettings?.phoneNumber}"
+                is NotificationSettingsKt.NotificationChannelKt.PushSettingsKt -> "Push notifications to device: ${notificationSettingsEmail.notificationChannel.pushSettings?.deviceToken}"
                 null -> "No notification channel set"
             }}"
         )
@@ -348,7 +348,7 @@ object ProtoExample {
             println("\n--- UpdateContactInfo Example ---")
             val contactInfo = ContactInfoKt(
                 name = "Service User",
-                contactMethod = ContactInfoKt.ContactMethod.Email(email = "service@example.com"),
+                contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "service@example.com"),
                 tags = listOf("service", "automated"),
                 preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
             )
@@ -368,7 +368,7 @@ object ProtoExample {
             )
             val notificationSettings = NotificationSettingsKt(
                 userId = "service456",
-                notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+                notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
                     pushSettings = pushSettings
                 ),
                 notificationsEnabled = true
@@ -495,9 +495,9 @@ object ProtoExample {
             println("Contact info: ${request.contactInfo}")
             println(
                 "Contact method: ${when (request.contactInfo?.contactMethod) {
-                    is ContactInfoKt.ContactMethod.Email -> "Email: ${request.contactInfo.contactMethod.email}"
-                    is ContactInfoKt.ContactMethod.Phone -> "Phone: ${request.contactInfo.contactMethod.phone}"
-                    is ContactInfoKt.ContactMethod.Username -> "Username: ${request.contactInfo.contactMethod.username}"
+                    is ContactInfoKt.ContactMethodKt.EmailKt -> "Email: ${request.contactInfo.contactMethod.email}"
+                    is ContactInfoKt.ContactMethodKt.PhoneKt -> "Phone: ${request.contactInfo.contactMethod.phone}"
+                    is ContactInfoKt.ContactMethodKt.UsernameKt -> "Username: ${request.contactInfo.contactMethod.username}"
                     null -> "None"
                 }}"
             )
@@ -510,9 +510,9 @@ object ProtoExample {
             println("Settings: ${request.settings}")
             println(
                 "Notification channel: ${when (request.settings?.notificationChannel) {
-                    is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
-                    is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
-                    is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
+                    is NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
+                    is NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
+                    is NotificationSettingsKt.NotificationChannelKt.PushSettingsKt -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
                     null -> "None"
                 }}"
             )

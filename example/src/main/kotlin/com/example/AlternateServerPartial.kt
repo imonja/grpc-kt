@@ -107,9 +107,9 @@ object PartialServerExample {
                 println("Partial server received updateContactInfo request for person: ${request.personId}")
                 println(
                     "Contact method: ${when (request.contactInfo?.contactMethod) {
-                        is ContactInfoKt.ContactMethod.Email -> "Email: ${request.contactInfo.contactMethod.email}"
-                        is ContactInfoKt.ContactMethod.Phone -> "Phone: ${request.contactInfo.contactMethod.phone}"
-                        is ContactInfoKt.ContactMethod.Username -> "Username: ${request.contactInfo.contactMethod.username}"
+                        is ContactInfoKt.ContactMethodKt.EmailKt -> "Email: ${request.contactInfo.contactMethod.email}"
+                        is ContactInfoKt.ContactMethodKt.PhoneKt -> "Phone: ${request.contactInfo.contactMethod.phone}"
+                        is ContactInfoKt.ContactMethodKt.UsernameKt -> "Username: ${request.contactInfo.contactMethod.username}"
                         null -> "None"
                     }}"
                 )
@@ -122,9 +122,9 @@ object PartialServerExample {
                 println("Partial server received updateNotificationSettings request for user: ${request.userId}")
                 println(
                     "Notification channel: ${when (request.settings?.notificationChannel) {
-                        is NotificationSettingsKt.NotificationChannel.EmailSettings -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
-                        is NotificationSettingsKt.NotificationChannel.SmsSettings -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
-                        is NotificationSettingsKt.NotificationChannel.PushSettings -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
+                        is NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt -> "Email: ${request.settings.notificationChannel.emailSettings?.emailAddress}"
+                        is NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
+                        is NotificationSettingsKt.NotificationChannelKt.PushSettingsKt -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
                         null -> "None"
                     }}"
                 )
@@ -281,7 +281,7 @@ object PartialServerExample {
             println("\n--- Update Contact Info Example (String Oneof) ---")
             val contactInfo = ContactInfoKt(
                 name = "John Doe",
-                contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@example.com"),
+                contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "john@example.com"),
                 tags = listOf("customer", "premium"),
                 preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
             )
@@ -301,7 +301,7 @@ object PartialServerExample {
             )
             val notificationSettings = NotificationSettingsKt(
                 userId = "user456",
-                notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+                notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
                     emailSettings = emailSettings
                 ),
                 notificationsEnabled = true

@@ -2,7 +2,6 @@ package io.github.imonja.grpc.kt.builder.function.impl
 
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
@@ -16,7 +15,7 @@ import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
 import io.github.imonja.grpc.kt.toolkit.isKnownPreDefinedType
 import io.github.imonja.grpc.kt.toolkit.isProtoOptional
 import io.github.imonja.grpc.kt.toolkit.javaFieldName
-import io.github.imonja.grpc.kt.toolkit.kotlinPackage
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 import io.github.imonja.grpc.kt.toolkit.protobufJavaTypeName
 import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
@@ -40,12 +39,7 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
             val oneOfJsonName = fieldNameToJsonName(oneOf.name)
             functionBuilder.beginControlFlow("when (%L)", oneOfJsonName.escapeIfNecessary())
             for (field in oneOf.fields) {
-                val oneOfFieldDataClassName = ClassName(
-                    oneOf.file.kotlinPackage,
-                    generatedType.simpleName,
-                    oneOfJsonName.capitalize(),
-                    field.jsonName.capitalize()
-                )
+                val oneOfFieldDataClassName = KotlinNames.oneOfVariantClassName(descriptor, oneOf, field)
                 functionBuilder.beginControlFlow("is %L ->", oneOfFieldDataClassName)
                 val (template, downStreamImports) = transformCodeTemplateForOneOf(field)
                 functionBuilder.addStatement(

@@ -303,7 +303,7 @@ class PartialServerExampleTest {
         // Test with email contact method
         val contactInfoEmail = ContactInfoKt(
             name = "John Email",
-            contactMethod = ContactInfoKt.ContactMethod.Email(email = "john@test.com"),
+            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "john@test.com"),
             tags = listOf("test", "email"),
             preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
         )
@@ -317,7 +317,7 @@ class PartialServerExampleTest {
         // Test with phone contact method
         val contactInfoPhone = ContactInfoKt(
             name = "Jane Phone",
-            contactMethod = ContactInfoKt.ContactMethod.Phone(phone = "+1-555-0123"),
+            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
             tags = listOf("test", "phone"),
             preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
         )
@@ -331,7 +331,7 @@ class PartialServerExampleTest {
         // Test with username contact method
         val contactInfoUsername = ContactInfoKt(
             name = "Bob Username",
-            contactMethod = ContactInfoKt.ContactMethod.Username(username = "@bobtest"),
+            contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@bobtest"),
             tags = listOf("test", "username"),
             preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
         )
@@ -370,7 +370,7 @@ class PartialServerExampleTest {
         )
         val settingsEmail = NotificationSettingsKt(
             userId = "user123",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.EmailSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
                 emailSettings = emailSettings
             ),
             notificationsEnabled = true
@@ -390,7 +390,7 @@ class PartialServerExampleTest {
         )
         val settingsSms = NotificationSettingsKt(
             userId = "user456",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.SmsSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
                 smsSettings = smsSettings
             ),
             notificationsEnabled = false
@@ -410,7 +410,7 @@ class PartialServerExampleTest {
         )
         val settingsPush = NotificationSettingsKt(
             userId = "user789",
-            notificationChannel = NotificationSettingsKt.NotificationChannel.PushSettings(
+            notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
                 pushSettings = pushSettings
             ),
             notificationsEnabled = true

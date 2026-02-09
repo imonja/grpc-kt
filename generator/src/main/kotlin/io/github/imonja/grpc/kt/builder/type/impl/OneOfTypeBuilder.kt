@@ -3,7 +3,6 @@ package io.github.imonja.grpc.kt.builder.type.impl
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.OneofDescriptor
 import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
@@ -12,8 +11,7 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.toolkit.fieldNameToJsonName
 import io.github.imonja.grpc.kt.toolkit.import.Import
-import io.github.imonja.grpc.kt.toolkit.kotlinPackage
-import io.github.imonja.grpc.kt.toolkit.shortNames
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 
 /**
  * Builder for creating Kotlin sealed interfaces for Protocol Buffer oneOf fields.
@@ -37,13 +35,8 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
     fun build(oneOf: OneofDescriptor, parentDescriptor: Descriptor): OneOfResult {
         val imports = mutableSetOf<Import>()
         val oneOfJsonName = fieldNameToJsonName(oneOf.name)
-        val interfaceSimpleName = oneOfJsonName.capitalize()
-        val interfaceClassName = ClassName(
-            oneOf.file.kotlinPackage,
-            *parentDescriptor.shortNames.toMutableList().apply {
-                add(interfaceSimpleName)
-            }.toTypedArray()
-        )
+        val interfaceSimpleName = KotlinNames.oneOfInterfaceSimpleName(oneOfJsonName)
+        val interfaceClassName = KotlinNames.oneOfInterfaceClassName(parentDescriptor, oneOf)
 
         val builder = TypeSpec.interfaceBuilder(interfaceClassName)
             .addModifiers(KModifier.SEALED)
@@ -53,7 +46,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
             imports.addAll(default.imports)
 
             builder.addType(
-                TypeSpec.classBuilder(field.jsonName.capitalize())
+                TypeSpec.classBuilder(KotlinNames.oneOfVariantSimpleName(field.jsonName))
                     .addModifiers(KModifier.DATA)
                     .primaryConstructor(
                         FunSpec.constructorBuilder()
@@ -80,7 +73,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
                             )
                         }
                     }
-                    .addSuperinterface(ClassName("", interfaceSimpleName))
+                    .addSuperinterface(interfaceClassName)
                     .build()
             )
         }
@@ -89,7 +82,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
             listOf(builder.build()),
             imports,
             oneOfJsonName,
-            ClassName("", interfaceSimpleName)
+            interfaceClassName
         )
     }
 }

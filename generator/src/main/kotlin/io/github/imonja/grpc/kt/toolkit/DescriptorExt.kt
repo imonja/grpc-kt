@@ -3,6 +3,7 @@ package io.github.imonja.grpc.kt.toolkit
 import com.google.protobuf.Descriptors.Descriptor
 import com.squareup.kotlinpoet.ClassName
 import io.github.imonja.grpc.kt.toolkit.import.Import
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
 val Descriptor.protobufJavaTypeName: ClassName
@@ -26,7 +27,7 @@ val Descriptor.protobufKotlinTypeName: ClassName
     }
 
 val Descriptor.shortKotlinNames: List<String>
-    get() = shortNames.map { it.plus("Kt") }
+    get() = shortNames.map { it.plus(KotlinNames.SUFFIX) }
 
 val Descriptor.shortNames: List<String>
     get() = this.fullName

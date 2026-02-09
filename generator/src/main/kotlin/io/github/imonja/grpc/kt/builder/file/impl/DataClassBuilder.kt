@@ -14,6 +14,7 @@ import io.github.imonja.grpc.kt.builder.type.impl.ProtoTypeMapper
 import io.github.imonja.grpc.kt.toolkit.addAllImports
 import io.github.imonja.grpc.kt.toolkit.addGeneratedFileComments
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
+import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 
 /**
  * Builder for creating Kotlin data classes from Protocol Buffer file descriptors.
@@ -33,7 +34,7 @@ class DataClassBuilder : FileSpecBuilder {
         for (messageType in fileDescriptor.messageTypes) {
             val fileSpecBuilder = FileSpec.builder(
                 fileDescriptor.kotlinPackage,
-                "${messageType.name}Kt.kt"
+                KotlinNames.messageFileName(messageType.name)
             )
 
             // Add data class type specs
@@ -72,7 +73,7 @@ class DataClassBuilder : FileSpecBuilder {
         for (enumType in fileDescriptor.enumTypes) {
             val fileSpecBuilder = FileSpec.builder(
                 fileDescriptor.kotlinPackage,
-                "${enumType.name}Kt.kt"
+                KotlinNames.enumFileName(enumType.name)
             )
 
             // Add enum type specs
