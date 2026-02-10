@@ -26,27 +26,6 @@ class SerializationFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
         val kotlinType = descriptor.protobufKotlinTypeName
         val javaType = descriptor.protobufJavaTypeName
 
-        // toByteArray()
-        funSpecs.add(
-            FunSpec.builder("toByteArray")
-                .receiver(kotlinType)
-                .returns(ByteArray::class)
-                .addKdoc("Serializes [%T] to a byte array.", kotlinType)
-                .addStatement("return toJavaProto().toByteArray()")
-                .build()
-        )
-
-        // toByteString()
-        val byteStringClass = ClassName("com.google.protobuf", "ByteString")
-        funSpecs.add(
-            FunSpec.builder("toByteString")
-                .receiver(kotlinType)
-                .returns(byteStringClass)
-                .addKdoc("Serializes [%T] to a [%T].", kotlinType, byteStringClass)
-                .addStatement("return toJavaProto().toByteString()")
-                .build()
-        )
-
         // writeTo(output: OutputStream)
         val outputStreamClass = ClassName("java.io", "OutputStream")
         funSpecs.add(
@@ -58,6 +37,7 @@ class SerializationFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 .build()
         )
 
+        val byteStringClass = ClassName("com.google.protobuf", "ByteString")
         // parseFrom(data: ByteArray)
         val companionType = ClassName(kotlinType.packageName, *kotlinType.simpleNames.toTypedArray(), "Companion")
         funSpecs.add(

@@ -47,6 +47,8 @@ class DataClassTypeBuilder(
                     addModifiers(KModifier.DATA)
                 }
             }
+            // Implement common message interface
+            .addSuperinterface(ClassName("io.github.imonja.grpc.kt.common", "ProtoKtMessage"))
 
         val constructorBuilder = FunSpec.constructorBuilder()
 
@@ -129,6 +131,22 @@ class DataClassTypeBuilder(
         }
 
         dataClassBuilder.primaryConstructor(constructorBuilder.build())
+
+        // Implement serialization methods from ProtoKtMessage
+        dataClassBuilder.addFunction(
+            FunSpec.builder("toByteArray")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(ByteArray::class)
+                .addStatement("return this.toJavaProto().toByteArray()")
+                .build()
+        )
+        dataClassBuilder.addFunction(
+            FunSpec.builder("toByteString")
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(ClassName("com.google.protobuf", "ByteString"))
+                .addStatement("return this.toJavaProto().toByteString()")
+                .build()
+        )
 
         // DSL Builder
         val builderClassName = "Builder"
