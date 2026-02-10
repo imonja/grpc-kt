@@ -93,16 +93,27 @@ class SerializationFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 .build()
         )
 
-        // parser()
+        // javaParser()
         val parserClass = ClassName("com.google.protobuf", "Parser")
         funSpecs.add(
-            FunSpec.builder("parser")
+            FunSpec.builder("javaParser")
+                .receiver(companionType)
+                .returns(parserClass.parameterizedBy(javaType))
+                .addKdoc("Returns a [%T] for the Java Protobuf message [%T].", parserClass, javaType)
+                .addStatement("return %T.parser()", javaType)
+                .build()
+        )
+
+        // kotlinParser()
+        funSpecs.add(
+            FunSpec.builder("kotlinParser")
                 .receiver(companionType)
                 .returns(parserClass.parameterizedBy(kotlinType))
                 .addKdoc("Returns a [%T] for [%T].", parserClass, kotlinType)
                 .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
                 .build()
         )
+
         imports.add(Import("io.github.imonja.grpc.kt.common", listOf("toKotlinParser")))
 
         // Process nested types
