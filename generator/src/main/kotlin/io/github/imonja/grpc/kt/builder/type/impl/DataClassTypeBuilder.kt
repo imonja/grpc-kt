@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
@@ -48,7 +49,10 @@ class DataClassTypeBuilder(
                 }
             }
             // Implement common message interface
-            .addSuperinterface(ClassName("io.github.imonja.grpc.kt.common", "ProtoKtMessage"))
+            .addSuperinterface(
+                ClassName("io.github.imonja.grpc.kt.common", "ProtoKtMessage")
+                    .parameterizedBy(descriptor.protobufJavaTypeName)
+            )
 
         val constructorBuilder = FunSpec.constructorBuilder()
 
@@ -147,6 +151,13 @@ class DataClassTypeBuilder(
                 .addStatement("return this.toJavaProto().toByteString()")
                 .build()
         )
+        dataClassBuilder.addFunction(
+            FunSpec.builder("writeTo")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("output", ClassName("java.io", "OutputStream"))
+                .addStatement("this.toJavaProto().writeTo(output)")
+                .build()
+        )
 
         // DSL Builder
         val builderClassName = "Builder"
@@ -195,8 +206,13 @@ class DataClassTypeBuilder(
         builderTypeSpec.addFunction(buildFunction.build())
         dataClassBuilder.addType(builderTypeSpec.build())
 
-        // Companion object with invoke operator
+        // Companion object with invoke operator and ProtoKtCompanion implementation
+        val javaType = descriptor.protobufJavaTypeName
         val companionBuilder = TypeSpec.companionObjectBuilder()
+            .addSuperinterface(
+                ClassName("io.github.imonja.grpc.kt.common", "ProtoKtCompanion")
+                    .parameterizedBy(className, javaType)
+            )
             .addFunction(
                 FunSpec.builder("invoke")
                     .addModifiers(KModifier.OPERATOR)
@@ -213,8 +229,48 @@ class DataClassTypeBuilder(
                     .addStatement("return %L().apply(block).build()", builderClassName)
                     .build()
             )
-            .build()
-        dataClassBuilder.addType(companionBuilder)
+            .addFunction(
+                FunSpec.builder("parseFrom")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter("data", ByteArray::class)
+                    .returns(className)
+                    .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder("parseFrom")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter("data", ClassName("com.google.protobuf", "ByteString"))
+                    .returns(className)
+                    .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder("parseFrom")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .addParameter("input", ClassName("java.io", "InputStream"))
+                    .returns(className)
+                    .addStatement("return %T.parseFrom(input).toKotlinProto()", javaType)
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder("javaParser")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(javaType))
+                    .addStatement("return %T.parser()", javaType)
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder("kotlinParser")
+                    .addModifiers(KModifier.OVERRIDE)
+                    .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(className))
+                    .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
+                    .build()
+            )
+
+        imports.add(Import("io.github.imonja.grpc.kt.common", listOf("toKotlinParser")))
+
+        dataClassBuilder.addType(companionBuilder.build())
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(dataClassBuilder.build()),

@@ -6,7 +6,6 @@ import io.github.imonja.grpc.kt.builder.file.FileSpecBuilder
 import io.github.imonja.grpc.kt.builder.function.impl.ConversionFunctionsBuilder
 import io.github.imonja.grpc.kt.builder.function.impl.EnumConversionFunctionsBuilder
 import io.github.imonja.grpc.kt.builder.function.impl.FieldCheckFunctionsBuilder
-import io.github.imonja.grpc.kt.builder.function.impl.SerializationFunctionsBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.DataClassTypeBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.EnumTypeBuilder
 import io.github.imonja.grpc.kt.builder.type.impl.OneOfTypeBuilder
@@ -27,7 +26,6 @@ class DataClassBuilder : FileSpecBuilder {
     private val conversionFunctionsBuilder = ConversionFunctionsBuilder()
     private val enumConversionFunctionsBuilder = EnumConversionFunctionsBuilder()
     private val fieldCheckFunctionsBuilder = FieldCheckFunctionsBuilder()
-    private val serializationFunctionsBuilder = SerializationFunctionsBuilder()
 
     override fun build(fileDescriptor: FileDescriptor): List<FileSpec> {
         val fileSpecs = mutableMapOf<String, FileSpec>()
@@ -56,13 +54,6 @@ class DataClassBuilder : FileSpecBuilder {
             if (fieldCheckFunSpecsWithImports.funSpecs.isNotEmpty()) {
                 fileSpecBuilder.addFunctions(fieldCheckFunSpecsWithImports.funSpecs)
                 fileSpecBuilder.addAllImports(fieldCheckFunSpecsWithImports.imports)
-            }
-
-            // Add serialization functions
-            val serializationFunSpecsWithImports = serializationFunctionsBuilder.build(messageType)
-            if (serializationFunSpecsWithImports.funSpecs.isNotEmpty()) {
-                fileSpecBuilder.addFunctions(serializationFunSpecsWithImports.funSpecs)
-                fileSpecBuilder.addAllImports(serializationFunSpecsWithImports.imports)
             }
 
             if (fileSpecBuilder.members.isNotEmpty()) {

@@ -770,7 +770,9 @@ class ProtoExampleTest {
             return UpdateContactInfoResponseKt(success = true)
         }
 
-        override suspend fun updateNotificationSettings(request: UpdateNotificationSettingsRequestKt): UpdateNotificationSettingsResponseKt {
+        override suspend fun updateNotificationSettings(
+            request: UpdateNotificationSettingsRequestKt
+        ): UpdateNotificationSettingsResponseKt {
             println("Test server received updateNotificationSettings request for user: ${request.userId}")
             return UpdateNotificationSettingsResponseKt(
                 success = true,

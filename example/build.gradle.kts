@@ -56,7 +56,13 @@ grpcKtProtobuf {
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     ktlint {
+        verbose.set(true)
+        outputToConsole.set(true)
+        enableExperimentalRules.set(true)
         ignoreFailures.set(true)
+        filter {
+            include("**/build/generated/sources/proto/**")
+        }
     }
 }
 

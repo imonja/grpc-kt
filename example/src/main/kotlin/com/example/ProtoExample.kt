@@ -505,7 +505,9 @@ object ProtoExample {
             return UpdateContactInfoResponseKt(success = true)
         }
 
-        override suspend fun updateNotificationSettings(request: UpdateNotificationSettingsRequestKt): UpdateNotificationSettingsResponseKt {
+        override suspend fun updateNotificationSettings(
+            request: UpdateNotificationSettingsRequestKt
+        ): UpdateNotificationSettingsResponseKt {
             println("Server received updateNotificationSettings request for user: ${request.userId}")
             println("Settings: ${request.settings}")
             println(
