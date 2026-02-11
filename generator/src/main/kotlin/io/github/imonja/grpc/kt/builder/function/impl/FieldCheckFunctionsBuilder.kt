@@ -2,6 +2,7 @@ package io.github.imonja.grpc.kt.builder.function.impl
 
 import com.google.protobuf.Descriptors.Descriptor
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.import.FunSpecsWithImports
@@ -39,6 +40,7 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 val methodName = "has${fieldName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }}"
 
                 val methodBuilder = FunSpec.builder(methodName)
+                    .addModifiers(KModifier.PUBLIC)
                     .receiver(generatedType)
                     .returns(Boolean::class)
                     .addStatement("return this.%N != null", PropertySpec.builder(fieldName, String::class).build())

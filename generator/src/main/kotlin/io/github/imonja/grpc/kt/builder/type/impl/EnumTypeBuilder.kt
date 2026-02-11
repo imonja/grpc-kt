@@ -66,7 +66,7 @@ class EnumTypeBuilder : TypeSpecsBuilder<EnumDescriptor> {
         // toJavaProto override
         enumBuilder.addFunction(
             FunSpec.builder("toJavaProto")
-                .addModifiers(KModifier.OVERRIDE)
+                .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                 .returns(javaType)
                 .addStatement("return %T.forNumber(number) ?: %T.UNRECOGNIZED", javaType, javaType)
                 .build()
@@ -77,6 +77,7 @@ class EnumTypeBuilder : TypeSpecsBuilder<EnumDescriptor> {
             TypeSpec.companionObjectBuilder()
                 .addFunction(
                     FunSpec.builder("forNumber")
+                        .addModifiers(KModifier.PUBLIC)
                         .addParameter("number", INT)
                         .returns(kotlinType)
                         .addStatement("return entries.firstOrNull { it.number == number } ?: %T.UNRECOGNIZED", kotlinType)

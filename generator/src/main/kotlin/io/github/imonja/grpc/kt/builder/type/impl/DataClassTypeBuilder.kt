@@ -147,8 +147,10 @@ class DataClassTypeBuilder(
         // DSL Builder
         val builderClassName = "Builder"
         val builderTypeSpec = TypeSpec.classBuilder(builderClassName)
+            .addModifiers(KModifier.PUBLIC)
         FunSpec.constructorBuilder()
         val buildFunction = FunSpec.builder("build")
+            .addModifiers(KModifier.PUBLIC)
             .returns(className)
         val buildArgs = mutableListOf<String>()
 
@@ -200,7 +202,7 @@ class DataClassTypeBuilder(
             )
             .addFunction(
                 FunSpec.builder("invoke")
-                    .addModifiers(KModifier.OPERATOR)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OPERATOR)
                     .addParameter(
                         ParameterSpec.builder(
                             "block",
@@ -216,7 +218,7 @@ class DataClassTypeBuilder(
             )
             .addFunction(
                 FunSpec.builder("parseFrom")
-                    .addModifiers(KModifier.OVERRIDE)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("data", ByteArray::class)
                     .returns(className)
                     .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
@@ -224,7 +226,7 @@ class DataClassTypeBuilder(
             )
             .addFunction(
                 FunSpec.builder("parseFrom")
-                    .addModifiers(KModifier.OVERRIDE)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("data", ClassName("com.google.protobuf", "ByteString"))
                     .returns(className)
                     .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
@@ -232,7 +234,7 @@ class DataClassTypeBuilder(
             )
             .addFunction(
                 FunSpec.builder("parseFrom")
-                    .addModifiers(KModifier.OVERRIDE)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("input", ClassName("java.io", "InputStream"))
                     .returns(className)
                     .addStatement("return %T.parseFrom(input).toKotlinProto()", javaType)
@@ -240,14 +242,14 @@ class DataClassTypeBuilder(
             )
             .addFunction(
                 FunSpec.builder("javaParser")
-                    .addModifiers(KModifier.OVERRIDE)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(javaType))
                     .addStatement("return %T.parser()", javaType)
                     .build()
             )
             .addFunction(
                 FunSpec.builder("kotlinParser")
-                    .addModifiers(KModifier.OVERRIDE)
+                    .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(className))
                     .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
                     .build()

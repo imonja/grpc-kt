@@ -4,6 +4,7 @@ import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.MAP_ENTRY_VALUE_FIELD_NUMBER
 import io.github.imonja.grpc.kt.toolkit.endControlFlowWithComma
@@ -28,6 +29,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
         val generatedType = descriptor.protobufKotlinTypeName
         val protoType = descriptor.protobufJavaTypeName
         val functionBuilder = FunSpec.builder("toKotlinProto")
+            .addModifiers(KModifier.PUBLIC)
             .receiver(protoType)
             .returns(generatedType)
 

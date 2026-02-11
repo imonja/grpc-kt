@@ -28,6 +28,7 @@ class ToJavaProto {
         val generatedType = descriptor.protobufKotlinTypeName
         val protoType = descriptor.protobufJavaTypeName
         val functionBuilder = FunSpec.builder("toJavaProto")
+            .addModifiers(KModifier.PUBLIC)
             .returns(protoType)
 
         if (isOverride) {
