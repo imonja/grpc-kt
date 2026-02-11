@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import io.github.imonja.grpc.kt.builder.function.impl.ToJavaProto
 import io.github.imonja.grpc.kt.builder.type.TypeSpecsBuilder
 import io.github.imonja.grpc.kt.toolkit.escapeIfNecessary
 import io.github.imonja.grpc.kt.toolkit.fieldNameToJsonName
@@ -136,7 +137,14 @@ class DataClassTypeBuilder(
 
         dataClassBuilder.primaryConstructor(constructorBuilder.build())
 
-        // Implement serialization methods from ProtoKtMessage
+        // Implement toJavaProto() as a member method (ProtoKtMessage requirement)
+        run {
+            val toJava = ToJavaProto().build(descriptor, true)
+            toJava.funSpecs.forEach { dataClassBuilder.addFunction(it) }
+            imports.addAll(toJava.imports)
+        }
+
+        // Keep serialization methods overrides for compatibility with older runtimes
         dataClassBuilder.addFunction(
             FunSpec.builder("toByteArray")
                 .addModifiers(KModifier.OVERRIDE)

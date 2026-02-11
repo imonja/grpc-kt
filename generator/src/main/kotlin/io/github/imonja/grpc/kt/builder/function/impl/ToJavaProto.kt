@@ -4,7 +4,7 @@ import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
-import io.github.imonja.grpc.kt.builder.function.FunctionSpecsBuilder
+import com.squareup.kotlinpoet.KModifier
 import io.github.imonja.grpc.kt.toolkit.MAP_ENTRY_VALUE_FIELD_NUMBER
 import io.github.imonja.grpc.kt.toolkit.escapeIfNecessary
 import io.github.imonja.grpc.kt.toolkit.fieldNameToJsonName
@@ -21,19 +21,27 @@ import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
-class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
+class ToJavaProto {
 
-    override fun build(descriptor: Descriptor): FunSpecsWithImports {
+    fun build(descriptor: Descriptor, isOverride: Boolean): FunSpecsWithImports {
         val imports = mutableSetOf<Import>()
         val generatedType = descriptor.protobufKotlinTypeName
         val protoType = descriptor.protobufJavaTypeName
         val functionBuilder = FunSpec.builder("toJavaProto")
-            .receiver(generatedType)
             .returns(protoType)
+
+        if (isOverride) {
+            functionBuilder.addModifiers(KModifier.OVERRIDE)
+        } else {
+            functionBuilder.receiver(generatedType)
+        }
 
         functionBuilder.addCode("return %T.newBuilder()\n", protoType)
 
         functionBuilder.beginControlFlow(".apply")
+
+        // reference to the outer receiver inside apply {}
+        val outerThisRef = if (isOverride) "this@${generatedType.simpleName}" else "this@toJavaProto"
 
         for (oneOf in descriptor.realOneofs) {
             val oneOfJsonName = fieldNameToJsonName(oneOf.name)
@@ -67,7 +75,7 @@ class ToJavaProto : FunctionSpecsBuilder<Descriptor> {
             if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet()) {
                 continue
             }
-            val fieldName = "this@toJavaProto.${field.jsonName.escapeIfNecessary()}"
+            val fieldName = "$outerThisRef.${field.jsonName.escapeIfNecessary()}"
             val optional = field.isProtoOptional
             if (optional) {
                 functionBuilder.beginControlFlow("if ($fieldName != null)")

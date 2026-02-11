@@ -18,12 +18,6 @@ class EnumConversionFunctionsBuilder : FunctionSpecsBuilder<EnumDescriptor> {
         val kotlinType = descriptor.protobufKotlinTypeName
         val javaType = descriptor.protobufJavaTypeName
 
-        val toJavaProto = FunSpec.builder("toJavaProto")
-            .receiver(kotlinType)
-            .returns(javaType)
-            .addKdoc("Converts [%T] to [%T]", kotlinType, javaType)
-            .beginControlFlow("return when (this)")
-
         val toKotlinProto = FunSpec.builder("toKotlinProto")
             .receiver(javaType)
             .returns(kotlinType)
@@ -31,22 +25,19 @@ class EnumConversionFunctionsBuilder : FunctionSpecsBuilder<EnumDescriptor> {
             .beginControlFlow("return when (this)")
 
         for (value in descriptor.values) {
-            toJavaProto.addStatement("%T.%L -> %T.%L", kotlinType, value.name, javaType, value.name)
             toKotlinProto.addStatement("%T.%L -> %T.%L", javaType, value.name, kotlinType, value.name)
         }
 
         // Handle UNRECOGNIZED
-        toJavaProto.addStatement("%T.UNRECOGNIZED -> %T.UNRECOGNIZED", kotlinType, javaType)
         toKotlinProto.addStatement("%T.UNRECOGNIZED -> %T.UNRECOGNIZED", javaType, kotlinType)
 
         // Default case for when from java
         toKotlinProto.addStatement("else -> %T.UNRECOGNIZED", kotlinType)
 
-        toJavaProto.endControlFlow()
         toKotlinProto.endControlFlow()
 
         return FunSpecsWithImports(
-            funSpecs = listOf(toJavaProto.build(), toKotlinProto.build()),
+            funSpecs = listOf(toKotlinProto.build()),
             imports = imports
         )
     }

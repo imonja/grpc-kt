@@ -11,7 +11,6 @@ import io.github.imonja.grpc.kt.toolkit.isGooglePackageType
  */
 class ConversionFunctionsBuilder {
     private val toKotlinProto = ToKotlinProto()
-    private val toJavaProto = ToJavaProto()
     private val enumConversionFunctionsBuilder = EnumConversionFunctionsBuilder()
 
     /**
@@ -27,12 +26,6 @@ class ConversionFunctionsBuilder {
 
         // Add toKotlin conversion function
         toKotlinProto.build(descriptor).apply {
-            funSpecs.addAll(this.funSpecs)
-            imports.addAll(this.imports)
-        }
-
-        // Add toJava conversion function
-        toJavaProto.build(descriptor).apply {
             funSpecs.addAll(this.funSpecs)
             imports.addAll(this.imports)
         }
