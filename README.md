@@ -7,110 +7,57 @@ grpc-kt is a protoc plugin for generating Kotlin data classes and gRPC service/s
 
 ## Features
 
-- **Kotlin Data Classes**: Generates Kotlin data classes from Protocol Buffer messages with appropriate types and default values
-- **gRPC Service/Stub Code**: Generates Kotlin-friendly gRPC service and client code
-- **Flexible Service Implementation**: Supports both traditional (class-based) and functional interface approaches for implementing gRPC services
-- **Coroutines Support**: Uses Kotlin Coroutines for asynchronous operations and streaming
-- **Validation Support**: Compatible with Protocol Buffer validation rules via protoc-gen-validate
-- **Documentation Generation**: Automatically generates protocol buffer documentation
-- **Comprehensive Type Mapping**: Properly maps Protocol Buffer types to Kotlin types
-- **Gradle Plugin**: Simplifies project setup and configuration
-- **Support for Protocol Buffer Features**:
-    - Oneofs (mapped to sealed interfaces)
-    - Maps
-    - Repeated fields
-    - Optional fields
-    - Nested types
-    - Enums
+- **Kotlin Data Classes**: Generates Kotlin data classes from Protocol Buffer messages with idiomatic types and default values.
+- **Automatic Type Mapping**:
+    - `google.protobuf.Timestamp` ↔ `java.time.LocalDateTime`
+    - `google.protobuf.Duration` ↔ `java.time.Duration`
+    - `google.protobuf.*Value` (Wrappers) ↔ Nullable Kotlin types (e.g., `String?`, `Int?`)
+- **gRPC Service/Stub Code**: Generates Kotlin-friendly gRPC service and client code.
+- **Coroutines & Flow**: Full support for unary, client-streaming, server-streaming, and bidirectional-streaming calls using Kotlin Coroutines and `Flow`.
+- **Flexible Service Implementation**: Supports both traditional (class-based) and functional interface (partial) approaches for implementing gRPC services.
+- **Metadata Support**: Easily access gRPC metadata within coroutines.
+- **Validation Support**: Built-in support for Protocol Buffer validation rules via `protoc-gen-validate` (PGV).
+- **Documentation Generation**: Automatically generates API documentation in Markdown or other formats.
+- **Gradle Plugin**: A powerful plugin that simplifies project setup by automatically configuring dependencies and code generation.
 
 ## Project Structure
 
-grpc-kt consists of four main modules:
+grpc-kt consists of several modules:
 
-- **common**: Provides runtime support for the generated code
-- **example**: Contains example proto files and usage demonstrations
-- **generator**: The main code generation module (the protoc plugin)
-- **gradle-plugin**: A Gradle plugin that simplifies protobuf configuration
+- **common**: Runtime support, metadata utilities, and type conversion extensions.
+- **generator**: The main code generation module (the protoc plugin).
+- **gradle-plugin**: Gradle plugin for easy integration.
+- **example**: Usage examples and integration tests.
 
 ## Installation
 
-### Gradle
+### Gradle Plugin (Recommended)
 
-> **Note**: Artifacts are published to both GitHub Packages and Maven Central.
-> For GitHub Packages, you'll need to add the repository configuration.
-> Maven Central is the recommended source for public consumption.
-
-> **Version**: For all examples below, replace `X.X.X` with the latest version from [GitHub Releases](https://github.com/imonja/grpc-kt/releases)
-
-#### Option 1: Using the Gradle Plugin (Recommended)
-
-The easiest way to use grpc-kt is with the Gradle plugin, which automatically configures all dependencies and protobuf generation:
+The easiest way to use grpc-kt is with our Gradle plugin. It automatically configures `protoc`, all necessary gRPC/Protobuf dependencies, and generation tasks.
 
 ```kotlin
 plugins {
     kotlin("jvm") version "2.1.0"
-    id("io.github.imonja.grpc-kt-gradle-plugin") version "X.X.X"
-}
-
-// The plugin automatically adds all necessary dependencies including grpc-kt-common
-```
-
-Place your `.proto` files in `proto/` directory in your project root (or `src/main/proto`).
-
-#### Option 2: Manual Configuration
-
-If you prefer manual configuration, add the following to your `build.gradle.kts` file:
-
-```kotlin
-plugins {
-    kotlin("jvm") version "2.1.0"
-    id("com.google.protobuf") version "0.9.5"
-}
-
-dependencies {
-    // grpc-kt runtime
-    implementation("io.github.imonja:grpc-kt-common:X.X.X")
-
-    // Other gRPC dependencies
-    implementation("io.grpc:grpc-stub:1.71.0")
-    implementation("io.grpc:grpc-protobuf:1.71.0")
-    implementation("io.grpc:grpc-kotlin-stub:1.4.1")
-    implementation("com.google.protobuf:protobuf-kotlin:4.30.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-}
-
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:4.30.2"
-    }
-    plugins {
-        id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.71.0"
-        }
-        id("grpc-kt") {
-            artifact = "io.github.imonja:protoc-gen-grpc-kt:X.X.X:jdk8@jar"
-        }
-    }
-    generateProtoTasks {
-        all().forEach {
-            it.plugins {
-                id("grpc") {
-                    outputSubDir = "java"
-                }
-                id("grpc-kt") {
-                    outputSubDir = "kotlin"
-                }
-            }
-        }
-    }
+    id("io.github.imonja.grpc-kt-gradle-plugin") version "x.x.x"
 }
 ```
+
+The plugin automatically adds the following dependencies to your project:
+- `grpc-kt-common`
+- `grpc-stub`, `grpc-protobuf`, `grpc-kotlin-stub`
+- `protobuf-kotlin`, `protobuf-java`, `protobuf-java-util`
+- `kotlinx-coroutines-core`
+- `pgv-java-grpc`, `pgv-java-stub` (for validation)
+
+### Manual Configuration
+
+If you need more control, you can configure the plugin manually. See the [Manual Configuration Guide](docs/manual-setup.md) (or refer to the full `build.gradle.kts` in this repo).
 
 ## Usage
 
-### Define Protocol Buffer Messages
+### 1. Define Protocol Buffer Messages
 
-Create your `.proto` files as usual:
+Create your `.proto` files in `src/main/proto` or `proto/`:
 
 ```protobuf
 syntax = "proto3";
@@ -119,285 +66,143 @@ package example;
 
 option java_package = "com.example.proto";
 option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 message Person {
     string name = 1;
     int32 age = 2;
     repeated string hobbies = 3;
-
+    
     enum Gender {
         UNKNOWN = 0;
         MALE = 1;
         FEMALE = 2;
-        NON_BINARY = 3;
     }
-
     Gender gender = 4;
-
-    message Address {
-        string street = 1;
-        string city = 2;
-        string country = 3;
-    }
-
-    Address address = 5;
+    
+    // Mapped to java.time.LocalDateTime
+    google.protobuf.Timestamp created_at = 5;
+    
+    // Mapped to String? (nullable)
+    google.protobuf.StringValue nickname = 6;
 }
 ```
 
-### Define gRPC Services
+### 2. Define gRPC Services
 
 ```protobuf
-syntax = "proto3";
-
-package example;
-
-option java_package = "com.example.proto";
-option java_multiple_files = true;
-
-import "model.proto";
-
 service PersonService {
     rpc GetPerson(GetPersonRequest) returns (GetPersonResponse) {}
     rpc ListPersons(ListPersonsRequest) returns (stream ListPersonsResponse) {}
-    rpc UpdatePerson(stream UpdatePersonRequest) returns (UpdatePersonResponse) {}
-    rpc ChatWithPerson(stream ChatRequest) returns (stream ChatResponse) {}
-}
-
-message GetPersonRequest {
-    string id = 1;
-}
-
-message GetPersonResponse {
-    Person person = 1;
-}
-
-message ListPersonsRequest {
-    int32 limit = 1;
-    int32 offset = 2;
-}
-
-message ListPersonsResponse {
-    Person person = 1;
-}
-
-message UpdatePersonRequest {
-    Person person = 1;
-}
-
-message UpdatePersonResponse {
-    bool success = 1;
-}
-
-message ChatRequest {
-    string message = 1;
-}
-
-message ChatResponse {
-    string message = 1;
 }
 ```
 
-### Use Generated Kotlin Code
+### 3. Use Generated Kotlin Code
 
-After running the Gradle build, grpc-kt will generate Kotlin data classes and gRPC service/stub code:
+grpc-kt generates Kotlin data classes with the `Kt` suffix to avoid conflicts with Java-generated classes.
 
 ```kotlin
+import java.time.LocalDateTime
+
 val person = PersonKt(
     name = "John Doe",
     age = 30,
-    hobbies = listOf("Reading", "Coding"),
-    gender = Person.Gender.MALE,
-    address = PersonKt.AddressKt(
-        street = "123 Main St",
-        city = "Anytown",
-        country = "USA"
-    )
+    gender = PersonKt.GenderKt.MALE,
+    createdAt = LocalDateTime.now(),
+    nickname = "JD", // StringValue mapped to String?
+    hobbies = listOf("Coding", "Music")
 )
 
+// Conversion to/from Java Protobuf
 val javaProto = person.toJavaProto()
 val kotlinProto = javaProto.toKotlinProto()
 
-val channel = ManagedChannelBuilder.forAddress("localhost", 8080)
-    .usePlaintext()
-    .build()
-
-val client = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
-
-val response = client.getPerson(GetPersonRequestKt(id = "123"))
-
-client.listPersons(ListPersonsRequestKt(limit = 10, offset = 0))
-    .collect { response ->
-        println("Received person: ${response.person.name}")
-    }
-
-val updateResponse = client.updatePerson(
-    flow {
-        emit(UpdatePersonRequestKt(person = person))
-        emit(UpdatePersonRequestKt(person = person.copy(age = 31)))
-    }
-)
-
-client.chatWithPerson(
-    flow {
-        emit(ChatRequestKt(message = "Hello"))
-        emit(ChatRequestKt(message = "How are you?"))
-    }
-).collect { response ->
-    println("Received message: ${response.message}")
+// Field check (matches hasFieldName() in Java)
+if (person.hasNickname()) {
+    println(person.nickname)
 }
 ```
 
-### Implementing a gRPC Service
+### 4. Implementing a gRPC Service
 
 #### Traditional Approach
-
-The traditional approach involves extending the generated base class:
 
 ```kotlin
 class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
     override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
-        return GetPersonResponseKt(
-            person = PersonKt(name = "John Doe", age = 30)
-        )
-    }
-
-    override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> {
-        return flow {
-            repeat(request.limit) {
-                emit(ListPersonsResponseKt(
-                    person = PersonKt(name = "Person $it", age = 20 + it)
-                ))
-            }
-        }
-    }
-
-    override suspend fun updatePerson(requests: Flow<UpdatePersonRequestKt>): UpdatePersonResponseKt {
-        requests.collect { request ->
-            println("Updating person: ${request.person.name}")
-        }
-        return UpdatePersonResponseKt(success = true)
-    }
-
-    override fun chatWithPerson(requests: Flow<ChatRequestKt>): Flow<ChatResponseKt> {
-        return requests.map { request ->
-            ChatResponseKt(message = "Echo: ${request.message}")
-        }
+        return GetPersonResponseKt(person = PersonKt(name = "John"))
     }
 }
 ```
 
-#### Partial Implementation Approach with Functional Interfaces
+#### Partial Implementation (Functional)
 
-grpc-kt also provides a partial implementation approach for gRPC services using functional interfaces, which allows for more modular and flexible service implementation where you can selectively implement only the methods you need:
+You can implement only the methods you need using functional interfaces. Unimplemented methods will return `UNIMPLEMENTED` status.
 
 ```kotlin
-// Define the service implementation functions
-val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
-    PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
-        println("Received getPerson request for id: ${request.id}")
-        GetPersonResponseKt(
-            person = PersonKt(name = "John Doe", age = 30)
-        )
-    }
+val getPerson = PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
+    GetPersonResponseKt(person = PersonKt(name = "John"))
+}
 
-val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
-    PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
-        println("Received listPersons request with limit: ${request.limit}")
-        flow {
-            repeat(request.limit) {
-                emit(ListPersonsResponseKt(
-                    person = PersonKt(name = "Person $it", age = 20 + it)
-                ))
-                delay(100) // Simulate some processing time
-            }
-        }
-    }
-
-// Create the service using the PartialServerBuilder
-// Only implement the methods you need - others will throw UNIMPLEMENTED by default
-val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
-    getPerson = getPerson,
-    listPersons = listPersons
-    // updatePerson and chatWithPerson are not implemented and will throw UNIMPLEMENTED
+val service = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+    getPerson = getPerson
 )
-
-// Start the gRPC server with the partial service
-val server = ServerBuilder.forPort(8080)
-    .addService(partialService)
-    .build()
-    .start()
 ```
 
-This approach has several advantages:
-- Each method can be implemented separately, making the code more modular
-- Methods can be easily swapped or mocked for testing
-- Implementation can be provided as lambda functions or method references
-- No need to create a class that extends a base class
-- **Partial implementation**: Only implement the methods you need - unimplemented methods will automatically throw `UNIMPLEMENTED` status exceptions
+### 5. Accessing Metadata
+
+Use `coroutineContext.grpcMetadata` to access gRPC headers:
+
+```kotlin
+import io.github.imonja.grpc.kt.common.grpcMetadata
+
+class MyService : MyServiceGrpcKt.MyServiceCoroutineImplBase() {
+    override suspend fun myMethod(request: MyRequestKt): MyResponseKt {
+        val metadata = coroutineContext.grpcMetadata
+        val userAgent = metadata?.get(Metadata.Key.of("user-agent", Metadata.ASCII_STRING_MARSHALLER))
+        return MyResponseKt()
+    }
+}
+
+// Don't forget to add the interceptor to your server
+val server = ServerBuilder.forPort(8080)
+    .addService(ServerInterceptors.intercept(myService, metadataServerInterceptor()))
+    .build()
+```
 
 ## Gradle Plugin Configuration
 
-When using the Gradle plugin, you can customize the configuration:
+Customize the plugin via the `grpcKtProtobuf` extension:
 
 ```kotlin
 grpcKtProtobuf {
     sourceDir {
-        protoSourceDir.set("custom/proto/dir")  // Default: "${project.projectDir}/proto"
+        protoSourceDir.set("custom/proto") // Default: projectDir/proto
     }
     
     generateSource {
-        grpcJavaOutputSubDir.set("java")        // Default: "java"
-        grpcKtOutputSubDir.set("kotlin")        // Default: "kotlin"
-        javaPgvOutputSubDir.set("java-pgv")     // Default: "java-pgv"
-        javaPgvLang.set("java")                 // Default: "java"
+        grpcKtOutputSubDir.set("kotlin")   // Default: kotlin
+        // ... other sub-dirs
     }
     
     docs {
-        grpcDocsFormat.set("markdown")          // Default: "markdown"
-        grpcDocsFileName.set("api-docs.md")     // Default: "grpc-docs.md"
-        grpcDocsOutputSubDir.set("docs")        // Default: "grpc-docs"
+        grpcDocsFormat.set("markdown")     // Default: markdown
+        grpcDocsFileName.set("api.md")     // Default: grpc-docs.md
     }
 }
 ```
 
-## Building from Source
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/imonja/grpc-kt.git
-   ```
-
-2. Build the project:
-   ```bash
-   ./gradlew build
-   ```
-
-3. Install to local Maven repository:
-   ```bash
-   ./gradlew publishToMavenLocal
-   ```
-
-4. Run tests:
-   ```bash
-   ./gradlew test
-   ```
-
-## License
-
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for full terms.
-
-It includes original work from [krotoDC](https://github.com/mscheong01/krotoDC),  
-with substantial modifications by [@ym](https://github.com/ym).
-
 ## Acknowledgements
 
-This project is based on [krotoDC](https://github.com/mscheong01/krotoDC),  
-originally developed by [@mscheong01](https://github.com/mscheong01) and licensed under the Apache License, Version 2.0.
-
-Significant modifications and new features have been introduced by [@imonja](https://github.com/imonja),  
-including enhancements for coroutine handling, Kotlin idioms, and broader protobuf feature support.
+This project is based on [krotoDC](https://github.com/mscheong01/krotoDC), originally developed by [@mscheong01](https://github.com/mscheong01).
+Significant enhancements for Coroutines, Kotlin idioms, and modern Protobuf features were introduced by [@imonja](https://github.com/imonja).
 
 ## Contributing
 
-Contributions are welcome!  
-Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide before submitting a Pull Request.
+Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide before submitting a Pull Request.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
