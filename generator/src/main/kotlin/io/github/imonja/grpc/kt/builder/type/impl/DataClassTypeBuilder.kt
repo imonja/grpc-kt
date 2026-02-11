@@ -144,29 +144,6 @@ class DataClassTypeBuilder(
             imports.addAll(toJava.imports)
         }
 
-        // Keep serialization methods overrides for compatibility with older runtimes
-        dataClassBuilder.addFunction(
-            FunSpec.builder("toByteArray")
-                .addModifiers(KModifier.OVERRIDE)
-                .returns(ByteArray::class)
-                .addStatement("return this.toJavaProto().toByteArray()")
-                .build()
-        )
-        dataClassBuilder.addFunction(
-            FunSpec.builder("toByteString")
-                .addModifiers(KModifier.OVERRIDE)
-                .returns(ClassName("com.google.protobuf", "ByteString"))
-                .addStatement("return this.toJavaProto().toByteString()")
-                .build()
-        )
-        dataClassBuilder.addFunction(
-            FunSpec.builder("writeTo")
-                .addModifiers(KModifier.OVERRIDE)
-                .addParameter("output", ClassName("java.io", "OutputStream"))
-                .addStatement("this.toJavaProto().writeTo(output)")
-                .build()
-        )
-
         // DSL Builder
         val builderClassName = "Builder"
         val builderTypeSpec = TypeSpec.classBuilder(builderClassName)
