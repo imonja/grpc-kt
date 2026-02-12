@@ -826,7 +826,7 @@ class ProtoExampleTest {
         val bytes = person.toByteArray()
 
         // Use the generated parser
-        val parser = PersonKt.kotlinParser()
+        val parser = PersonKt.parser()
         val deserialized = parser.parseFrom(bytes)
 
         deserialized shouldBe person
@@ -837,7 +837,7 @@ class ProtoExampleTest {
             contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "parser@example.com")
         )
         val contactBytes = contact.toByteArray()
-        val contactParser = ContactInfoKt.kotlinParser()
+        val contactParser = ContactInfoKt.parser()
         val deserializedContact = contactParser.parseFrom(contactBytes)
 
         deserializedContact shouldBe contact

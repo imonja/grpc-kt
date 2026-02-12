@@ -19,7 +19,7 @@ class CompatibilityTest {
 
     @Test
     fun testKotlinParser() {
-        val parser = PersonKt.kotlinParser()
+        val parser = PersonKt.parser()
         val person = PersonKt(name = "John")
         val bytes = person.toByteArray()
         val parsed = parser.parseFrom(bytes)

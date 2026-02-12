@@ -64,7 +64,7 @@ interface ProtoKtCompanion<K : ProtoKtMessage<J>, J : Message> {
     /**
      * Returns a [Parser] for the Kotlin message.
      */
-    fun kotlinParser(): Parser<K>
+    fun parser(): Parser<K>
 }
 
 /**

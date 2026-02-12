@@ -248,7 +248,7 @@ class DataClassTypeBuilder(
                     .build()
             )
             .addFunction(
-                FunSpec.builder("kotlinParser")
+                FunSpec.builder("parser")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(className))
                     .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
