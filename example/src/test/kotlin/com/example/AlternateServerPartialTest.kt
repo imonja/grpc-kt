@@ -6,6 +6,8 @@ import io.grpc.ServerBuilder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldStartWith
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class PartialServerExampleTest {
@@ -187,6 +190,88 @@ class PartialServerExampleTest {
         response.person?.age shouldBe 28
         response.person?.gender shouldBe PersonKt.GenderKt.FEMALE
         response.person?.address?.city shouldBe "New York"
+    }
+
+    @Test
+    fun `test partial server uses provided coroutine context`(): Unit = runBlocking {
+        val executor = Executors.newSingleThreadExecutor { task ->
+            Thread(task, "grpc-partial-coroutine-context")
+        }
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+                getPerson = {
+                    GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().name))
+                }
+            ) {
+                coroutineContext = dispatcher
+            }
+
+            val testServer = ServerBuilder.forPort(0)
+                .addService(partialService)
+                .build()
+                .start()
+
+            try {
+                val testChannel = ManagedChannelBuilder.forAddress("localhost", testServer.port)
+                    .usePlaintext()
+                    .build()
+
+                try {
+                    val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
+                    val response = stub.getPerson(GetPersonRequestKt(id = "context-test"))
+
+                    response.person?.name.orEmpty() shouldStartWith "grpc-partial-coroutine-context"
+                } finally {
+                    testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                }
+            } finally {
+                testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+            }
+        } finally {
+            dispatcher.close()
+        }
+    }
+
+    @Test
+    fun `test partial server uses virtual thread coroutine context`(): Unit = runBlocking {
+        val executor = Executors.newVirtualThreadPerTaskExecutor()
+        val dispatcher = executor.asCoroutineDispatcher()
+
+        try {
+            val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+                getPerson = {
+                    GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().isVirtual.toString()))
+                }
+            ) {
+                coroutineContext = dispatcher
+            }
+
+            val testServer = ServerBuilder.forPort(0)
+                .addService(partialService)
+                .build()
+                .start()
+
+            try {
+                val testChannel = ManagedChannelBuilder.forAddress("localhost", testServer.port)
+                    .usePlaintext()
+                    .build()
+
+                try {
+                    val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
+                    val response = stub.getPerson(GetPersonRequestKt(id = "virtual-thread-context-test"))
+
+                    response.person?.name shouldBe "true"
+                } finally {
+                    testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                }
+            } finally {
+                testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+            }
+        } finally {
+            dispatcher.close()
+        }
     }
 
     @Test

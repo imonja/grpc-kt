@@ -20,6 +20,7 @@ import io.grpc.ServerServiceDefinition
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.kotlin.AbstractCoroutineServerImpl
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
@@ -37,6 +38,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         // Generate interfaces for each service method that handlers will implement
         val interfacesTypeSpecs = generateInterfaceTypeSpecs(stubs)
         objectBuilder.addTypes(interfacesTypeSpecs)
+        objectBuilder.addType(generateCoroutineImplPartialConfigTypeSpec())
 
         // Generate a function to create a bindable service
         val createBindableFunSpec = generateCreateBindableFunSpec()
@@ -85,12 +87,29 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         }
     }
 
+    private fun generateCoroutineImplPartialConfigTypeSpec(): TypeSpec {
+        return TypeSpec.classBuilder("CoroutineImplPartialConfig")
+            .addModifiers(KModifier.PUBLIC)
+            .addProperty(
+                PropertySpec.builder("coroutineContext", CoroutineContext::class)
+                    .addModifiers(KModifier.PUBLIC)
+                    .mutable(true)
+                    .initializer("%T", EmptyCoroutineContext::class)
+                    .build()
+            )
+            .build()
+    }
+
     private fun generateCreateBindableFunSpec(): FunSpec {
         return FunSpec.builder("createBindableService")
             .addModifiers(KModifier.PRIVATE)
             .addParameter(
                 "serviceDescriptor",
                 ClassName("io.grpc", "ServiceDescriptor")
+            )
+            .addParameter(
+                "coroutineContext",
+                CoroutineContext::class
             )
             .addParameter(
                 "builderFn",
@@ -102,7 +121,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             .returns(BindableService::class)
             .addCode(
                 """
-                    return object : %T() {
+                    return object : %T(coroutineContext) {
                         override fun bindService() = %T.builder(serviceDescriptor).apply {
                             builderFn()
                         }.build()
@@ -144,10 +163,26 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             )
         }
 
+        coroutineImplPartialFunSpec.addParameter(
+            ParameterSpec.builder(
+                "configure",
+                LambdaTypeName.get(
+                    receiver = ClassName("", "CoroutineImplPartialConfig"),
+                    returnType = UNIT
+                )
+            )
+                .defaultValue("{}")
+                .build()
+        )
+
         val allImports = mutableSetOf<Import>()
 
         coroutineImplPartialFunSpec.addCode(
-            "return createBindableService(%M()) {\n",
+            """
+                val config = CoroutineImplPartialConfig().apply(configure)
+                return createBindableService(%M(), config.coroutineContext) {
+
+            """.trimIndent(),
             descriptor.grpcClass.member("getServiceDescriptor")
         )
 
@@ -210,6 +245,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                 """
                     bind<%T, %T, %T, %T>(
                         pair = %M() to $name::invoke,
+                        context = config.coroutineContext,
                         toKotlinProto = %L,
                         toJavaProto = %L
                     )
@@ -250,6 +286,10 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                     )
             )
             .addParameter(
+                "context",
+                CoroutineContext::class
+            )
+            .addParameter(
                 "toKotlinProto",
                 LambdaTypeName.get(TypeVariableName("ReqT"), returnType = TypeVariableName("ReqKotlin"))
             )
@@ -270,7 +310,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 MemberName("io.grpc.kotlin.ServerCalls", "unaryServerMethodDefinition")
                             )
                             .indent()
-                            .addStatement("context = %T,", EmptyCoroutineContext::class)
+                            .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateUnaryImplementation())
                             .unindent()
@@ -286,7 +326,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 MemberName("io.grpc.kotlin.ServerCalls", "serverStreamingServerMethodDefinition")
                             )
                             .indent()
-                            .addStatement("context = %T,", EmptyCoroutineContext::class)
+                            .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateServerStreamingImplementation())
                             .unindent()
@@ -302,7 +342,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 MemberName("io.grpc.kotlin.ServerCalls", "clientStreamingServerMethodDefinition")
                             )
                             .indent()
-                            .addStatement("context = %T,", EmptyCoroutineContext::class)
+                            .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateClientStreamingImplementation())
                             .unindent()
@@ -318,7 +358,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                                 MemberName("io.grpc.kotlin.ServerCalls", "bidiStreamingServerMethodDefinition")
                             )
                             .indent()
-                            .addStatement("context = %T,", EmptyCoroutineContext::class)
+                            .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateBidiStreamingImplementation())
                             .unindent()

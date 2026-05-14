@@ -151,6 +151,16 @@ val service = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
 )
 ```
 
+Pass a custom coroutine context to control where partial service handlers run:
+
+```kotlin
+val service = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+    getPerson = getPerson
+) {
+    coroutineContext = dispatcher
+}
+```
+
 ### 5. Accessing Metadata
 
 Use `coroutineContext.grpcMetadata` to access gRPC headers:
