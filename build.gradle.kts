@@ -35,14 +35,19 @@ repositories {
 }
 
 subprojects {
+    // example is a sample application of the gradle plugin, not a library artifact
+    val publishable = name != "example"
+
     apply {
         plugin("java")
         plugin("org.jetbrains.kotlin.jvm")
         plugin("org.jlleitschuh.gradle.ktlint")
         plugin("com.google.protobuf")
-        plugin("maven-publish")
-        plugin("signing")
-        plugin("com.vanniktech.maven.publish")
+        if (publishable) {
+            plugin("maven-publish")
+            plugin("signing")
+            plugin("com.vanniktech.maven.publish")
+        }
     }
 
     group = rootProject.group
@@ -84,59 +89,61 @@ subprojects {
         useJUnitPlatform()
     }
 
-    publishing {
-        repositories {
-            maven {
-                url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
-                name = "GitHub"
-                credentials {
-                    username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
-                    password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
+    if (publishable) {
+        publishing {
+            repositories {
+                maven {
+                    url = uri("https://maven.pkg.github.com/imonja/grpc-kt")
+                    name = "GitHub"
+                    credentials {
+                        username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME")
+                        password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
+                    }
                 }
             }
         }
-    }
 
-    // Maven Central publishing configuration - only for publishable modules
-    configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
-        coordinates(
-            groupId = project.group.toString(),
-            artifactId = project.name,
-            version = project.version.toString()
-        )
+        // Maven Central publishing configuration - only for publishable modules
+        configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+            coordinates(
+                groupId = project.group.toString(),
+                artifactId = project.name,
+                version = project.version.toString()
+            )
 
-        pom {
-            name.set("grpc-kt")
-            description.set(project.description ?: "gRPC Kotlin code generator")
-            url.set("https://github.com/imonja/grpc-kt")
-            inceptionYear.set("2025")
-
-            licenses {
-                license {
-                    name.set("The Apache License, Version 2.0")
-                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    distribution.set("repo")
-                }
-            }
-
-            developers {
-                developer {
-                    id.set("imonja")
-                    name.set("imonja")
-                    url.set("https://github.com/imonja")
-                    organization.set("imonja")
-                }
-            }
-
-            scm {
-                connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
-                developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
+            pom {
+                name.set("grpc-kt")
+                description.set(project.description ?: "gRPC Kotlin code generator")
                 url.set("https://github.com/imonja/grpc-kt")
-            }
-        }
+                inceptionYear.set("2025")
 
-        publishToMavenCentral()
-        signAllPublications()
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        distribution.set("repo")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("imonja")
+                        name.set("imonja")
+                        url.set("https://github.com/imonja")
+                        organization.set("imonja")
+                    }
+                }
+
+                scm {
+                    connection.set("scm:git:git://github.com/imonja/grpc-kt.git")
+                    developerConnection.set("scm:git:ssh://github.com:imonja/grpc-kt.git")
+                    url.set("https://github.com/imonja/grpc-kt")
+                }
+            }
+
+            publishToMavenCentral()
+            signAllPublications()
+        }
     }
 
     configure<KtlintExtension> {
