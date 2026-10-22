@@ -7,56 +7,32 @@ on:
             - '*'
 
 jobs:
-    ci-checks:
-        uses: ./.github/workflows/ci-checks.yml
-        with:
-            run-ktlint: true
-            run-tests: true
-
     publish-release:
-        needs: ci-checks
         runs-on: ubuntu-latest
         concurrency: publishing-ci
         permissions:
             packages: write
             contents: write
-            actions: read
-            checks: write
-            id-token: write
-        name: Publish Libraries
+        name: Build & Test & Publish
 
         steps:
-            -   uses: actions/checkout@v6
+            -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
+            -   uses: ./.github/actions/ci-checks
 
-            -   name: Setup JDK
-                uses: actions/setup-java@v5.0.0
-                with:
-                    distribution: 'temurin'
-                    java-version: 21
-
-            -   name: Setup Gradle for a non-wrapper project
-                uses: gradle/actions/setup-gradle@v5
-                with:
-                    gradle-version: wrapper
-
-            -   uses: paulhatch/semantic-version@v5.4.0
+            -   uses: ./.github/actions/next-version
                 id: tag
-                with:
-                    bump_each_commit: true
-                    bump_each_commit_patch_pattern: "(BUMP)"
-                    tag_prefix: ""
 
             -   name: Get version
                 id: version
                 run: |
                     if [[ ${GITHUB_REF} == refs/tags/* ]]; then
-                      echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-                      echo "is_tag=true" >> $GITHUB_OUTPUT
+                      echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+                      echo "is_tag=true" >> "$GITHUB_OUTPUT"
                     else
-                      echo "version=${{ steps.tag.outputs.version }}" >> $GITHUB_OUTPUT
-                      echo "is_tag=false" >> $GITHUB_OUTPUT
+                      echo "version=${{ steps.tag.outputs.version }}" >> "$GITHUB_OUTPUT"
+                      echo "is_tag=false" >> "$GITHUB_OUTPUT"
                     fi
 
             -   name: Publish Libraries
@@ -90,14 +66,21 @@ jobs:
                     GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
                     GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
 
-            -   uses: actions/create-release@v1.1.4
+            -   name: Create GitHub release
                 if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}
-                id: create_release
                 env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                with:
-                    tag_name: ${{ steps.version.outputs.version }}
-                    release_name: ${{ steps.version.outputs.version }}
-                    body: |
-                        Changes in this Release
-                        ${{ steps.notes.outputs.CHANGELOG }}
+                    GH_TOKEN: ${{ github.token }}
+                    VERSION: ${{ steps.version.outputs.version }}
+                run: |
+                    # The new tag does not exist yet, so the latest reachable tag is the previous release
+                    previous_tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
+                    if [ -n "$previous_tag" ]; then
+                      notes=$(git log --pretty=format:'- %s (%h)' "$previous_tag"..HEAD)
+                    else
+                      notes=$(git log --pretty=format:'- %s (%h)' -n 20)
+                    fi
+                    if [ -z "$notes" ]; then
+                      notes="- Maintenance release"
+                    fi
+                    printf 'Changes in this Release\n%s\n' "$notes" > "$RUNNER_TEMP/release-notes.md"
+                    gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"

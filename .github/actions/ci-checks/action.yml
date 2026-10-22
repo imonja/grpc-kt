@@ -1,0 +1,41 @@
+name: CI checks
+description: >
+    Sets up JDK and the Gradle cache, then runs every check that must pass before publishing:
+    lint and tests of the libraries, lint and validation of the Gradle plugin.
+    The caller checks out the repository first.
+
+runs:
+    using: composite
+    steps:
+        -   name: Setup JDK
+            uses: actions/setup-java@v6
+            with:
+                distribution: 'temurin'
+                java-version: 21
+
+        -   name: Gradle cache
+            uses: actions/cache@v6
+            with:
+                path: |
+                    ~/.gradle/caches
+                    ~/.gradle/wrapper
+                key: gradle-${{ runner.os }}-${{ hashFiles('*.gradle.kts', '*/build.gradle.kts', 'gradle-plugin/*.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
+                restore-keys: |
+                    gradle-${{ runner.os }}-
+
+        -   name: Libraries lint & tests
+            shell: bash
+            run: ./gradlew ktlintCheck test --continue --stacktrace
+
+        -   name: Gradle plugin lint & validation
+            shell: bash
+            run: ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:validatePlugins --continue --stacktrace
+
+        # Writes the results to the job summary (use-actions-summary defaults to true), so no checks permission is needed
+        -   name: Test report
+            if: ${{ !cancelled() }}
+            uses: dorny/test-reporter@v3
+            with:
+                name: Junit tests
+                path: ./**/build/test-results/*/TEST-*.xml
+                reporter: java-junit

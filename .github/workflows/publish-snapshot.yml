@@ -7,51 +7,30 @@ on:
     workflow_dispatch:
 
 jobs:
-    ci-checks:
-        uses: ./.github/workflows/ci-checks.yml
-        with:
-            run-ktlint: true
-            run-tests: true
-
     publish-snapshot:
-        needs: ci-checks
         runs-on: ubuntu-latest
         concurrency: publish-snapshot-${{ github.ref_name }}
         permissions:
             packages: write
             contents: read
-        name: Publish SNAPSHOT
+        name: Build & Test & Publish SNAPSHOT
 
         steps:
-            -   uses: actions/checkout@v6
+            -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
+            -   uses: ./.github/actions/ci-checks
 
-            -   name: Setup JDK
-                uses: actions/setup-java@v5.0.0
-                with:
-                    distribution: 'temurin'
-                    java-version: 21
-
-            -   name: Setup Gradle for a non-wrapper project
-                uses: gradle/actions/setup-gradle@v5
-                with:
-                    gradle-version: wrapper
-
-            -   uses: paulhatch/semantic-version@v5.4.0
+            -   uses: ./.github/actions/next-version
                 id: tag
-                with:
-                    bump_each_commit: true
-                    bump_each_commit_patch_pattern: "(BUMP)"
-                    tag_prefix: ""
 
             -   name: Get version
                 id: version
                 run: |
                     branch=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.]+/-/g; s/^-+|-+$//g')
                     version="${{ steps.tag.outputs.version }}-${branch}-SNAPSHOT"
-                    echo "version=${version}" >> $GITHUB_OUTPUT
-                    echo "### Published \`${version}\`" >> $GITHUB_STEP_SUMMARY
+                    echo "version=${version}" >> "$GITHUB_OUTPUT"
+                    echo "### Published \`${version}\`" >> "$GITHUB_STEP_SUMMARY"
 
             -   name: Publish libraries
                 run: ./gradlew -PreleaseVersion=${{ steps.version.outputs.version }} :common:publish :generator:publish -x check
