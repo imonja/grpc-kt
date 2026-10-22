@@ -19,6 +19,7 @@ jobs:
             -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
+
             -   uses: ./.github/actions/ci-checks
 
             -   uses: ./.github/actions/next-version
@@ -31,6 +32,7 @@ jobs:
                     version="${{ steps.tag.outputs.version }}-${branch}-SNAPSHOT"
                     echo "version=${version}" >> "$GITHUB_OUTPUT"
                     echo "### Published \`${version}\`" >> "$GITHUB_STEP_SUMMARY"
+
 
             -   name: Publish libraries
                 run: ./gradlew -PreleaseVersion=${{ steps.version.outputs.version }} :common:publish :generator:publish -x check
