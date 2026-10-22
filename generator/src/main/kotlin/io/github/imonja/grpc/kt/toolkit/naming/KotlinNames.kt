@@ -18,42 +18,51 @@ object KotlinNames {
     /**
      * Appends the [SUFFIX] to the given [name] if it doesn't already end with it.
      */
-    fun withSuffix(name: String): String =
-        if (name.endsWith(SUFFIX)) name else name + SUFFIX
+    fun withSuffix(
+        name: String,
+    ): String = if (name.endsWith(SUFFIX)) name else name + SUFFIX
 
     /**
      * Appends the [SUFFIX] to each name in the [names] list using [withSuffix].
      */
-    fun withSuffix(names: List<String>): List<String> = names.map { withSuffix(it) }
+    fun withSuffix(
+        names: List<String>,
+    ): List<String> = names.map { withSuffix(it) }
 
     /**
      * Returns the Kotlin file name for a message.
      */
-    fun messageFileName(simpleName: String): String = "${withSuffix(simpleName)}.kt"
+    fun messageFileName(
+        simpleName: String,
+    ): String = "${withSuffix(simpleName)}.kt"
 
     /**
      * Returns the Kotlin file name for an enum.
      */
-    fun enumFileName(simpleName: String): String = "${withSuffix(simpleName)}.kt"
+    fun enumFileName(
+        simpleName: String,
+    ): String = "${withSuffix(simpleName)}.kt"
 
     /**
      * Returns the simple name for a oneOf sealed interface.
      */
-    fun oneOfInterfaceSimpleName(oneOfJsonName: String): String =
-        withSuffix(oneOfJsonName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
+    fun oneOfInterfaceSimpleName(
+        oneOfJsonName: String,
+    ): String = withSuffix(oneOfJsonName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
 
     /**
      * Returns the simple name for a oneOf variant data class.
      */
-    fun oneOfVariantSimpleName(fieldJsonName: String): String =
-        withSuffix(fieldJsonName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
+    fun oneOfVariantSimpleName(
+        fieldJsonName: String,
+    ): String = withSuffix(fieldJsonName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() })
 
     /**
      * Returns the [ClassName] for a oneOf interface within the parent message.
      */
     fun oneOfInterfaceClassName(
         parent: Descriptors.Descriptor,
-        oneOf: Descriptors.OneofDescriptor
+        oneOf: Descriptors.OneofDescriptor,
     ): ClassName =
         ClassName(
             parent.file.kotlinPackage,
@@ -62,7 +71,7 @@ object KotlinNames {
                     .removePrefix(parent.file.`package` + ".")
                     .split('.')
                     .let { withSuffix(it) } + oneOfInterfaceSimpleName(fieldNameToJsonName(oneOf.name))
-                ).toTypedArray()
+            ).toTypedArray(),
         )
 
     /**
@@ -71,7 +80,7 @@ object KotlinNames {
     fun oneOfVariantClassName(
         parent: Descriptors.Descriptor,
         oneOf: Descriptors.OneofDescriptor,
-        field: Descriptors.FieldDescriptor
+        field: Descriptors.FieldDescriptor,
     ): ClassName =
         ClassName(
             parent.file.kotlinPackage,
@@ -82,8 +91,8 @@ object KotlinNames {
                     .let { withSuffix(it) } +
                     listOf(
                         oneOfInterfaceSimpleName(fieldNameToJsonName(oneOf.name)),
-                        oneOfVariantSimpleName(field.jsonName)
+                        oneOfVariantSimpleName(field.jsonName),
                     )
-                ).toTypedArray()
+            ).toTypedArray(),
         )
 }

@@ -13,4 +13,8 @@ val FileDescriptor.kotlinPackage: String
 //    get() = this.javaPackage + "." + GRPC_KOTLIN_PACKAGE
 
 val FileDescriptor.shortName: String
-    get() = this.name.split('/').last().split('.').first()
+    get() = this.name
+        .split('/')
+        .last()
+        .split('.')
+        .first()

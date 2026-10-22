@@ -11,14 +11,13 @@ private val hasOptionalKeywordMethod: Method by lazy {
 }
 
 // Use reflection to call the package-private hasOptionalKeyword() method
-private fun FieldDescriptor.hasOptionalKeywordReflective(): Boolean {
-    return try {
+private fun FieldDescriptor.hasOptionalKeywordReflective(): Boolean =
+    try {
         hasOptionalKeywordMethod.invoke(this) as Boolean
     } catch (e: Exception) {
         // If reflection fails, fall back to false
         false
     }
-}
 
 /**
  * Determines if a field should be treated as optional in Proto3.
@@ -30,8 +29,12 @@ private fun FieldDescriptor.hasOptionalKeywordReflective(): Boolean {
 val FieldDescriptor.isProtoOptional: Boolean
     get() = when {
         hasOptionalKeywordReflective() -> true
+
         isRepeated || isMapField -> false
-        type == FieldDescriptor.Type.MESSAGE -> true // All MESSAGE fields are nullable in Proto3
+
+        type == FieldDescriptor.Type.MESSAGE -> true
+
+        // All MESSAGE fields are nullable in Proto3
         else -> false
     }
 
@@ -46,10 +49,8 @@ val FieldDescriptor.isExplicitlyOptional: Boolean
 val FieldDescriptor.javaFieldName: String
     get() {
         val jsonName = this.jsonName
-        /**
-         * protobuf-java escapes special fields in order to avoid name clashes with Java/Protobuf keywords
-         * @see https://github.com/protocolbuffers/protobuf/blob/2cf94fafe39eeab44d3ab83898aabf03ff930d7a/java/core/src/main/java/com/google/protobuf/DescriptorMessageInfoFactory.java#L629C1-L648
-         */
+        // protobuf-java escapes special fields in order to avoid name clashes with Java/Protobuf keywords, see
+        // https://github.com/protocolbuffers/protobuf/blob/2cf94fafe39eeab44d3ab83898aabf03ff930d7a/java/core/src/main/java/com/google/protobuf/DescriptorMessageInfoFactory.java#L629C1-L648
         return if (protobufJavaSpecialFieldNames.contains(jsonName.capitalize())) {
             jsonName + "_"
         } else {
@@ -74,5 +75,5 @@ private val protobufJavaSpecialFieldNames = setOf(
     "InitializationErrorString",
     "UnknownFields",
     // obsolete. kept for backwards compatibility of generated code
-    "CachedSize"
+    "CachedSize",
 )

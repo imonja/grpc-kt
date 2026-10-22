@@ -31,13 +31,16 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
-    override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
+    override fun build(
+        descriptor: ServiceDescriptor,
+    ): TypeSpecsWithImports {
         val serviceImplClassName = descriptor.grpcServiceImplBaseName
 
         val stubs: List<MethodStub> = descriptor.methods.map { serviceMethodStub(it) }
         val `super` = AbstractCoroutineServerImpl::class
         val coroutineContextParameter =
-            ParameterSpec.builder("coroutineContext", CoroutineContext::class)
+            ParameterSpec
+                .builder("coroutineContext", CoroutineContext::class)
                 .defaultValue("%T", EmptyCoroutineContext::class)
                 .build()
         val implBuilder = TypeSpec
@@ -45,78 +48,87 @@ class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             .addModifiers(KModifier.ABSTRACT)
             .superclass(`super`)
             .primaryConstructor(
-                FunSpec.constructorBuilder()
+                FunSpec
+                    .constructorBuilder()
                     .addParameter(
-                        coroutineContextParameter
-                    )
-                    .build()
-            )
-            .addSuperclassConstructorParameter("%N", coroutineContextParameter)
+                        coroutineContextParameter,
+                    ).build(),
+            ).addSuperclassConstructorParameter("%N", coroutineContextParameter)
 
         var serverServiceDefinitionBuilder =
             CodeBlock.of(
                 "%M(%M())",
                 ServerServiceDefinition::class.member("builder"),
-                descriptor.grpcClass.member("getServiceDescriptor")
+                descriptor.grpcClass.member("getServiceDescriptor"),
             )
 
         for (stub in stubs) {
             implBuilder.addFunction(stub.methodSpec)
             serverServiceDefinitionBuilder = CodeBlock.of(
                 """
-          %L
-            .addMethod(%L)
+                %L
+                  .addMethod(%L)
                 """.trimIndent(),
                 serverServiceDefinitionBuilder,
-                stub.serverMethodDef
+                stub.serverMethodDef,
             )
         }
 
         implBuilder.addFunction(
-            FunSpec.builder("bindService")
+            FunSpec
+                .builder("bindService")
                 .addModifiers(KModifier.OVERRIDE, KModifier.FINAL)
                 .returns(ServerServiceDefinition::class)
                 .addStatement("return %L.build()", serverServiceDefinitionBuilder)
-                .build()
+                .build(),
         )
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(implBuilder.build()),
-            imports = stubs.map { it.imports }.flatten().toSet()
+            imports = stubs.map { it.imports }.flatten().toSet(),
         )
     }
 
     private val typeMapper = ProtoTypeMapper()
 
-    fun serviceMethodStub(method: Descriptors.MethodDescriptor): MethodStub {
+    fun serviceMethodStub(
+        method: Descriptors.MethodDescriptor,
+    ): MethodStub {
         val imports = mutableSetOf<Import>()
         val inputType = typeMapper
-            .getTypeNameAndDefaultValue(method.inputType).first.copy(nullable = false)
+            .getTypeNameAndDefaultValue(method.inputType)
+            .first
+            .copy(nullable = false)
         val outputType = typeMapper
-            .getTypeNameAndDefaultValue(method.outputType).first.copy(nullable = false)
+            .getTypeNameAndDefaultValue(method.outputType)
+            .first
+            .copy(nullable = false)
 
         val requestParam = if (method.isClientStreaming) {
-            ParameterSpec.builder("requests", Flow::class.asClassName().parameterizedBy(inputType))
+            ParameterSpec
+                .builder("requests", Flow::class.asClassName().parameterizedBy(inputType))
                 .build()
         } else {
             ParameterSpec.builder("request", inputType).build()
         }
 
-        val methodBuilder = FunSpec.builder(method.name.decapitalize())
+        val methodBuilder = FunSpec
+            .builder(method.name.decapitalize())
             .addModifiers(KModifier.OPEN)
             .addParameter(requestParam)
             .addStatement(
                 "throw %T(%M.withDescription(%S))",
                 StatusException::class,
                 Status::class.member("UNIMPLEMENTED"),
-                "Method ${method.fullName} is unimplemented"
+                "Method ${method.fullName} is unimplemented",
             )
 
         if (method.options.deprecated) {
             methodBuilder.addAnnotation(
-                AnnotationSpec.builder(Deprecated::class)
+                AnnotationSpec
+                    .builder(Deprecated::class)
                     .addMember("%S", "The underlying service method is marked deprecated.")
-                    .build()
+                    .build(),
             )
         }
 
@@ -146,63 +158,63 @@ class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             if (method.isClientStreaming) {
                 CodeBlock.of(
                     """
-                        { requests ->
-                            %N(requests.map { %L }).map { %L }
-                        }
+                    { requests ->
+                        %N(requests.map { %L }).map { %L }
+                    }
                     """.trimIndent(),
                     methodSpec,
                     requestTransformTemplate.safeCall("it"),
-                    responseTransformTemplate.safeCall("it")
+                    responseTransformTemplate.safeCall("it"),
                 )
             } else {
                 CodeBlock.of(
                     """
-                        { request ->
-                            %N(%L).map { %L }
-                        }
+                    { request ->
+                        %N(%L).map { %L }
+                    }
                     """.trimIndent(),
                     methodSpec,
                     requestTransformTemplate.safeCall("request"),
-                    responseTransformTemplate.safeCall("it")
+                    responseTransformTemplate.safeCall("it"),
                 )
             }
         } else {
             if (method.isClientStreaming) {
                 CodeBlock.of(
                     """
-                        { requests ->
-                            %N(requests.map { %L }).let { %L }
-                        }
+                    { requests ->
+                        %N(requests.map { %L }).let { %L }
+                    }
                     """.trimIndent(),
                     methodSpec,
                     requestTransformTemplate.safeCall("it"),
-                    responseTransformTemplate.safeCall("it")
+                    responseTransformTemplate.safeCall("it"),
                 )
             } else {
                 CodeBlock.of(
                     """
-                        { request ->
-                            %N(%L).let { %L }
-                        }
+                    { request ->
+                        %N(%L).let { %L }
+                    }
                     """.trimIndent(),
                     methodSpec,
                     requestTransformTemplate.safeCall("request"),
-                    responseTransformTemplate.safeCall("it")
+                    responseTransformTemplate.safeCall("it"),
                 )
             }
         }
 
         val serverMethodDef = CodeBlock.of(
             """
-                %M(
-                    context = this.context,
-                    descriptor = %L,
-                    implementation = %L,
-                )
+            %M(
+                context = this.context,
+                descriptor = %L,
+                implementation = %L,
+            )
             """.trimIndent(),
             smdFactory,
             method.descriptorCode,
-            implementationCode
+            implementationCode,
         )
 
         return MethodStub(methodSpec, serverMethodDef, imports)
@@ -215,7 +227,7 @@ class ServerBuilder : TypeSpecsBuilder<ServiceDescriptor> {
          * the function described in [methodSpec].
          */
         val serverMethodDef: CodeBlock,
-        val imports: Set<Import>
+        val imports: Set<Import>,
     )
 
     companion object {

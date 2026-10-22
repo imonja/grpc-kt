@@ -23,28 +23,31 @@ import java.util.*
 /**
  * Converts a [Timestamp] to a [LocalDateTime] using time zone with default offset.
  */
-fun Timestamp.toLocalDateTime(zone: ZoneId = ZoneOffset.UTC): LocalDateTime =
-    LocalDateTime.ofInstant(this.toInstant(), zone)
+fun Timestamp.toLocalDateTime(
+    zone: ZoneId = ZoneOffset.UTC,
+): LocalDateTime = LocalDateTime.ofInstant(this.toInstant(), zone)
 
 /**
  * Converts a [LocalDateTime] to a [Timestamp].
  */
-fun LocalDateTime.toProtoTimestamp(zone: ZoneId = ZoneOffset.UTC): Timestamp =
-    this.atZone(zone).toInstant().toProtoTimestamp()
+fun LocalDateTime.toProtoTimestamp(
+    zone: ZoneId = ZoneOffset.UTC,
+): Timestamp = this.atZone(zone).toInstant().toProtoTimestamp()
 
 /**
  * Converts a [Timestamp] to an [Instant].
  */
-fun Timestamp.toInstant(): Instant =
-    Instant.ofEpochSecond(this.seconds, this.nanos.toLong())
+fun Timestamp.toInstant(): Instant = Instant.ofEpochSecond(this.seconds, this.nanos.toLong())
 
 /**
  * Converts an [Instant] to a [Timestamp].
  */
-fun Instant.toProtoTimestamp(): Timestamp = Timestamp.newBuilder()
-    .setSeconds(epochSecond)
-    .setNanos(nano)
-    .build()
+fun Instant.toProtoTimestamp(): Timestamp =
+    Timestamp
+        .newBuilder()
+        .setSeconds(epochSecond)
+        .setNanos(nano)
+        .build()
 
 /**
  * Converts a Protobuf [Timestamp] to a [Date].
@@ -59,14 +62,14 @@ fun Date.toProtoTimestamp(): Timestamp = fromDate(this)
 /**
  * Converts a Protobuf [Duration] to a [Duration].
  */
-fun com.google.protobuf.Duration.toDuration(): Duration =
-    Duration.ofSeconds(seconds, nanos.toLong())
+fun com.google.protobuf.Duration.toDuration(): Duration = Duration.ofSeconds(seconds, nanos.toLong())
 
 /**
  * Converts a [Duration] to a Protobuf [Duration].
  */
 fun Duration.toProtoDuration(): com.google.protobuf.Duration =
-    com.google.protobuf.Duration.newBuilder()
+    com.google.protobuf.Duration
+        .newBuilder()
         .setSeconds(seconds)
         .setNanos(nano)
         .build()

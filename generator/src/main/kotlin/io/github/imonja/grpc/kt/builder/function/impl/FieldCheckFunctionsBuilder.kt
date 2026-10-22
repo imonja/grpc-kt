@@ -16,11 +16,12 @@ import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
  * Builder for creating extension functions to check if fields were explicitly set.
  */
 class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
-
     /**
      * Builds extension functions for checking if fields were explicitly set.
      */
-    override fun build(descriptor: Descriptor): FunSpecsWithImports {
+    override fun build(
+        descriptor: Descriptor,
+    ): FunSpecsWithImports {
         if (descriptor.isGooglePackageType() || descriptor.options.mapEntry) {
             return FunSpecsWithImports.EMPTY
         }
@@ -31,7 +32,11 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
 
         // Add extension functions for checking if optional fields were explicitly set
         for (field in descriptor.fields) {
-            if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet() || field.isExtension) {
+            if (field.name in descriptor.realOneofs
+                    .flatMap { it.fields }
+                    .map { it.name }
+                    .toSet() || field.isExtension
+            ) {
                 continue
             }
 
@@ -39,7 +44,8 @@ class FieldCheckFunctionsBuilder : FunctionSpecsBuilder<Descriptor> {
                 val fieldName = field.jsonName
                 val methodName = "has${fieldName.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }}"
 
-                val methodBuilder = FunSpec.builder(methodName)
+                val methodBuilder = FunSpec
+                    .builder(methodName)
                     .addModifiers(KModifier.PUBLIC)
                     .receiver(generatedType)
                     .returns(Boolean::class)

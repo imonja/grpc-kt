@@ -24,15 +24,17 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
-
-    override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
+    override fun build(
+        descriptor: ServiceDescriptor,
+    ): TypeSpecsWithImports {
         val stubs = descriptor.methods.map {
             ServerBuilder().serviceMethodStub(it)
         }
         val methodDescriptors = descriptor.methods
 
         val objectName = "${descriptor.name}GrpcPartialKt"
-        val objectBuilder = TypeSpec.objectBuilder(objectName)
+        val objectBuilder = TypeSpec
+            .objectBuilder(objectName)
             .addModifiers(KModifier.PUBLIC)
 
         // Generate interfaces for each service method that handlers will implement
@@ -48,7 +50,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
         val (coroutineImplPartialFunSpec, coroutineImports) = generateCoroutineImplPartialFunSpec(
             descriptor,
             stubs,
-            methodDescriptors
+            methodDescriptors,
         )
         objectBuilder.addFunction(coroutineImplPartialFunSpec)
 
@@ -58,93 +60,92 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
 
         // Collect all imports from the coroutine implementation function
         val allImports = stubs.flatMap { it.imports }.toSet() + coroutineImports + setOf(
-            Import("kotlinx.coroutines.flow", listOf("map"))
+            Import("kotlinx.coroutines.flow", listOf("map")),
         )
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(objectBuilder.build()),
-            imports = allImports
+            imports = allImports,
         )
     }
 
-    private fun generateInterfaceTypeSpecs(stubs: List<ServerBuilder.MethodStub>): List<TypeSpec> {
-        return stubs.map { stub ->
+    private fun generateInterfaceTypeSpecs(
+        stubs: List<ServerBuilder.MethodStub>,
+    ): List<TypeSpec> =
+        stubs.map { stub ->
             val method = stub.methodSpec
             val ifaceName = "${method.name.replaceFirstChar { it.uppercase() }}GrpcMethod"
 
-            val methodFun = FunSpec.builder("invoke")
+            val methodFun = FunSpec
+                .builder("invoke")
                 .addModifiers(KModifier.PUBLIC, KModifier.OPERATOR, KModifier.ABSTRACT)
                 .apply {
                     if (KModifier.SUSPEND in method.modifiers) addModifiers(KModifier.SUSPEND)
-                }
-                .addParameter("request", method.parameters.first().type)
+                }.addParameter("request", method.parameters.first().type)
                 .returns(method.returnType)
                 .build()
 
-            TypeSpec.funInterfaceBuilder(ifaceName)
+            TypeSpec
+                .funInterfaceBuilder(ifaceName)
                 .addFunction(methodFun)
                 .build()
         }
-    }
 
-    private fun generateCoroutineImplPartialConfigTypeSpec(): TypeSpec {
-        return TypeSpec.classBuilder("CoroutineImplPartialConfig")
+    private fun generateCoroutineImplPartialConfigTypeSpec(): TypeSpec =
+        TypeSpec
+            .classBuilder("CoroutineImplPartialConfig")
             .addModifiers(KModifier.PUBLIC)
             .addProperty(
-                PropertySpec.builder("coroutineContext", CoroutineContext::class)
+                PropertySpec
+                    .builder("coroutineContext", CoroutineContext::class)
                     .addModifiers(KModifier.PUBLIC)
                     .mutable(true)
                     .initializer("%T", EmptyCoroutineContext::class)
-                    .build()
-            )
-            .build()
-    }
+                    .build(),
+            ).build()
 
-    private fun generateCreateBindableFunSpec(): FunSpec {
-        return FunSpec.builder("createBindableService")
+    private fun generateCreateBindableFunSpec(): FunSpec =
+        FunSpec
+            .builder("createBindableService")
             .addModifiers(KModifier.PRIVATE)
             .addParameter(
                 "serviceDescriptor",
-                ClassName("io.grpc", "ServiceDescriptor")
-            )
-            .addParameter(
+                ClassName("io.grpc", "ServiceDescriptor"),
+            ).addParameter(
                 "coroutineContext",
-                CoroutineContext::class
-            )
-            .addParameter(
+                CoroutineContext::class,
+            ).addParameter(
                 "builderFn",
                 LambdaTypeName.get(
                     receiver = ClassName("io.grpc.ServerServiceDefinition", "Builder"),
-                    returnType = UNIT
-                )
-            )
-            .returns(BindableService::class)
+                    returnType = UNIT,
+                ),
+            ).returns(BindableService::class)
             .addCode(
                 """
-                    return object : %T(coroutineContext) {
-                        override fun bindService() = %T.builder(serviceDescriptor).apply {
-                            builderFn()
-                        }.build()
-                    }
+                return object : %T(coroutineContext) {
+                    override fun bindService() = %T.builder(serviceDescriptor).apply {
+                        builderFn()
+                    }.build()
+                }
                 """.trimIndent(),
                 AbstractCoroutineServerImpl::class,
-                ServerServiceDefinition::class
-            )
-            .build()
-    }
+                ServerServiceDefinition::class,
+            ).build()
 
     private fun generateCoroutineImplPartialFunSpec(
         descriptor: ServiceDescriptor,
         stubs: List<ServerBuilder.MethodStub>,
-        methodDescriptors: List<Descriptors.MethodDescriptor>
+        methodDescriptors: List<Descriptors.MethodDescriptor>,
     ): Pair<FunSpec, Set<Import>> {
-        val coroutineImplPartialFunSpec = FunSpec.builder("${descriptor.name}CoroutineImplPartial")
+        val coroutineImplPartialFunSpec = FunSpec
+            .builder("${descriptor.name}CoroutineImplPartial")
             .addAnnotation(
-                AnnotationSpec.builder(Suppress::class)
+                AnnotationSpec
+                    .builder(Suppress::class)
                     .addMember("%S", "FunctionName")
-                    .build()
-            )
-            .addModifiers(KModifier.PUBLIC)
+                    .build(),
+            ).addModifiers(KModifier.PUBLIC)
             .returns(BindableService::class)
 
         stubs.forEach { stub ->
@@ -154,36 +155,37 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                 "%T(%M.withDescription(%S))",
                 StatusException::class,
                 Status::class.member("UNIMPLEMENTED"),
-                "Method ${name.replaceFirstChar { it.uppercase() }} is unimplemented"
+                "Method ${name.replaceFirstChar { it.uppercase() }} is unimplemented",
             )
             coroutineImplPartialFunSpec.addParameter(
-                ParameterSpec.builder(name, ClassName("", ifaceName))
+                ParameterSpec
+                    .builder(name, ClassName("", ifaceName))
                     .defaultValue("$ifaceName { request -> throw $defaultImpl }")
-                    .build()
+                    .build(),
             )
         }
 
         coroutineImplPartialFunSpec.addParameter(
-            ParameterSpec.builder(
-                "configure",
-                LambdaTypeName.get(
-                    receiver = ClassName("", "CoroutineImplPartialConfig"),
-                    returnType = UNIT
-                )
-            )
-                .defaultValue("{}")
-                .build()
+            ParameterSpec
+                .builder(
+                    "configure",
+                    LambdaTypeName.get(
+                        receiver = ClassName("", "CoroutineImplPartialConfig"),
+                        returnType = UNIT,
+                    ),
+                ).defaultValue("{}")
+                .build(),
         )
 
         val allImports = mutableSetOf<Import>()
 
         coroutineImplPartialFunSpec.addCode(
             """
-                val config = CoroutineImplPartialConfig().apply(configure)
-                return createBindableService(%M(), config.coroutineContext) {
+            val config = CoroutineImplPartialConfig().apply(configure)
+            return createBindableService(%M(), config.coroutineContext) {
 
             """.trimIndent(),
-            descriptor.grpcClass.member("getServiceDescriptor")
+            descriptor.grpcClass.member("getServiceDescriptor"),
         )
 
         stubs.zip(methodDescriptors).forEach { (stub, methodDescriptor) ->
@@ -243,12 +245,12 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
 
             coroutineImplPartialFunSpec.addCode(
                 """
-                    bind<%T, %T, %T, %T>(
-                        pair = %M() to $name::invoke,
-                        context = config.coroutineContext,
-                        toKotlinProto = %L,
-                        toJavaProto = %L
-                    )
+                bind<%T, %T, %T, %T>(
+                    pair = %M() to $name::invoke,
+                    context = config.coroutineContext,
+                    toKotlinProto = %L,
+                    toJavaProto = %L
+                )
                 """.trimIndent() + "\n",
                 inputJavaTypeName,
                 outputJavaTypeName,
@@ -256,7 +258,7 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                 outputKtTypeName,
                 methodGetter,
                 requestFunctionRef,
-                responseFunctionRef
+                responseFunctionRef,
             )
         }
         coroutineImplPartialFunSpec.addCode("}")
@@ -264,13 +266,14 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
     }
 
     private fun generateBindFunSpec(): FunSpec {
-        val bindFunSpec = FunSpec.builder("bind")
+        val bindFunSpec = FunSpec
+            .builder("bind")
             .addAnnotation(
-                AnnotationSpec.builder(Suppress::class)
+                AnnotationSpec
+                    .builder(Suppress::class)
                     .addMember("%S", "UNCHECKED_CAST")
-                    .build()
-            )
-            .addModifiers(KModifier.PUBLIC)
+                    .build(),
+            ).addModifiers(KModifier.PUBLIC)
             .receiver(ClassName("io.grpc.ServerServiceDefinition", "Builder"))
             .addTypeVariable(TypeVariableName("ReqT"))
             .addTypeVariable(TypeVariableName("RespT"))
@@ -280,103 +283,96 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
                 "pair",
                 ClassName("kotlin", "Pair")
                     .parameterizedBy(
-                        MethodDescriptor::class.asClassName()
+                        MethodDescriptor::class
+                            .asClassName()
                             .parameterizedBy(TypeVariableName("ReqT"), TypeVariableName("RespT")),
-                        ANY
-                    )
-            )
-            .addParameter(
+                        ANY,
+                    ),
+            ).addParameter(
                 "context",
-                CoroutineContext::class
-            )
-            .addParameter(
+                CoroutineContext::class,
+            ).addParameter(
                 "toKotlinProto",
-                LambdaTypeName.get(TypeVariableName("ReqT"), returnType = TypeVariableName("ReqKotlin"))
-            )
-            .addParameter(
+                LambdaTypeName.get(TypeVariableName("ReqT"), returnType = TypeVariableName("ReqKotlin")),
+            ).addParameter(
                 "toJavaProto",
-                LambdaTypeName.get(TypeVariableName("RespKotlin"), returnType = TypeVariableName("RespT"))
-            )
-            .addCode(
-                CodeBlock.builder()
+                LambdaTypeName.get(TypeVariableName("RespKotlin"), returnType = TypeVariableName("RespT")),
+            ).addCode(
+                CodeBlock
+                    .builder()
                     .addStatement("val (descriptor, implementationRaw) = pair")
                     .beginControlFlow("val methodDef = when (descriptor.type)")
                     .add(
                         // --- UNARY (default) case
-                        CodeBlock.builder()
+                        CodeBlock
+                            .builder()
                             .addStatement(
                                 "%T.UNARY -> %M(",
                                 MethodDescriptor.MethodType::class,
-                                MemberName("io.grpc.kotlin.ServerCalls", "unaryServerMethodDefinition")
-                            )
-                            .indent()
+                                MemberName("io.grpc.kotlin.ServerCalls", "unaryServerMethodDefinition"),
+                            ).indent()
                             .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateUnaryImplementation())
                             .unindent()
                             .addStatement(")")
-                            .build()
-                    )
-                    .add(
+                            .build(),
+                    ).add(
                         // --- SERVER_STREAMING case
-                        CodeBlock.builder()
+                        CodeBlock
+                            .builder()
                             .addStatement(
                                 "%T.SERVER_STREAMING -> %M(",
                                 MethodDescriptor.MethodType::class,
-                                MemberName("io.grpc.kotlin.ServerCalls", "serverStreamingServerMethodDefinition")
-                            )
-                            .indent()
+                                MemberName("io.grpc.kotlin.ServerCalls", "serverStreamingServerMethodDefinition"),
+                            ).indent()
                             .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateServerStreamingImplementation())
                             .unindent()
                             .addStatement(")")
-                            .build()
-                    )
-                    .add(
+                            .build(),
+                    ).add(
                         // --- CLIENT_STREAMING case
-                        CodeBlock.builder()
+                        CodeBlock
+                            .builder()
                             .addStatement(
                                 "%T.CLIENT_STREAMING -> %M(",
                                 MethodDescriptor.MethodType::class,
-                                MemberName("io.grpc.kotlin.ServerCalls", "clientStreamingServerMethodDefinition")
-                            )
-                            .indent()
+                                MemberName("io.grpc.kotlin.ServerCalls", "clientStreamingServerMethodDefinition"),
+                            ).indent()
                             .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateClientStreamingImplementation())
                             .unindent()
                             .addStatement(")")
-                            .build()
-                    )
-                    .add(
+                            .build(),
+                    ).add(
                         // --- BIDI_STREAMING case
-                        CodeBlock.builder()
+                        CodeBlock
+                            .builder()
                             .addStatement(
                                 "%T.BIDI_STREAMING -> %M(",
                                 MethodDescriptor.MethodType::class,
-                                MemberName("io.grpc.kotlin.ServerCalls", "bidiStreamingServerMethodDefinition")
-                            )
-                            .indent()
+                                MemberName("io.grpc.kotlin.ServerCalls", "bidiStreamingServerMethodDefinition"),
+                            ).indent()
                             .addStatement("context = context,")
                             .addStatement("descriptor = descriptor,")
                             .add(generateBidiStreamingImplementation())
                             .unindent()
                             .addStatement(")")
-                            .build()
-                    )
-                    .addStatement("else -> throw IllegalArgumentException(%S)", "Unsupported method type")
+                            .build(),
+                    ).addStatement("else -> throw IllegalArgumentException(%S)", "Unsupported method type")
                     .endControlFlow()
                     .addStatement("addMethod(methodDef)")
-                    .build()
-
-            )
-            .build()
+                    .build(),
+            ).build()
         return bindFunSpec
     }
 
-    private fun generateUnaryImplementation(): CodeBlock {
-        return CodeBlock.builder()
+    private fun generateUnaryImplementation(): CodeBlock =
+        CodeBlock
+            .builder()
             .addStatement("implementation = { req ->")
             .indent()
             .addStatement("val reqKt = toKotlinProto(req)")
@@ -385,53 +381,49 @@ class ServerBuilderPartial : TypeSpecsBuilder<ServiceDescriptor> {
             .unindent()
             .addStatement("}")
             .build()
-    }
 
-    private fun generateServerStreamingImplementation(): CodeBlock {
-        return CodeBlock.builder()
+    private fun generateServerStreamingImplementation(): CodeBlock =
+        CodeBlock
+            .builder()
             .addStatement("implementation = { req ->")
             .indent()
             .addStatement("val reqKt = toKotlinProto(req)")
             .addStatement(
                 "(implementationRaw as (ReqKotlin) -> %T<RespKotlin>)",
-                ClassName("kotlinx.coroutines.flow", "Flow")
-            )
-            .indent()
+                ClassName("kotlinx.coroutines.flow", "Flow"),
+            ).indent()
             .addStatement(".invoke(reqKt)")
             .addStatement(".map(toJavaProto)")
             .unindent()
             .unindent()
             .addStatement("}")
             .build()
-    }
 
-    private fun generateClientStreamingImplementation(): CodeBlock {
-        return CodeBlock.builder()
+    private fun generateClientStreamingImplementation(): CodeBlock =
+        CodeBlock
+            .builder()
             .addStatement("implementation = { reqFlow ->")
             .indent()
             .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
             .addStatement(
                 "val resultKt = (implementationRaw as suspend (%T<ReqKotlin>) -> RespKotlin).invoke(adaptedFlow)",
-                ClassName("kotlinx.coroutines.flow", "Flow")
-            )
-            .addStatement("toJavaProto(resultKt)")
+                ClassName("kotlinx.coroutines.flow", "Flow"),
+            ).addStatement("toJavaProto(resultKt)")
             .unindent()
             .addStatement("}")
             .build()
-    }
 
-    private fun generateBidiStreamingImplementation(): CodeBlock {
-        return CodeBlock.builder()
+    private fun generateBidiStreamingImplementation(): CodeBlock =
+        CodeBlock
+            .builder()
             .addStatement("implementation = { reqFlow ->")
             .indent()
             .addStatement("val adaptedFlow = reqFlow.map(toKotlinProto)")
             .addStatement(
                 "(implementationRaw as (%T<ReqKotlin>) -> %T<RespKotlin>)(adaptedFlow).map(toJavaProto)",
                 ClassName("kotlinx.coroutines.flow", "Flow"),
-                ClassName("kotlinx.coroutines.flow", "Flow")
-            )
-            .unindent()
+                ClassName("kotlinx.coroutines.flow", "Flow"),
+            ).unindent()
             .addStatement("}")
             .build()
-    }
 }

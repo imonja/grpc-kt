@@ -29,13 +29,14 @@ object GrpcMetadataContext {
  * Returns a new [ServerInterceptor] that puts gRPC [Metadata] into the [Context].
  * This makes metadata available in the server implementation via `coroutineContext.grpcMetadata`.
  */
-fun metadataServerInterceptor(): ServerInterceptor = object : ServerInterceptor {
-    override fun <ReqT : Any?, RespT : Any?> interceptCall(
-        call: ServerCall<ReqT, RespT>,
-        headers: Metadata,
-        next: ServerCallHandler<ReqT, RespT>
-    ): ServerCall.Listener<ReqT> {
-        val context = Context.current().withValue(GrpcMetadataContext.METADATA_KEY, headers)
-        return Contexts.interceptCall(context, call, headers, next)
+fun metadataServerInterceptor(): ServerInterceptor =
+    object : ServerInterceptor {
+        override fun <ReqT : Any?, RespT : Any?> interceptCall(
+            call: ServerCall<ReqT, RespT>,
+            headers: Metadata,
+            next: ServerCallHandler<ReqT, RespT>,
+        ): ServerCall.Listener<ReqT> {
+            val context = Context.current().withValue(GrpcMetadataContext.METADATA_KEY, headers)
+            return Contexts.interceptCall(context, call, headers, next)
+        }
     }
-}

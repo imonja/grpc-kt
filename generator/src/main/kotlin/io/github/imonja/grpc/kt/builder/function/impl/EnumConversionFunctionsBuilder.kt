@@ -13,13 +13,15 @@ import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
  * Builder for creating conversion functions for Kotlin enums.
  */
 class EnumConversionFunctionsBuilder : FunctionSpecsBuilder<EnumDescriptor> {
-
-    override fun build(descriptor: EnumDescriptor): FunSpecsWithImports {
+    override fun build(
+        descriptor: EnumDescriptor,
+    ): FunSpecsWithImports {
         val imports = mutableSetOf<Import>()
         val kotlinType = descriptor.protobufKotlinTypeName
         val javaType = descriptor.protobufJavaTypeName
 
-        val toKotlinProto = FunSpec.builder("toKotlinProto")
+        val toKotlinProto = FunSpec
+            .builder("toKotlinProto")
             .addModifiers(KModifier.PUBLIC)
             .receiver(javaType)
             .returns(kotlinType)
@@ -40,7 +42,7 @@ class EnumConversionFunctionsBuilder : FunctionSpecsBuilder<EnumDescriptor> {
 
         return FunSpecsWithImports(
             funSpecs = listOf(toKotlinProto.build()),
-            imports = imports
+            imports = imports,
         )
     }
 }

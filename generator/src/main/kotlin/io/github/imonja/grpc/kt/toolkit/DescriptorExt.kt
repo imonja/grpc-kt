@@ -15,7 +15,7 @@ val Descriptor.protobufJavaTypeName: ClassName
                     this.file.options.javaOuterClassname
                 } else {
                     fieldNameToJsonName(this.file.shortName).capitalize()
-                }
+                },
             ) + simpleNames
         }
         return ClassName(this.file.javaPackage, simpleNames)
@@ -34,9 +34,7 @@ val Descriptor.shortNames: List<String>
         .replace(this.file.`package` + ".", "")
         .split('.')
 
-fun Descriptor.isGooglePackageType(): Boolean {
-    return this.file.name.startsWith("google/")
-}
+fun Descriptor.isGooglePackageType(): Boolean = this.file.name.startsWith("google/")
 
 fun Descriptor.isPrimitiveWrapperType(): Boolean {
     val primitiveTypes = setOf(
@@ -48,16 +46,15 @@ fun Descriptor.isPrimitiveWrapperType(): Boolean {
         KnownPreDefinedType.UINT64_VALUE.descriptor.fullName,
         KnownPreDefinedType.BOOL_VALUE.descriptor.fullName,
         KnownPreDefinedType.STRING_VALUE.descriptor.fullName,
-        KnownPreDefinedType.BYTES_VALUE.descriptor.fullName
+        KnownPreDefinedType.BYTES_VALUE.descriptor.fullName,
     )
     return this.fullName in primitiveTypes
 }
 
-fun Descriptor.isKnownPreDefinedType(): Boolean {
-    return KnownPreDefinedType.entries.any {
+fun Descriptor.isKnownPreDefinedType(): Boolean =
+    KnownPreDefinedType.entries.any {
         it.descriptor.fullName == this.fullName
     }
-}
 
 val Descriptor.converterImports: Set<Import>
     get() {
@@ -66,7 +63,7 @@ val Descriptor.converterImports: Set<Import>
         }
         return setOf(
             this.toJavaProtoImport,
-            this.toKotlinProtoImport
+            this.toKotlinProtoImport,
         )
     }
 

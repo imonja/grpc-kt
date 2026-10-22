@@ -5,7 +5,7 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     signing
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.35.0"
     id("com.gradle.plugin-publish") version "1.3.0"
 }
@@ -127,13 +127,13 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
     coordinates(
         groupId = project.group.toString(),
         artifactId = "grpc-kt-gradle-plugin",
-        version = project.version.toString()
+        version = project.version.toString(),
     )
 
     pom {
         name.set("gRPC Kotlin Gradle Plugin")
         description.set(
-            "A Gradle plugin that configures protobuf generation with grpc-kt, grpc-java, validation, and documentation"
+            "A Gradle plugin that configures protobuf generation with grpc-kt, grpc-java, validation, and documentation",
         )
         url.set("https://github.com/imonja/grpc-kt")
         inceptionYear.set("2025")
@@ -167,8 +167,17 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
 }
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    version.set("1.8.0")
+    enableExperimentalRules.set(true)
     filter {
         exclude("**/generated/**")
         include("**/build/generated/**")
     }
+}
+
+// ktlintFormat must always rewrite the sources: an up-to-date or cached result would skip formatting,
+// for example after a file was reverted in the IDE or .editorconfig changed
+tasks.matching { task -> task.name.startsWith("runKtlintFormatOver") }.configureEach {
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
 }

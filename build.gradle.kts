@@ -7,7 +7,7 @@ plugins {
     id("com.google.protobuf") version "0.9.5" apply false
     `maven-publish`
     signing
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.35.0" apply false
 }
 
@@ -27,7 +27,7 @@ mapOf(
     "coroutinesVersion" to "1.10.2",
     "kotlinPoetVersion" to "2.1.0",
     "jupiterVersion" to "5.11.4",
-    "kotestVersion" to "5.9.1"
+    "kotestVersion" to "5.9.1",
 ).forEach({ (key, value) -> ext[key] = value })
 
 repositories {
@@ -108,7 +108,7 @@ subprojects {
             coordinates(
                 groupId = project.group.toString(),
                 artifactId = project.name,
-                version = project.version.toString()
+                version = project.version.toString(),
             )
 
             pom {
@@ -156,6 +156,21 @@ subprojects {
     }
 }
 
+allprojects {
+    // Same ktlint engine and style as the letycohq services (ls.ktlint-rules); the style lives in .editorconfig
+    configure<KtlintExtension> {
+        version.set("1.8.0")
+        enableExperimentalRules.set(true)
+    }
+
+    // ktlintFormat must always rewrite the sources: an up-to-date or cached result would skip formatting,
+    // for example after a file was reverted in the IDE or .editorconfig changed
+    tasks.matching { task -> task.name.startsWith("runKtlintFormatOver") }.configureEach {
+        outputs.upToDateWhen { false }
+        outputs.cacheIf { false }
+    }
+}
+
 tasks.register("ktlintFormatAll") {
     description = "Run ktlintFormat for all modules (grpc-kt, gradle-plugin)"
     group = "formatting"
@@ -198,7 +213,7 @@ gradle.taskGraph.whenReady {
         (
             preCommitHook.exists() && sourceHook.exists() &&
                 preCommitHook.readText() != sourceHook.readText()
-            )
+        )
 
     if (needsInstall && file("$rootDir/.git").exists() && sourceHook.exists()) {
         println("🔧 Auto-installing git hooks...")

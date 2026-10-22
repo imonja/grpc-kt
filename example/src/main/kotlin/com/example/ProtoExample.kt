@@ -21,11 +21,12 @@ import java.util.concurrent.TimeUnit
  * 4. Creating a gRPC client to interact with the service
  */
 object ProtoExample {
-
     private const val SERVER_PORT = 50051
 
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         println("Starting Proto Example")
 
         // Example 1: Creating and serializing Person message
@@ -58,8 +59,8 @@ object ProtoExample {
             address = PersonKt.AddressKt(
                 street = "123 Main St",
                 city = "San Francisco",
-                country = "USA"
-            )
+                country = "USA",
+            ),
         )
 
         println("Created person: $person")
@@ -107,7 +108,7 @@ object ProtoExample {
             name = "Alice Smith",
             contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "alice@example.com"),
             tags = listOf("customer", "vip"),
-            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY,
         )
         println("ContactInfo with email: $contactInfoEmail")
 
@@ -116,7 +117,7 @@ object ProtoExample {
             name = "Bob Johnson",
             contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
             tags = listOf("lead"),
-            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
+            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY,
         )
         println("ContactInfo with phone: $contactInfoPhone")
 
@@ -125,7 +126,7 @@ object ProtoExample {
             name = "Charlie Brown",
             contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@charlie_b"),
             tags = listOf("partner"),
-            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
+            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD,
         )
         println("ContactInfo with username: $contactInfoUsername")
 
@@ -142,28 +143,28 @@ object ProtoExample {
         val emailSettings = NotificationSettingsKt.EmailSettingsKt(
             emailAddress = "user@example.com",
             dailyDigest = true,
-            categories = listOf("orders", "promotions", "news")
+            categories = listOf("orders", "promotions", "news"),
         )
         val notificationSettingsEmail = NotificationSettingsKt(
             userId = "user123",
             notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
-                emailSettings = emailSettings
+                emailSettings = emailSettings,
             ),
-            notificationsEnabled = true
+            notificationsEnabled = true,
         )
         println("NotificationSettings with email: $notificationSettingsEmail")
 
         // Create NotificationSettings with SMS settings
         val smsSettings = NotificationSettingsKt.SmsSettingsKt(
             phoneNumber = "+1-555-0456",
-            urgentOnly = true
+            urgentOnly = true,
         )
         val notificationSettingsSms = NotificationSettingsKt(
             userId = "user456",
             notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
-                smsSettings = smsSettings
+                smsSettings = smsSettings,
             ),
-            notificationsEnabled = true
+            notificationsEnabled = true,
         )
         println("NotificationSettings with SMS: $notificationSettingsSms")
 
@@ -171,14 +172,14 @@ object ProtoExample {
         val pushSettings = NotificationSettingsKt.PushSettingsKt(
             deviceToken = "abc123def456",
             soundEnabled = true,
-            soundName = "notification_sound.wav"
+            soundName = "notification_sound.wav",
         )
         val notificationSettingsPush = NotificationSettingsKt(
             userId = "user789",
             notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
-                pushSettings = pushSettings
+                pushSettings = pushSettings,
             ),
-            notificationsEnabled = false
+            notificationsEnabled = false,
         )
         println("NotificationSettings with push: $notificationSettingsPush")
 
@@ -196,7 +197,7 @@ object ProtoExample {
                 is ContactInfoKt.ContactMethodKt.PhoneKt -> "Phone: ${contactInfoEmail.contactMethod.phone}"
                 is ContactInfoKt.ContactMethodKt.UsernameKt -> "Username: ${contactInfoEmail.contactMethod.username}"
                 null -> "No contact method set"
-            }}"
+            }}",
         )
 
         println(
@@ -205,7 +206,7 @@ object ProtoExample {
                 is NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt -> "SMS notifications to: ${notificationSettingsEmail.notificationChannel.smsSettings?.phoneNumber}"
                 is NotificationSettingsKt.NotificationChannelKt.PushSettingsKt -> "Push notifications to device: ${notificationSettingsEmail.notificationChannel.pushSettings?.deviceToken}"
                 null -> "No notification channel set"
-            }}"
+            }}",
         )
     }
 
@@ -217,7 +218,7 @@ object ProtoExample {
 
         // Create a schedule request (no longer has 'when' field)
         val scheduleRequest = GetScheduleRequestKt(
-            personId = "user123"
+            personId = "user123",
         )
         println("Created schedule request: $scheduleRequest")
         println("Person ID: ${scheduleRequest.personId}")
@@ -226,13 +227,13 @@ object ProtoExample {
         val scheduleItem = GetScheduleResponseKt.ScheduleItemKt(
             id = "item1",
             title = "Team Meeting",
-            description = "Weekly team sync"
+            description = "Weekly team sync",
         )
 
         // Create a schedule response with 'when' field (Kotlin keyword)
         val scheduleResponse = GetScheduleResponseKt(
             items = listOf(scheduleItem),
-            `when` = java.time.LocalDateTime.now() // Using backticks for Kotlin keyword
+            `when` = java.time.LocalDateTime.now(), // Using backticks for Kotlin keyword
         )
         println("Created schedule response: $scheduleResponse")
         println("Response timestamp (when field): ${scheduleResponse.`when`}")
@@ -256,177 +257,182 @@ object ProtoExample {
     /**
      * Demonstrates how to use gRPC services with the generated code.
      */
-    private fun demonstrateGrpcService() = runBlocking {
-        println("\n=== gRPC Service Example ===")
+    private fun demonstrateGrpcService() =
+        runBlocking {
+            println("\n=== gRPC Service Example ===")
 
-        // Start the gRPC server
-        val server = ServerBuilder.forPort(SERVER_PORT)
-            .addService(PersonServiceImpl())
-            .build()
-            .start()
+            // Start the gRPC server
+            val server = ServerBuilder
+                .forPort(SERVER_PORT)
+                .addService(PersonServiceImpl())
+                .build()
+                .start()
 
-        println("Server started on port $SERVER_PORT")
+            println("Server started on port $SERVER_PORT")
 
-        // Create a channel to the server
-        val channel = ManagedChannelBuilder.forAddress("localhost", SERVER_PORT)
-            .usePlaintext()
-            .build()
+            // Create a channel to the server
+            val channel = ManagedChannelBuilder
+                .forAddress("localhost", SERVER_PORT)
+                .usePlaintext()
+                .build()
 
-        try {
-            // Create a client stub
-            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
+            try {
+                // Create a client stub
+                val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
-            // Example 1.1: Unary call - GetPerson
-            println("\n--- Unary Call Example (GetPerson) ---")
-            val getPersonRequest = GetPersonRequestKt(id = "123")
-            val getPersonResponse = stub.getPerson(getPersonRequest)
-            println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
+                // Example 1.1: Unary call - GetPerson
+                println("\n--- Unary Call Example (GetPerson) ---")
+                val getPersonRequest = GetPersonRequestKt(id = "123")
+                val getPersonResponse = stub.getPerson(getPersonRequest)
+                println("Received person: ${getPersonResponse.person?.name}, age: ${getPersonResponse.person?.age}")
 
-            // Example 1.2: Unary call - DeletePerson
-            println("\n--- Unary Call Example (DeletePerson) ---")
-            val deletePersonRequest = DeletePersonRequestKt(id = "123")
-            stub.deletePerson(deletePersonRequest)
-            println("Person with id ${deletePersonRequest.id} deleted successfully")
+                // Example 1.2: Unary call - DeletePerson
+                println("\n--- Unary Call Example (DeletePerson) ---")
+                val deletePersonRequest = DeletePersonRequestKt(id = "123")
+                stub.deletePerson(deletePersonRequest)
+                println("Person with id ${deletePersonRequest.id} deleted successfully")
 
-            // Example 2: Server streaming
-            println("\n--- Server Streaming Example ---")
-            val listRequest = ListPersonsRequestKt(limit = 5, offset = 0)
-            println("Requesting persons with limit=${listRequest.limit}, offset=${listRequest.offset}")
+                // Example 2: Server streaming
+                println("\n--- Server Streaming Example ---")
+                val listRequest = ListPersonsRequestKt(limit = 5, offset = 0)
+                println("Requesting persons with limit=${listRequest.limit}, offset=${listRequest.offset}")
 
-            val persons = mutableListOf<PersonKt?>()
-            stub.listPersons(listRequest).collect { response ->
-                persons.add(response.person)
-                println("Received person: ${response.person?.name}, age: ${response.person?.age}")
-            }
-            println("Received ${persons.size} persons in total")
+                val persons = mutableListOf<PersonKt?>()
+                stub.listPersons(listRequest).collect { response ->
+                    persons.add(response.person)
+                    println("Received person: ${response.person?.name}, age: ${response.person?.age}")
+                }
+                println("Received ${persons.size} persons in total")
 
-            // Example 3: Client streaming
-            println("\n--- Client Streaming Example ---")
-            val updateRequests = flow {
-                for (i in 1..3) {
-                    val person = PersonKt(
-                        name = "Person $i",
-                        age = 20 + i,
-                        hobbies = listOf("Hobby $i"),
-                        gender = PersonKt.GenderKt.UNKNOWN,
-                        address = PersonKt.AddressKt(
-                            street = "$i Main St",
-                            city = "City $i",
-                            country = "Country $i"
+                // Example 3: Client streaming
+                println("\n--- Client Streaming Example ---")
+                val updateRequests = flow {
+                    for (i in 1..3) {
+                        val person = PersonKt(
+                            name = "Person $i",
+                            age = 20 + i,
+                            hobbies = listOf("Hobby $i"),
+                            gender = PersonKt.GenderKt.UNKNOWN,
+                            address = PersonKt.AddressKt(
+                                street = "$i Main St",
+                                city = "City $i",
+                                country = "Country $i",
+                            ),
                         )
-                    )
-                    println("Sending update for person: ${person.name}")
-                    emit(UpdatePersonRequestKt(person = person))
-                    delay(100) // Simulate some processing time
+                        println("Sending update for person: ${person.name}")
+                        emit(UpdatePersonRequestKt(person = person))
+                        delay(100) // Simulate some processing time
+                    }
                 }
-            }
 
-            val updateResponse = stub.updatePerson(updateRequests)
-            println("Update successful: ${updateResponse.success}")
+                val updateResponse = stub.updatePerson(updateRequests)
+                println("Update successful: ${updateResponse.success}")
 
-            // Example 4: Bidirectional streaming
-            println("\n--- Bidirectional Streaming Example ---")
-            val chatRequests = flow {
-                for (i in 1..5) {
-                    val message = "Hello $i from client"
-                    println("Sending: $message")
-                    emit(ChatRequestKt(message = message))
-                    delay(100) // Simulate some processing time
+                // Example 4: Bidirectional streaming
+                println("\n--- Bidirectional Streaming Example ---")
+                val chatRequests = flow {
+                    for (i in 1..5) {
+                        val message = "Hello $i from client"
+                        println("Sending: $message")
+                        emit(ChatRequestKt(message = message))
+                        delay(100) // Simulate some processing time
+                    }
                 }
-            }
 
-            val job = launch {
-                stub.chatWithPerson(chatRequests).collect { response ->
-                    println("Received: ${response.message}")
+                val job = launch {
+                    stub.chatWithPerson(chatRequests).collect { response ->
+                        println("Received: ${response.message}")
+                    }
                 }
+
+                // Wait for the chat to complete
+                job.join()
+
+                // Example 5: UpdateContactInfo with oneof
+                println("\n--- UpdateContactInfo Example ---")
+                val contactInfo = ContactInfoKt(
+                    name = "Service User",
+                    contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "service@example.com"),
+                    tags = listOf("service", "automated"),
+                    preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY,
+                )
+                val updateContactRequest = UpdateContactInfoRequestKt(
+                    personId = "service123",
+                    contactInfo = contactInfo,
+                )
+                val contactResponse = stub.updateContactInfo(updateContactRequest)
+                println("Contact info update successful: ${contactResponse.success}")
+
+                // Example 6: UpdateNotificationSettings with message oneof
+                println("\n--- UpdateNotificationSettings Example ---")
+                val pushSettings = NotificationSettingsKt.PushSettingsKt(
+                    deviceToken = "service_device_token",
+                    soundEnabled = false,
+                    soundName = "silent",
+                )
+                val notificationSettings = NotificationSettingsKt(
+                    userId = "service456",
+                    notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
+                        pushSettings = pushSettings,
+                    ),
+                    notificationsEnabled = true,
+                )
+                val updateNotificationRequest = UpdateNotificationSettingsRequestKt(
+                    userId = "service456",
+                    settings = notificationSettings,
+                )
+                val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
+                println("Notification settings update successful: ${notificationResponse.success}")
+                println("Response message: ${notificationResponse.message}")
+
+                // Example 7: GetSchedule with Kotlin keyword field in response
+                println("\n--- GetSchedule Example (Kotlin keywords) ---")
+                val getScheduleRequest = GetScheduleRequestKt(
+                    personId = "service789",
+                )
+                val scheduleResponse = stub.getSchedule(getScheduleRequest)
+                println("Schedule response received at: ${scheduleResponse.`when`}") // Using backticks for Kotlin keyword
+                println("Number of schedule items: ${scheduleResponse.items.size}")
+                scheduleResponse.items.forEach { item ->
+                    println("Schedule item: ${item.id} - ${item.title}")
+                    println("  Description: ${item.description}")
+                }
+
+                // Example 8: TestOptionalField - Test optional field behavior
+                println("\n--- TestOptionalField Example ---")
+
+                // Test 1: Field not set
+                println("Test 1: Field not set")
+                val requestNoField = TestOptionalFieldRequestKt()
+                val responseNoField = stub.testOptionalField(requestNoField)
+                println("Has field: ${responseNoField.hasField}")
+
+                // Test 2: Field set to empty string
+                println("Test 2: Field set to empty string")
+                val requestEmptyField = TestOptionalFieldRequestKt(field = "")
+                val responseEmptyField = stub.testOptionalField(requestEmptyField)
+                println("Has field: ${responseEmptyField.hasField}")
+
+                // Test 3: Field set to "John"
+                println("Test 3: Field set to 'John'")
+                val requestWithField = TestOptionalFieldRequestKt(field = "John")
+                val responseWithField = stub.testOptionalField(requestWithField)
+                println("Has field: ${responseWithField.hasField}")
+            } finally {
+                // Shutdown the channel and server
+                println("\nShutting down client and server")
+                channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
             }
-
-            // Wait for the chat to complete
-            job.join()
-
-            // Example 5: UpdateContactInfo with oneof
-            println("\n--- UpdateContactInfo Example ---")
-            val contactInfo = ContactInfoKt(
-                name = "Service User",
-                contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "service@example.com"),
-                tags = listOf("service", "automated"),
-                preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
-            )
-            val updateContactRequest = UpdateContactInfoRequestKt(
-                personId = "service123",
-                contactInfo = contactInfo
-            )
-            val contactResponse = stub.updateContactInfo(updateContactRequest)
-            println("Contact info update successful: ${contactResponse.success}")
-
-            // Example 6: UpdateNotificationSettings with message oneof
-            println("\n--- UpdateNotificationSettings Example ---")
-            val pushSettings = NotificationSettingsKt.PushSettingsKt(
-                deviceToken = "service_device_token",
-                soundEnabled = false,
-                soundName = "silent"
-            )
-            val notificationSettings = NotificationSettingsKt(
-                userId = "service456",
-                notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
-                    pushSettings = pushSettings
-                ),
-                notificationsEnabled = true
-            )
-            val updateNotificationRequest = UpdateNotificationSettingsRequestKt(
-                userId = "service456",
-                settings = notificationSettings
-            )
-            val notificationResponse = stub.updateNotificationSettings(updateNotificationRequest)
-            println("Notification settings update successful: ${notificationResponse.success}")
-            println("Response message: ${notificationResponse.message}")
-
-            // Example 7: GetSchedule with Kotlin keyword field in response
-            println("\n--- GetSchedule Example (Kotlin keywords) ---")
-            val getScheduleRequest = GetScheduleRequestKt(
-                personId = "service789"
-            )
-            val scheduleResponse = stub.getSchedule(getScheduleRequest)
-            println("Schedule response received at: ${scheduleResponse.`when`}") // Using backticks for Kotlin keyword
-            println("Number of schedule items: ${scheduleResponse.items.size}")
-            scheduleResponse.items.forEach { item ->
-                println("Schedule item: ${item.id} - ${item.title}")
-                println("  Description: ${item.description}")
-            }
-
-            // Example 8: TestOptionalField - Test optional field behavior
-            println("\n--- TestOptionalField Example ---")
-
-            // Test 1: Field not set
-            println("Test 1: Field not set")
-            val requestNoField = TestOptionalFieldRequestKt()
-            val responseNoField = stub.testOptionalField(requestNoField)
-            println("Has field: ${responseNoField.hasField}")
-
-            // Test 2: Field set to empty string
-            println("Test 2: Field set to empty string")
-            val requestEmptyField = TestOptionalFieldRequestKt(field = "")
-            val responseEmptyField = stub.testOptionalField(requestEmptyField)
-            println("Has field: ${responseEmptyField.hasField}")
-
-            // Test 3: Field set to "John"
-            println("Test 3: Field set to 'John'")
-            val requestWithField = TestOptionalFieldRequestKt(field = "John")
-            val responseWithField = stub.testOptionalField(requestWithField)
-            println("Has field: ${responseWithField.hasField}")
-        } finally {
-            // Shutdown the channel and server
-            println("\nShutting down client and server")
-            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
-            server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
         }
-    }
 
     /**
      * Implementation of the PersonService for demonstration.
      */
     private class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
-        override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
+        override suspend fun getPerson(
+            request: GetPersonRequestKt,
+        ): GetPersonResponseKt {
             println("Server received getPerson request for id: ${request.id}")
 
             // Simulate fetching a person by ID
@@ -438,38 +444,45 @@ object ProtoExample {
                 address = PersonKt.AddressKt(
                     street = "123 Main St",
                     city = "San Francisco",
-                    country = "USA"
-                )
+                    country = "USA",
+                ),
             )
             return GetPersonResponseKt(person = person)
         }
 
-        override suspend fun deletePerson(request: DeletePersonRequestKt) {
+        override suspend fun deletePerson(
+            request: DeletePersonRequestKt,
+        ) {
             println("Server received deletePerson request for id: ${request.id}")
 
             // Simulate deleting a person by ID
             // No return value needed as the method returns Unit
         }
 
-        override fun listPersons(request: ListPersonsRequestKt): Flow<ListPersonsResponseKt> = flow {
-            println("Server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
+        override fun listPersons(
+            request: ListPersonsRequestKt,
+        ): Flow<ListPersonsResponseKt> =
+            flow {
+                println("Server received listPersons request with limit: ${request.limit}, offset: ${request.offset}")
 
-            // Simulate fetching a list of persons
-            val persons = listOf(
-                PersonKt(name = "Alice", age = 25, gender = PersonKt.GenderKt.FEMALE),
-                PersonKt(name = "Bob", age = 30, gender = PersonKt.GenderKt.MALE),
-                PersonKt(name = "Charlie", age = 35, gender = PersonKt.GenderKt.NON_BINARY)
-            )
+                // Simulate fetching a list of persons
+                val persons = listOf(
+                    PersonKt(name = "Alice", age = 25, gender = PersonKt.GenderKt.FEMALE),
+                    PersonKt(name = "Bob", age = 30, gender = PersonKt.GenderKt.MALE),
+                    PersonKt(name = "Charlie", age = 35, gender = PersonKt.GenderKt.NON_BINARY),
+                )
 
-            // Emit each person as a separate response
-            persons.forEach { person ->
-                println("Server sending person: ${person.name}")
-                emit(ListPersonsResponseKt(person = person))
-                delay(100) // Simulate some processing time
+                // Emit each person as a separate response
+                persons.forEach { person ->
+                    println("Server sending person: ${person.name}")
+                    emit(ListPersonsResponseKt(person = person))
+                    delay(100) // Simulate some processing time
+                }
             }
-        }
 
-        override suspend fun updatePerson(requests: Flow<UpdatePersonRequestKt>): UpdatePersonResponseKt {
+        override suspend fun updatePerson(
+            requests: Flow<UpdatePersonRequestKt>,
+        ): UpdatePersonResponseKt {
             println("Server received updatePerson request stream")
 
             // Process each update request
@@ -480,7 +493,9 @@ object ProtoExample {
             return UpdatePersonResponseKt(success = true)
         }
 
-        override fun chatWithPerson(requests: Flow<ChatRequestKt>): Flow<ChatResponseKt> {
+        override fun chatWithPerson(
+            requests: Flow<ChatRequestKt>,
+        ): Flow<ChatResponseKt> {
             println("Server received chatWithPerson request stream")
 
             // Echo back each message with a prefix
@@ -490,7 +505,9 @@ object ProtoExample {
             }
         }
 
-        override suspend fun updateContactInfo(request: UpdateContactInfoRequestKt): UpdateContactInfoResponseKt {
+        override suspend fun updateContactInfo(
+            request: UpdateContactInfoRequestKt,
+        ): UpdateContactInfoResponseKt {
             println("Server received updateContactInfo request for person: ${request.personId}")
             println("Contact info: ${request.contactInfo}")
             println(
@@ -499,14 +516,14 @@ object ProtoExample {
                     is ContactInfoKt.ContactMethodKt.PhoneKt -> "Phone: ${request.contactInfo.contactMethod.phone}"
                     is ContactInfoKt.ContactMethodKt.UsernameKt -> "Username: ${request.contactInfo.contactMethod.username}"
                     null -> "None"
-                }}"
+                }}",
             )
 
             return UpdateContactInfoResponseKt(success = true)
         }
 
         override suspend fun updateNotificationSettings(
-            request: UpdateNotificationSettingsRequestKt
+            request: UpdateNotificationSettingsRequestKt,
         ): UpdateNotificationSettingsResponseKt {
             println("Server received updateNotificationSettings request for user: ${request.userId}")
             println("Settings: ${request.settings}")
@@ -516,13 +533,15 @@ object ProtoExample {
                     is NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt -> "SMS: ${request.settings.notificationChannel.smsSettings?.phoneNumber}"
                     is NotificationSettingsKt.NotificationChannelKt.PushSettingsKt -> "Push: ${request.settings.notificationChannel.pushSettings?.deviceToken}"
                     null -> "None"
-                }}"
+                }}",
             )
 
             return UpdateNotificationSettingsResponseKt(success = true, message = "Notification settings updated successfully")
         }
 
-        override suspend fun getSchedule(request: GetScheduleRequestKt): GetScheduleResponseKt {
+        override suspend fun getSchedule(
+            request: GetScheduleRequestKt,
+        ): GetScheduleResponseKt {
             println("Server received getSchedule request for person: ${request.personId}")
 
             // Create sample schedule items (now nested ScheduleItem type)
@@ -530,22 +549,24 @@ object ProtoExample {
                 GetScheduleResponseKt.ScheduleItemKt(
                     id = "meeting1",
                     title = "Product Planning",
-                    description = "Quarterly product roadmap discussion"
+                    description = "Quarterly product roadmap discussion",
                 ),
                 GetScheduleResponseKt.ScheduleItemKt(
                     id = "break1",
                     title = "Coffee Break",
-                    description = "Team coffee break"
-                )
+                    description = "Team coffee break",
+                ),
             )
 
             return GetScheduleResponseKt(
                 items = scheduleItems,
-                `when` = java.time.LocalDateTime.now() // Using backticks for Kotlin keyword
+                `when` = java.time.LocalDateTime.now(), // Using backticks for Kotlin keyword
             )
         }
 
-        override suspend fun testOptionalField(request: TestOptionalFieldRequestKt): TestOptionalFieldResponseKt {
+        override suspend fun testOptionalField(
+            request: TestOptionalFieldRequestKt,
+        ): TestOptionalFieldResponseKt {
             println("Server received testOptionalField request")
 
             // Check if the optional field is present using hasField() method

@@ -31,7 +31,9 @@ interface ProtoKtMessage<out J : Message> {
     /**
      * Writes the serialized message to an [OutputStream].
      */
-    fun writeTo(output: OutputStream) = toJavaProto().writeTo(output)
+    fun writeTo(
+        output: OutputStream,
+    ) = toJavaProto().writeTo(output)
 }
 
 /**
@@ -44,17 +46,23 @@ interface ProtoKtCompanion<K : ProtoKtMessage<J>, J : Message> {
     /**
      * Deserializes a message from a byte array.
      */
-    fun parseFrom(data: ByteArray): K
+    fun parseFrom(
+        data: ByteArray,
+    ): K
 
     /**
      * Deserializes a message from a [ByteString].
      */
-    fun parseFrom(data: ByteString): K
+    fun parseFrom(
+        data: ByteString,
+    ): K
 
     /**
      * Deserializes a message from an [InputStream].
      */
-    fun parseFrom(input: InputStream): K
+    fun parseFrom(
+        input: InputStream,
+    ): K
 
     /**
      * Returns a [Parser] for the Java Protobuf message.

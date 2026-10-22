@@ -14,13 +14,14 @@ import io.github.imonja.grpc.kt.toolkit.addGeneratedFileComments
 import io.github.imonja.grpc.kt.toolkit.kotlinPackage
 
 class ServerGrpcSpecBuilder : FileSpecBuilder {
-
-    override fun build(fileDescriptor: Descriptors.FileDescriptor): List<FileSpec> {
+    override fun build(
+        fileDescriptor: Descriptors.FileDescriptor,
+    ): List<FileSpec> {
         val fileSpecs = mutableListOf<FileSpec>()
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
                 ServerBuilder(),
-                ClientBuilder()
+                ClientBuilder(),
             )
             val results = generators.map {
                 it.build(service)
@@ -28,11 +29,13 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
             val grpcClassName = "${service.name}GrpcKt"
 
             fileSpecs.add(
-                FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
+                FileSpec
+                    .builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
                     .addType(
-                        TypeSpec.objectBuilder(grpcClassName)
+                        TypeSpec
+                            .objectBuilder(grpcClassName)
                             .apply { results.flatMap { it.typeSpecs }.forEach { addType(it) } }
-                            .build()
+                            .build(),
                     ).apply {
                         addGeneratedFileComments(fileDescriptor.name)
 
@@ -40,14 +43,13 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
                             addImport("kotlinx.coroutines.flow", "map")
                         }
                         addAllImports(results.flatMap { it.imports }.toSet())
-                    }
-                    .build()
+                    }.build(),
             )
         }
 
         fileDescriptor.services.forEach { service ->
             val generators: List<TypeSpecsBuilder<ServiceDescriptor>> = listOf(
-                ServerBuilderPartial()
+                ServerBuilderPartial(),
             )
             val results = generators.map {
                 it.build(service)
@@ -55,7 +57,8 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
             val grpcClassName = "${service.name}GrpcPartialKt"
 
             fileSpecs.add(
-                FileSpec.builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
+                FileSpec
+                    .builder(fileDescriptor.kotlinPackage, "$grpcClassName.kt")
                     .apply {
                         results.flatMap { it.typeSpecs }.forEach { addType(it) }
                         addGeneratedFileComments(fileDescriptor.name)
@@ -64,8 +67,7 @@ class ServerGrpcSpecBuilder : FileSpecBuilder {
                             addImport("kotlinx.coroutines.flow", "map")
                         }
                         addAllImports(results.flatMap { it.imports }.toSet())
-                    }
-                    .build()
+                    }.build(),
             )
         }
 

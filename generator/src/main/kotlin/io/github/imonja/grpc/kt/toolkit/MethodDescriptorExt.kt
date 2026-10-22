@@ -7,5 +7,5 @@ val MethodDescriptor.descriptorCode: CodeBlock
     get() = CodeBlock.of(
         "%T.%L()",
         service.grpcClass,
-        "get" + this.name.capitalize() + "Method"
+        "get" + this.name.capitalize() + "Method",
     )

@@ -16,7 +16,9 @@ class ConversionFunctionsBuilder {
     /**
      * Builds conversion functions for a Protocol Buffer message descriptor.
      */
-    fun build(descriptor: Descriptor): FunSpecsWithImports {
+    fun build(
+        descriptor: Descriptor,
+    ): FunSpecsWithImports {
         if (descriptor.isGooglePackageType() || descriptor.options.mapEntry) {
             return FunSpecsWithImports.EMPTY
         }

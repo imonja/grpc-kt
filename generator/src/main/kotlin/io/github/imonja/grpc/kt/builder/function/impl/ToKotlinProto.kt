@@ -24,11 +24,14 @@ import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
 class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
-    override fun build(descriptor: Descriptor): FunSpecsWithImports {
+    override fun build(
+        descriptor: Descriptor,
+    ): FunSpecsWithImports {
         val imports = mutableSetOf<Import>()
         val generatedType = descriptor.protobufKotlinTypeName
         val protoType = descriptor.protobufJavaTypeName
-        val functionBuilder = FunSpec.builder("toKotlinProto")
+        val functionBuilder = FunSpec
+            .builder("toKotlinProto")
             .addModifiers(KModifier.PUBLIC)
             .receiver(protoType)
             .returns(generatedType)
@@ -40,7 +43,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
             functionBuilder.beginControlFlow(
                 "%L = when (%LCase)",
                 oneOfJsonName.escapeIfNecessary(),
-                oneOfJsonName
+                oneOfJsonName,
             )
             for (field in oneOf.fields) {
                 val dataClassFieldName = field.jsonName
@@ -54,7 +57,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                     field.name.uppercase(),
                     oneOfDataClassName,
                     dataClassFieldName.escapeIfNecessary(),
-                    template.safeCall(protoFieldName.escapeIfNecessary())
+                    template.safeCall(protoFieldName.escapeIfNecessary()),
                 )
                 imports.addAll(downStreamImports)
             }
@@ -62,14 +65,18 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 "%L.%LCase.%L -> null",
                 protoType,
                 oneOfJsonName.capitalize(),
-                "${oneOf.name.replace("_", "").uppercase()}_NOT_SET".uppercase()
+                "${oneOf.name.replace("_", "").uppercase()}_NOT_SET".uppercase(),
             )
             functionBuilder.addStatement("null -> null")
             functionBuilder.endControlFlowWithComma()
         }
 
         for (field in descriptor.fields) {
-            if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet()) {
+            if (field.name in descriptor.realOneofs
+                    .flatMap { it.fields }
+                    .map { it.name }
+                    .toSet()
+            ) {
                 continue
             }
 
@@ -90,7 +97,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                     CodeBlock.of(
                         "%LMap.mapValues { %L }",
                         protoFieldName,
-                        template.safeCall("it.value")
+                        template.safeCall("it.value"),
                     )
                 }
                 CodeWithImports.of(mapCodeBlock, downStreamImports)
@@ -106,7 +113,7 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 val (template, downStreamImports) = transformCodeTemplate(field)
                 CodeWithImports.of(
                     template.safeCall(protoFieldName.escapeIfNecessary()),
-                    downStreamImports
+                    downStreamImports,
                 )
             }
 
@@ -125,13 +132,15 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
 
         return FunSpecsWithImports(
             listOf(functionBuilder.build()),
-            imports
+            imports,
         )
     }
 
     // code template that could be used like CodeBlock.of(transformCodeTemplate, fieldName)
-    private fun transformCodeTemplate(field: FieldDescriptor): TransformTemplateWithImports {
-        return when (field.type) {
+    private fun transformCodeTemplate(
+        field: FieldDescriptor,
+    ): TransformTemplateWithImports =
+        when (field.type) {
             FieldDescriptor.Type.MESSAGE -> {
                 messageTypeTransformCodeTemplate(field.messageType)
             }
@@ -144,29 +153,32 @@ class ToKotlinProto : FunctionSpecsBuilder<Descriptor> {
                 TransformTemplateWithImports.of("%L")
             }
         }
-    }
 
     companion object {
-        fun messageTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
-            return when {
+        fun messageTypeTransformCodeTemplate(
+            descriptor: Descriptor,
+        ): TransformTemplateWithImports =
+            when {
                 descriptor.isGooglePackageType() -> {
                     preDefinedTypeTransformCodeTemplate(descriptor)
                 }
 
-                else -> TransformTemplateWithImports.of("%L.toKotlinProto()")
+                else -> {
+                    TransformTemplateWithImports.of("%L.toKotlinProto()")
+                }
             }
-        }
 
         private fun preDefinedTypeTransformCodeTemplate(
-            descriptor: Descriptor
-        ): TransformTemplateWithImports {
-            return when {
+            descriptor: Descriptor,
+        ): TransformTemplateWithImports =
+            when {
                 descriptor.isKnownPreDefinedType() -> {
                     KnownPreDefinedType.valueOfByDescriptor(descriptor).toKotlinProtoTemplate
                 }
 
-                else -> TransformTemplateWithImports.of("%L")
+                else -> {
+                    TransformTemplateWithImports.of("%L")
+                }
             }
-        }
     }
 }

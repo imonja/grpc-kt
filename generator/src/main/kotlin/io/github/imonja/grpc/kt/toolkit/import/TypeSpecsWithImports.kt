@@ -4,7 +4,7 @@ import com.squareup.kotlinpoet.TypeSpec
 
 data class TypeSpecsWithImports(
     val typeSpecs: List<TypeSpec> = emptyList(),
-    val imports: Set<Import> = emptySet()
+    val imports: Set<Import> = emptySet(),
 ) {
     companion object {
         val EMPTY = TypeSpecsWithImports()

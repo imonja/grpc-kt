@@ -12,7 +12,9 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
 
 class GrpcKtProtobufPlugin : Plugin<Project> {
-    override fun apply(project: Project) {
+    override fun apply(
+        project: Project,
+    ) {
         // Apply required plugins
         project.plugins.apply(JavaPlugin::class)
         project.plugins.apply(ProtobufPlugin::class)
@@ -94,7 +96,7 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
                         }
                         id("grpc-docs") {
                             option(
-                                "${extension.docs.grpcDocsFormat.get()},${extension.docs.grpcDocsFileName.get()}"
+                                "${extension.docs.grpcDocsFormat.get()},${extension.docs.grpcDocsFileName.get()}",
                             )
                             outputSubDir = extension.docs.grpcDocsOutputSubDir.get()
                         }

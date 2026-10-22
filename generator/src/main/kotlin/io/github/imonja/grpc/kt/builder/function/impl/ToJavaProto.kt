@@ -22,12 +22,15 @@ import io.github.imonja.grpc.kt.toolkit.template.TransformTemplateWithImports
 import io.github.imonja.grpc.kt.toolkit.type.KnownPreDefinedType
 
 class ToJavaProto {
-
-    fun build(descriptor: Descriptor, isOverride: Boolean): FunSpecsWithImports {
+    fun build(
+        descriptor: Descriptor,
+        isOverride: Boolean,
+    ): FunSpecsWithImports {
         val imports = mutableSetOf<Import>()
         val generatedType = descriptor.protobufKotlinTypeName
         val protoType = descriptor.protobufJavaTypeName
-        val functionBuilder = FunSpec.builder("toJavaProto")
+        val functionBuilder = FunSpec
+            .builder("toJavaProto")
             .addModifiers(KModifier.PUBLIC)
             .returns(protoType)
 
@@ -59,10 +62,10 @@ class ToJavaProto {
                             CodeBlock.of(
                                 "%L.%L",
                                 oneOfJsonName.escapeIfNecessary(),
-                                field.jsonName.escapeIfNecessary()
-                            )
-                        )
-                    )
+                                field.jsonName.escapeIfNecessary(),
+                            ),
+                        ),
+                    ),
                 )
 
                 functionBuilder.endControlFlow()
@@ -73,7 +76,11 @@ class ToJavaProto {
         }
 
         for (field in descriptor.fields) {
-            if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet()) {
+            if (field.name in descriptor.realOneofs
+                    .flatMap { it.fields }
+                    .map { it.name }
+                    .toSet()
+            ) {
                 continue
             }
             val fieldName = "$outerThisRef.${field.jsonName.escapeIfNecessary()}"
@@ -103,7 +110,7 @@ class ToJavaProto {
                 val (template, downStreamImports) = transformCodeTemplate(field)
                 CodeWithImports.of(
                     template.safeCall(fieldName),
-                    downStreamImports
+                    downStreamImports,
                 )
             }
             val accessorMethodName = when {
@@ -116,8 +123,8 @@ class ToJavaProto {
             functionBuilder.addCode(
                 CodeBlock.of(
                     "$accessorMethodName(%L)\n",
-                    codeWithImports.code
-                )
+                    codeWithImports.code,
+                ),
             )
             if (optional) {
                 functionBuilder.endControlFlow()
@@ -131,8 +138,10 @@ class ToJavaProto {
         return FunSpecsWithImports(listOf(functionBuilder.build()), imports)
     }
 
-    private fun transformCodeTemplate(field: FieldDescriptor): TransformTemplateWithImports {
-        return when (field.type) {
+    private fun transformCodeTemplate(
+        field: FieldDescriptor,
+    ): TransformTemplateWithImports =
+        when (field.type) {
             FieldDescriptor.Type.MESSAGE -> {
                 messageTypeTransformCodeTemplate(field.messageType)
             }
@@ -141,12 +150,15 @@ class ToJavaProto {
                 TransformTemplateWithImports.of("%L.toJavaProto()")
             }
 
-            else -> TransformTemplateWithImports.of("%L")
+            else -> {
+                TransformTemplateWithImports.of("%L")
+            }
         }
-    }
 
-    private fun transformCodeTemplateForOneOf(field: FieldDescriptor): TransformTemplateWithImports {
-        return when (field.type) {
+    private fun transformCodeTemplateForOneOf(
+        field: FieldDescriptor,
+    ): TransformTemplateWithImports =
+        when (field.type) {
             FieldDescriptor.Type.MESSAGE -> {
                 messageTypeTransformCodeTemplateForOneOf(field.messageType)
             }
@@ -155,34 +167,42 @@ class ToJavaProto {
                 TransformTemplateWithImports.of("%L.toJavaProto()")
             }
 
-            else -> TransformTemplateWithImports.of("%L")
-        }
-    }
-
-    companion object {
-        fun messageTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
-            return when {
-                descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
-
-                else -> TransformTemplateWithImports.of("%L.toJavaProto()")
+            else -> {
+                TransformTemplateWithImports.of("%L")
             }
         }
 
-        fun messageTypeTransformCodeTemplateForOneOf(descriptor: Descriptor): TransformTemplateWithImports {
-            return when {
+    companion object {
+        fun messageTypeTransformCodeTemplate(
+            descriptor: Descriptor,
+        ): TransformTemplateWithImports =
+            when {
+                descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
+                else -> TransformTemplateWithImports.of("%L.toJavaProto()")
+            }
+
+        fun messageTypeTransformCodeTemplateForOneOf(
+            descriptor: Descriptor,
+        ): TransformTemplateWithImports =
+            when {
                 descriptor.isGooglePackageType() -> preDefinedTypeTransformCodeTemplate(descriptor)
                 else -> TransformTemplateWithImports.of("%L?.toJavaProto()")
             }
-        }
 
-        private fun preDefinedTypeTransformCodeTemplate(descriptor: Descriptor): TransformTemplateWithImports {
-            return when {
-                descriptor.isKnownPreDefinedType() -> KnownPreDefinedType.valueOfByDescriptor(
-                    descriptor
-                ).toJavaProtoTransformTemplate
+        private fun preDefinedTypeTransformCodeTemplate(
+            descriptor: Descriptor,
+        ): TransformTemplateWithImports =
+            when {
+                descriptor.isKnownPreDefinedType() -> {
+                    KnownPreDefinedType
+                        .valueOfByDescriptor(
+                            descriptor,
+                        ).toJavaProtoTransformTemplate
+                }
 
-                else -> TransformTemplateWithImports.of("%L")
+                else -> {
+                    TransformTemplateWithImports.of("%L")
+                }
             }
-        }
     }
 }

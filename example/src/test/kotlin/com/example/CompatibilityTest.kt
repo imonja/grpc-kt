@@ -7,7 +7,9 @@ import com.google.protobuf.Parser
 import org.junit.jupiter.api.Test
 
 class CompatibilityTest {
-    fun <V : Message> testParser(parser: Parser<V>) {
+    fun <V : Message> testParser(
+        parser: Parser<V>,
+    ) {
         println("Parser is valid for Message")
     }
 

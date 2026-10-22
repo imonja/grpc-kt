@@ -15,7 +15,7 @@ val EnumDescriptor.protobufJavaTypeName: ClassName
                     this.file.options.javaOuterClassname
                 } else {
                     fieldNameToJsonName(this.file.shortName).capitalize()
-                }
+                },
             ) + simpleNames
         }
         return ClassName(this.file.javaPackage, simpleNames)

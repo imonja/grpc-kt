@@ -16,8 +16,9 @@ import io.github.imonja.grpc.kt.toolkit.naming.KotlinNames
 /**
  * Builder for creating Kotlin sealed interfaces for Protocol Buffer oneOf fields.
  */
-class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
-
+class OneOfTypeBuilder(
+    private val typeMapper: ProtoTypeMapper,
+) {
     /**
      * Result of building a oneOf interface, including the interface type spec, imports,
      * and information needed to add the oneOf property to the parent data class.
@@ -26,19 +27,23 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
         val typeSpecs: List<TypeSpec>,
         val imports: Set<Import>,
         val oneOfName: String,
-        val oneOfType: TypeName
+        val oneOfType: TypeName,
     )
 
     /**
      * Builds a sealed interface for a Protocol Buffer oneOf field.
      */
-    fun build(oneOf: OneofDescriptor, parentDescriptor: Descriptor): OneOfResult {
+    fun build(
+        oneOf: OneofDescriptor,
+        parentDescriptor: Descriptor,
+    ): OneOfResult {
         val imports = mutableSetOf<Import>()
         val oneOfJsonName = fieldNameToJsonName(oneOf.name)
         val interfaceSimpleName = KotlinNames.oneOfInterfaceSimpleName(oneOfJsonName)
         val interfaceClassName = KotlinNames.oneOfInterfaceClassName(parentDescriptor, oneOf)
 
-        val builder = TypeSpec.interfaceBuilder(interfaceClassName)
+        val builder = TypeSpec
+            .interfaceBuilder(interfaceClassName)
             .addModifiers(KModifier.SEALED)
 
         oneOf.fields.forEach { field ->
@@ -46,35 +51,36 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
             imports.addAll(default.imports)
 
             builder.addType(
-                TypeSpec.classBuilder(KotlinNames.oneOfVariantSimpleName(field.jsonName))
+                TypeSpec
+                    .classBuilder(KotlinNames.oneOfVariantSimpleName(field.jsonName))
                     .addModifiers(KModifier.DATA)
                     .primaryConstructor(
-                        FunSpec.constructorBuilder()
+                        FunSpec
+                            .constructorBuilder()
                             .addParameter(
-                                ParameterSpec.builder(field.jsonName, type)
+                                ParameterSpec
+                                    .builder(field.jsonName, type)
                                     .defaultValue(default.code)
-                                    .build()
-                            )
-                            .build()
-                    )
-                    .addProperty(
-                        PropertySpec.builder(field.jsonName, type)
-                            .initializer(field.jsonName).build()
-                    )
-                    .apply {
+                                    .build(),
+                            ).build(),
+                    ).addProperty(
+                        PropertySpec
+                            .builder(field.jsonName, type)
+                            .initializer(field.jsonName)
+                            .build(),
+                    ).apply {
                         if (field.options.deprecated) {
                             addAnnotation(
-                                AnnotationSpec.builder(Deprecated::class)
+                                AnnotationSpec
+                                    .builder(Deprecated::class)
                                     .addMember(
                                         "%S",
-                                        "The underlying field is marked deprecated."
-                                    )
-                                    .build()
+                                        "The underlying field is marked deprecated.",
+                                    ).build(),
                             )
                         }
-                    }
-                    .addSuperinterface(interfaceClassName)
-                    .build()
+                    }.addSuperinterface(interfaceClassName)
+                    .build(),
             )
         }
 
@@ -82,7 +88,7 @@ class OneOfTypeBuilder(private val typeMapper: ProtoTypeMapper) {
             listOf(builder.build()),
             imports,
             oneOfJsonName,
-            interfaceClassName
+            interfaceClassName,
         )
     }
 }
