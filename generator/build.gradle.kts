@@ -70,7 +70,12 @@ protobuf {
                 "io.grpc:protoc-gen-grpc-kotlin:${rootProject.ext["grpcKotlinVersion"]}:jdk8@jar"
         }
         id("grpc-kt") {
-            path = tasks.jar.get().archiveFile.get().asFile.absolutePath.replace("-jdk8", "")
+            path = tasks.jar
+                .get()
+                .archiveFile
+                .get()
+                .asFile.absolutePath
+                .replace("-jdk8", "")
         }
     }
     generateProtoTasks {
@@ -92,14 +97,14 @@ configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
     coordinates(
         groupId = project.group.toString(),
         artifactId = "protoc-gen-grpc-kt",
-        version = project.version.toString()
+        version = project.version.toString(),
     )
 
     pom {
         name.set("protoc generator grpc kt")
         description.set(
             "protoc-gen-grpc-kt is a protoc plugin designed to generate " +
-                "Kotlin data classes and gRPC services/stubs from .proto input files."
+                "Kotlin data classes and gRPC services/stubs from .proto input files.",
         )
     }
 }

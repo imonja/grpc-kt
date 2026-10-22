@@ -5,7 +5,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 class EnumGenerationTest {
-
     @Test
     fun `test nested enum conversion - PersonKt GenderKt`() {
         // Kotlin to Java
@@ -47,7 +46,11 @@ class EnumGenerationTest {
         // Test "else" branch in toKotlinProto
         // In Java Protobuf, forNumber() returns null for unknown values in some cases,
         // but getting the field from a message returns UNRECOGNIZED for unknown values.
-        val unknownJava = Person.newBuilder().setGenderValue(-1).build().gender
+        val unknownJava = Person
+            .newBuilder()
+            .setGenderValue(-1)
+            .build()
+            .gender
         unknownJava shouldBe Person.Gender.UNRECOGNIZED
         unknownJava.toKotlinProto() shouldBe PersonKt.GenderKt.UNRECOGNIZED
     }
@@ -56,7 +59,7 @@ class EnumGenerationTest {
     fun `test message with enum field serialization`() {
         val original = PersonKt(
             name = "Enum Tester",
-            gender = PersonKt.GenderKt.FEMALE
+            gender = PersonKt.GenderKt.FEMALE,
         )
 
         val javaProto = original.toJavaProto()

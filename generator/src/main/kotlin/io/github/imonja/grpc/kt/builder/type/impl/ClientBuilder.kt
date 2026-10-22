@@ -23,25 +23,28 @@ import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
-    override fun build(descriptor: ServiceDescriptor): TypeSpecsWithImports {
+    override fun build(
+        descriptor: ServiceDescriptor,
+    ): TypeSpecsWithImports {
         val imports = mutableSetOf<Import>()
         val className = "${descriptor.name}CoroutineStub"
         val superClassType =
             AbstractCoroutineStub::class.asClassName().parameterizedBy(TypeVariableName(className))
-        val typeBuilder = TypeSpec.classBuilder(className)
+        val typeBuilder = TypeSpec
+            .classBuilder(className)
             .superclass(superClassType)
             .primaryConstructor(
-                FunSpec.constructorBuilder()
+                FunSpec
+                    .constructorBuilder()
                     .addParameter("channel", Channel::class)
                     .addParameter(
-                        ParameterSpec.builder("callOptions", CallOptions::class)
+                        ParameterSpec
+                            .builder("callOptions", CallOptions::class)
                             .defaultValue("%M", CallOptions::class.member("DEFAULT"))
-                            .build()
-                    )
-                    .addAnnotation(JvmOverloads::class)
-                    .build()
-            )
-            .addSuperclassConstructorParameter("channel")
+                            .build(),
+                    ).addAnnotation(JvmOverloads::class)
+                    .build(),
+            ).addSuperclassConstructorParameter("channel")
             .addSuperclassConstructorParameter("callOptions")
 
         val clientMethodStubs = descriptor.methods.map { clientMethodStub(it) }
@@ -50,38 +53,47 @@ class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
             imports.addAll(it.imports)
         }
         typeBuilder.addFunction(
-            FunSpec.builder("build")
+            FunSpec
+                .builder("build")
                 .addModifiers(KModifier.OVERRIDE)
                 .addParameter("channel", Channel::class)
                 .addParameter("callOptions", CallOptions::class)
                 .returns(TypeVariableName(className))
                 .addStatement("return %T(channel, callOptions)", TypeVariableName(className))
-                .build()
+                .build(),
         )
         typeBuilder.addAnnotation(
-            AnnotationSpec.builder(StubFor::class)
+            AnnotationSpec
+                .builder(StubFor::class)
                 .addMember("%T::class", descriptor.grpcClass)
-                .build()
+                .build(),
         )
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(typeBuilder.build()),
-            imports = imports
+            imports = imports,
         )
     }
 
     private val typeMapper = ProtoTypeMapper()
 
-    fun clientMethodStub(method: MethodDescriptor): FunSpecsWithImports {
+    fun clientMethodStub(
+        method: MethodDescriptor,
+    ): FunSpecsWithImports {
         val imports = mutableSetOf<Import>()
 
         val inputType = typeMapper
-            .getTypeNameAndDefaultValue(method.inputType).first.copy(nullable = false)
+            .getTypeNameAndDefaultValue(method.inputType)
+            .first
+            .copy(nullable = false)
         val outputType = typeMapper
-            .getTypeNameAndDefaultValue(method.outputType).first.copy(nullable = false)
+            .getTypeNameAndDefaultValue(method.outputType)
+            .first
+            .copy(nullable = false)
 
         val requestParam = if (method.isClientStreaming) {
-            ParameterSpec.builder("requests", Flow::class.asClassName().parameterizedBy(inputType))
+            ParameterSpec
+                .builder("requests", Flow::class.asClassName().parameterizedBy(inputType))
                 .build()
         } else {
             ParameterSpec.builder("request", inputType).build()
@@ -99,71 +111,71 @@ class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
         }
 
         val (toKotlinProtoTemplate, toKotlinProtoImports) = ToKotlinProto.messageTypeTransformCodeTemplate(
-            method.outputType
+            method.outputType,
         )
         val (toJavaProtoTemplate, toJavaProtoImports) = ToJavaProto.messageTypeTransformCodeTemplate(
-            method.inputType
+            method.inputType,
         )
         imports.addAll(toKotlinProtoImports)
         imports.addAll(toJavaProtoImports)
         val requestCode = if (method.isClientStreaming) {
             CodeBlock.of(
                 "requests.map { %L }",
-                toJavaProtoTemplate.safeCall("it")
+                toJavaProtoTemplate.safeCall("it"),
             )
         } else {
             CodeBlock.of(
                 "%L",
-                toJavaProtoTemplate.safeCall("request")
+                toJavaProtoTemplate.safeCall("request"),
             )
         }
         val implementationCode = if (method.isServerStreaming) {
             CodeBlock.of(
                 """
-                    return %M(
-                        channel,
-                        %L,
-                        %L,
-                        callOptions,
-                        metadata,
-                    ).map { %L }
+                return %M(
+                    channel,
+                    %L,
+                    %L,
+                    callOptions,
+                    metadata,
+                ).map { %L }
                 """.trimIndent(),
                 clientFactoryMethod,
                 method.descriptorCode,
                 requestCode,
-                toKotlinProtoTemplate.safeCall("it")
+                toKotlinProtoTemplate.safeCall("it"),
             )
         } else {
             CodeBlock.of(
                 """
-                    return %M(
-                        channel,
-                        %L,
-                        %L,
-                        callOptions,
-                        metadata,
-                    ).let { %L }
+                return %M(
+                    channel,
+                    %L,
+                    %L,
+                    callOptions,
+                    metadata,
+                ).let { %L }
                 """.trimIndent(),
                 clientFactoryMethod,
                 method.descriptorCode,
                 requestCode,
-                toKotlinProtoTemplate.safeCall("it")
+                toKotlinProtoTemplate.safeCall("it"),
             )
         }
         val methodBuilder =
-            FunSpec.builder(method.name.replaceFirstChar { it.lowercase(Locale.getDefault()) })
+            FunSpec
+                .builder(method.name.replaceFirstChar { it.lowercase(Locale.getDefault()) })
                 .addParameter(requestParam)
                 .returns(responseType)
                 .addParameter(
-                    ParameterSpec.builder("metadata", Metadata::class)
+                    ParameterSpec
+                        .builder("metadata", Metadata::class)
                         .defaultValue("%L", "Metadata()")
-                        .build()
-                )
-                .addStatement(
+                        .build(),
+                ).addStatement(
                     "%L",
-                    implementationCode
-                )
-                .apply {
+                    implementationCode,
+                ).apply {
                     if (!method.isServerStreaming) {
                         addModifiers(KModifier.SUSPEND)
                     }
@@ -171,15 +183,16 @@ class ClientBuilder : TypeSpecsBuilder<ServiceDescriptor> {
 
         if (method.options.deprecated) {
             methodBuilder.addAnnotation(
-                AnnotationSpec.builder(Deprecated::class)
+                AnnotationSpec
+                    .builder(Deprecated::class)
                     .addMember("%S", "The underlying service method is marked deprecated.")
-                    .build()
+                    .build(),
             )
         }
 
         return FunSpecsWithImports(
             funSpecs = listOf(methodBuilder.build()),
-            imports = imports
+            imports = imports,
         )
     }
 

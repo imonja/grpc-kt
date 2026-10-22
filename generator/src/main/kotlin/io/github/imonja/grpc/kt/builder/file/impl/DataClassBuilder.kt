@@ -27,12 +27,14 @@ class DataClassBuilder : FileSpecBuilder {
     private val enumConversionFunctionsBuilder = EnumConversionFunctionsBuilder()
     private val fieldCheckFunctionsBuilder = FieldCheckFunctionsBuilder()
 
-    override fun build(fileDescriptor: FileDescriptor): List<FileSpec> {
+    override fun build(
+        fileDescriptor: FileDescriptor,
+    ): List<FileSpec> {
         val fileSpecs = mutableMapOf<String, FileSpec>()
         for (messageType in fileDescriptor.messageTypes) {
             val fileSpecBuilder = FileSpec.builder(
                 fileDescriptor.kotlinPackage,
-                KotlinNames.messageFileName(messageType.name)
+                KotlinNames.messageFileName(messageType.name),
             )
 
             // Add data class type specs
@@ -64,7 +66,7 @@ class DataClassBuilder : FileSpecBuilder {
         for (enumType in fileDescriptor.enumTypes) {
             val fileSpecBuilder = FileSpec.builder(
                 fileDescriptor.kotlinPackage,
-                KotlinNames.enumFileName(enumType.name)
+                KotlinNames.enumFileName(enumType.name),
             )
 
             // Add enum type specs

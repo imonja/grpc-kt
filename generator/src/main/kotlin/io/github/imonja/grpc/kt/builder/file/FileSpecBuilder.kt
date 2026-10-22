@@ -4,5 +4,7 @@ import com.google.protobuf.Descriptors.FileDescriptor
 import com.squareup.kotlinpoet.FileSpec
 
 interface FileSpecBuilder {
-    fun build(fileDescriptor: FileDescriptor): List<FileSpec>
+    fun build(
+        fileDescriptor: FileDescriptor,
+    ): List<FileSpec>
 }

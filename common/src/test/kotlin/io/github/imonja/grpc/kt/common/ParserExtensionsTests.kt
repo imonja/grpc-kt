@@ -27,35 +27,35 @@ class ParserExtensionsTests {
             bytes,
             0,
             bytes.size,
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // ByteString
         kotlinParser.parseFrom(byteString) shouldBe testValue
         kotlinParser.parseFrom(
             byteString,
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // InputStream
         kotlinParser.parseFrom(ByteArrayInputStream(bytes)) shouldBe testValue
         kotlinParser.parseFrom(
             ByteArrayInputStream(bytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // CodedInputStream
         kotlinParser.parseFrom(CodedInputStream.newInstance(bytes)) shouldBe testValue
         kotlinParser.parseFrom(
             CodedInputStream.newInstance(bytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // ByteBuffer
         kotlinParser.parseFrom(ByteBuffer.wrap(bytes)) shouldBe testValue
         kotlinParser.parseFrom(
             ByteBuffer.wrap(bytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // Delimited
@@ -65,7 +65,7 @@ class ParserExtensionsTests {
         kotlinParser.parseDelimitedFrom(ByteArrayInputStream(delimitedBytes)) shouldBe testValue
         kotlinParser.parseDelimitedFrom(
             ByteArrayInputStream(delimitedBytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // Partial
@@ -73,35 +73,35 @@ class ParserExtensionsTests {
         kotlinParser.parsePartialFrom(bytes, 0, bytes.size) shouldBe testValue
         kotlinParser.parsePartialFrom(
             bytes,
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
         kotlinParser.parsePartialFrom(
             bytes,
             0,
             bytes.size,
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
         kotlinParser.parsePartialFrom(byteString) shouldBe testValue
         kotlinParser.parsePartialFrom(
             byteString,
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
         kotlinParser.parsePartialFrom(ByteArrayInputStream(bytes)) shouldBe testValue
         kotlinParser.parsePartialFrom(
             ByteArrayInputStream(bytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
         kotlinParser.parsePartialFrom(CodedInputStream.newInstance(bytes)) shouldBe testValue
         kotlinParser.parsePartialFrom(
             CodedInputStream.newInstance(bytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
 
         // Partial Delimited
         kotlinParser.parsePartialDelimitedFrom(ByteArrayInputStream(delimitedBytes)) shouldBe testValue
         kotlinParser.parsePartialDelimitedFrom(
             ByteArrayInputStream(delimitedBytes),
-            ExtensionRegistryLite.getEmptyRegistry()
+            ExtensionRegistryLite.getEmptyRegistry(),
         ) shouldBe testValue
     }
 }

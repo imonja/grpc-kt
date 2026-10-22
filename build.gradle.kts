@@ -1,13 +1,15 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
-    kotlin("jvm") version "2.1.0" apply false
+    kotlin("jvm") version "2.4.21" apply false
     id("com.google.protobuf") version "0.9.5" apply false
     `maven-publish`
     signing
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.35.0" apply false
 }
 
@@ -27,7 +29,7 @@ mapOf(
     "coroutinesVersion" to "1.10.2",
     "kotlinPoetVersion" to "2.1.0",
     "jupiterVersion" to "5.11.4",
-    "kotestVersion" to "5.9.1"
+    "kotestVersion" to "5.9.1",
 ).forEach({ (key, value) -> ext[key] = value })
 
 repositories {
@@ -71,6 +73,8 @@ subprojects {
         "testImplementation"("org.junit.jupiter:junit-jupiter-api:${rootProject.ext["jupiterVersion"]}")
         "testImplementation"("org.junit.jupiter:junit-jupiter-engine:${rootProject.ext["jupiterVersion"]}")
         "testImplementation"("io.kotest:kotest-assertions-core:${rootProject.ext["kotestVersion"]}")
+        // Gradle 9 no longer loads the JUnit Platform launcher automatically
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.withType<JavaCompile> {
@@ -78,10 +82,18 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_1_8.toString()
     }
 
+    // The published artifacts target Kotlin 2.1, not the compiler version: consumers on Kotlin 2.0+ can read
+    // their metadata, and the POM requires this stdlib. Raising them forces a Kotlin upgrade onto every consumer.
+    configure<KotlinJvmProjectExtension> {
+        coreLibrariesVersion = "2.1.0"
+    }
+
     tasks.withType<KotlinCompile> {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
             jvmTarget.set(JvmTarget.JVM_1_8)
+            apiVersion.set(KotlinVersion.KOTLIN_2_1)
+            languageVersion.set(KotlinVersion.KOTLIN_2_1)
         }
     }
 
@@ -108,7 +120,7 @@ subprojects {
             coordinates(
                 groupId = project.group.toString(),
                 artifactId = project.name,
-                version = project.version.toString()
+                version = project.version.toString(),
             )
 
             pom {
@@ -156,6 +168,21 @@ subprojects {
     }
 }
 
+allprojects {
+    // Same ktlint engine and style as the letycohq services (ls.ktlint-rules); the style lives in .editorconfig
+    configure<KtlintExtension> {
+        version.set("1.8.0")
+        enableExperimentalRules.set(true)
+    }
+
+    // ktlintFormat must always rewrite the sources: an up-to-date or cached result would skip formatting,
+    // for example after a file was reverted in the IDE or .editorconfig changed
+    tasks.matching { task -> task.name.startsWith("runKtlintFormatOver") }.configureEach {
+        outputs.upToDateWhen { false }
+        outputs.cacheIf { false }
+    }
+}
+
 tasks.register("ktlintFormatAll") {
     description = "Run ktlintFormat for all modules (grpc-kt, gradle-plugin)"
     group = "formatting"
@@ -198,7 +225,7 @@ gradle.taskGraph.whenReady {
         (
             preCommitHook.exists() && sourceHook.exists() &&
                 preCommitHook.readText() != sourceHook.readText()
-            )
+        )
 
     if (needsInstall && file("$rootDir/.git").exists() && sourceHook.exists()) {
         println("🔧 Auto-installing git hooks...")

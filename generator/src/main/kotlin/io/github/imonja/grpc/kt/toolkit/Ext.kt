@@ -7,7 +7,9 @@ internal const val MAP_ENTRY_VALUE_FIELD_NUMBER = 2
 internal const val GRPC_JAVA_CLASS_NAME_SUFFIX = "Grpc"
 internal const val GRPC_KOTLIN_PACKAGE = "kt"
 
-internal fun fieldNameToJsonName(name: String): String {
+internal fun fieldNameToJsonName(
+    name: String,
+): String {
     val result = StringBuilder()
     var capitalizeNext = false
     for (ch in name) {

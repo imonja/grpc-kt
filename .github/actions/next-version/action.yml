@@ -1,0 +1,28 @@
+name: Next version
+description: >
+    Calculates the next release version from the commits since the latest tag.
+    A commit releases only when its subject starts with a release marker: "(BUMP)" for a patch,
+    "(MINOR)" for a minor or "(MAJOR)" for a major version. Without a marker version_type is "none".
+    The caller checks out the repository with fetch-depth: 0.
+
+outputs:
+    version:
+        description: The next version, {major}.{minor}.{patch}
+        value: ${{ steps.semver.outputs.version }}
+    version_type:
+        description: major, minor, patch or none
+        value: ${{ steps.semver.outputs.version_type }}
+
+runs:
+    using: composite
+    steps:
+        # Pinned to an exact version: a change in how versions are calculated can trigger an unintended release
+        -   uses: paulhatch/semantic-version@v6.0.4
+            id: semver
+            with:
+                bump_each_commit: true
+                # Markers count only at the start of the subject, so a marker mentioned elsewhere does not release
+                bump_each_commit_patch_pattern: "/^\\(BUMP\\)/"
+                major_pattern: "/^\\(MAJOR\\)/"
+                minor_pattern: "/^\\(MINOR\\)/"
+                tag_prefix: ""

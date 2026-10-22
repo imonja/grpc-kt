@@ -5,7 +5,9 @@ import java.io.IOException
 
 object Executor {
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         buildCode(parseRequest())
     }
 
@@ -15,13 +17,12 @@ object Executor {
      * @return Parsed [CodeGeneratorRequest].
      * @throws IOException If an error occurs during parsing.
      */
-    private fun parseRequest(): CodeGeneratorRequest {
-        return try {
+    private fun parseRequest(): CodeGeneratorRequest =
+        try {
             CodeGeneratorRequest.parseFrom(System.`in`)
         } catch (e: Throwable) {
             throw IOException("Error occurred while parsing CodeGeneratorRequest for Generator", e)
         }
-    }
 
     /**
      * Generates code using [CodeBuilder] based on the provided [request].
@@ -29,7 +30,9 @@ object Executor {
      * @param request The parsed [CodeGeneratorRequest].
      * @throws IOException If an error occurs during code generation.
      */
-    private fun buildCode(request: CodeGeneratorRequest) {
+    private fun buildCode(
+        request: CodeGeneratorRequest,
+    ) {
         try {
             CodeBuilder.buildCode(request)
         } catch (e: Throwable) {

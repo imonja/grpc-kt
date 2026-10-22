@@ -21,7 +21,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class PartialServerExampleTest {
-
     private val serverPort = (60_000..65_000).random()
     private var server: io.grpc.Server? = null
     private var channel: io.grpc.ManagedChannel? = null
@@ -42,8 +41,8 @@ class PartialServerExampleTest {
                     address = PersonKt.AddressKt(
                         street = "456 Oak St",
                         city = "New York",
-                        country = "USA"
-                    )
+                        country = "USA",
+                    ),
                 )
                 GetPersonResponseKt(person = person)
             }
@@ -61,7 +60,7 @@ class PartialServerExampleTest {
                 val persons = listOf(
                     PersonKt(name = "David", age = 40, gender = PersonKt.GenderKt.MALE),
                     PersonKt(name = "Emma", age = 22, gender = PersonKt.GenderKt.FEMALE),
-                    PersonKt(name = "Sam", age = 33, gender = PersonKt.GenderKt.NON_BINARY)
+                    PersonKt(name = "Sam", age = 33, gender = PersonKt.GenderKt.NON_BINARY),
                 )
 
                 flow {
@@ -115,18 +114,18 @@ class PartialServerExampleTest {
                     GetScheduleResponseKt.ScheduleItemKt(
                         id = "test_schedule1",
                         title = "Test Meeting",
-                        description = "Test meeting description"
+                        description = "Test meeting description",
                     ),
                     GetScheduleResponseKt.ScheduleItemKt(
                         id = "test_schedule2",
                         title = "Test Review",
-                        description = "Test code review session"
-                    )
+                        description = "Test code review session",
+                    ),
                 )
 
                 GetScheduleResponseKt(
                     items = scheduleItems,
-                    `when` = LocalDateTime.now() // Using backticks for Kotlin keyword
+                    `when` = LocalDateTime.now(), // Using backticks for Kotlin keyword
                 )
             }
 
@@ -153,17 +152,19 @@ class PartialServerExampleTest {
             updateContactInfo = updateContactInfo,
             updateNotificationSettings = updateNotificationSettings,
             getSchedule = getSchedule,
-            testOptionalField = testOptionalField
+            testOptionalField = testOptionalField,
         )
 
         // Start the gRPC server with the partial service
-        server = ServerBuilder.forPort(serverPort)
+        server = ServerBuilder
+            .forPort(serverPort)
             .addService(partialService)
             .build()
             .start()
 
         // Create a channel to the server
-        channel = ManagedChannelBuilder.forAddress("localhost", serverPort)
+        channel = ManagedChannelBuilder
+            .forAddress("localhost", serverPort)
             .usePlaintext()
             .build()
     }
@@ -175,380 +176,394 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test partial server unary call`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+    fun `test partial server unary call`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Create a request
-        val request = GetPersonRequestKt(id = "456")
+            // Create a request
+            val request = GetPersonRequestKt(id = "456")
 
-        // Make the call
-        val response = stub.getPerson(request)
+            // Make the call
+            val response = stub.getPerson(request)
 
-        // Verify the response
-        response.person?.name shouldBe "Jane Doe"
-        response.person?.age shouldBe 28
-        response.person?.gender shouldBe PersonKt.GenderKt.FEMALE
-        response.person?.address?.city shouldBe "New York"
-    }
+            // Verify the response
+            response.person?.name shouldBe "Jane Doe"
+            response.person?.age shouldBe 28
+            response.person?.gender shouldBe PersonKt.GenderKt.FEMALE
+            response.person?.address?.city shouldBe "New York"
+        }
 
     @Test
-    fun `test partial server uses provided coroutine context`(): Unit = runBlocking {
-        val executor = Executors.newSingleThreadExecutor { task ->
-            Thread(task, "grpc-partial-coroutine-context")
-        }
-        val dispatcher = executor.asCoroutineDispatcher()
-
-        try {
-            val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
-                getPerson = {
-                    GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().name))
-                }
-            ) {
-                coroutineContext = dispatcher
+    fun `test partial server uses provided coroutine context`(): Unit =
+        runBlocking {
+            val executor = Executors.newSingleThreadExecutor { task ->
+                Thread(task, "grpc-partial-coroutine-context")
             }
-
-            val testServer = ServerBuilder.forPort(0)
-                .addService(partialService)
-                .build()
-                .start()
+            val dispatcher = executor.asCoroutineDispatcher()
 
             try {
-                val testChannel = ManagedChannelBuilder.forAddress("localhost", testServer.port)
-                    .usePlaintext()
+                val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+                    getPerson = {
+                        GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().name))
+                    },
+                ) {
+                    coroutineContext = dispatcher
+                }
+
+                val testServer = ServerBuilder
+                    .forPort(0)
+                    .addService(partialService)
                     .build()
+                    .start()
 
                 try {
-                    val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
-                    val response = stub.getPerson(GetPersonRequestKt(id = "context-test"))
+                    val testChannel = ManagedChannelBuilder
+                        .forAddress("localhost", testServer.port)
+                        .usePlaintext()
+                        .build()
 
-                    response.person?.name.orEmpty() shouldStartWith "grpc-partial-coroutine-context"
+                    try {
+                        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
+                        val response = stub.getPerson(GetPersonRequestKt(id = "context-test"))
+
+                        response.person?.name.orEmpty() shouldStartWith "grpc-partial-coroutine-context"
+                    } finally {
+                        testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                    }
                 } finally {
-                    testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                    testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
                 }
             } finally {
-                testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                dispatcher.close()
             }
-        } finally {
-            dispatcher.close()
         }
-    }
 
     @Test
-    fun `test partial server uses virtual thread coroutine context`(): Unit = runBlocking {
-        val executor = Executors.newVirtualThreadPerTaskExecutor()
-        val dispatcher = executor.asCoroutineDispatcher()
-
-        try {
-            val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
-                getPerson = {
-                    GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().isVirtual.toString()))
-                }
-            ) {
-                coroutineContext = dispatcher
-            }
-
-            val testServer = ServerBuilder.forPort(0)
-                .addService(partialService)
-                .build()
-                .start()
+    fun `test partial server uses virtual thread coroutine context`(): Unit =
+        runBlocking {
+            val executor = Executors.newVirtualThreadPerTaskExecutor()
+            val dispatcher = executor.asCoroutineDispatcher()
 
             try {
-                val testChannel = ManagedChannelBuilder.forAddress("localhost", testServer.port)
-                    .usePlaintext()
+                val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+                    getPerson = {
+                        GetPersonResponseKt(person = PersonKt(name = Thread.currentThread().isVirtual.toString()))
+                    },
+                ) {
+                    coroutineContext = dispatcher
+                }
+
+                val testServer = ServerBuilder
+                    .forPort(0)
+                    .addService(partialService)
                     .build()
+                    .start()
 
                 try {
-                    val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
-                    val response = stub.getPerson(GetPersonRequestKt(id = "virtual-thread-context-test"))
+                    val testChannel = ManagedChannelBuilder
+                        .forAddress("localhost", testServer.port)
+                        .usePlaintext()
+                        .build()
 
-                    response.person?.name shouldBe "true"
+                    try {
+                        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(testChannel)
+                        val response = stub.getPerson(GetPersonRequestKt(id = "virtual-thread-context-test"))
+
+                        response.person?.name shouldBe "true"
+                    } finally {
+                        testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                    }
                 } finally {
-                    testChannel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                    testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
                 }
             } finally {
-                testServer.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                dispatcher.close()
             }
-        } finally {
-            dispatcher.close()
-        }
-    }
-
-    @Test
-    fun `test partial server delete person`() = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Create a request
-        val request = DeletePersonRequestKt(id = "456")
-
-        // Make the call
-        stub.deletePerson(request)
-
-        // No response to verify since it returns Unit, but we can assert that no exception was thrown
-        // If we reach this point, the test passes
-    }
-
-    @Test
-    fun `test partial server streaming`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Create a request
-        val request = ListPersonsRequestKt(limit = 5, offset = 0)
-
-        // Make the call and collect responses
-        val responses = mutableListOf<PersonKt?>()
-        stub.listPersons(request).collect { response ->
-            responses.add(response.person)
-            println("Received person: ${response.person?.name}")
         }
 
-        // Verify we received the expected number of responses
-        responses.size shouldBe 3
+    @Test
+    fun `test partial server delete person`() =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Verify the content of the responses
-        responses[0]?.name shouldBe "David"
-        responses[1]?.name shouldBe "Emma"
-        responses[2]?.name shouldBe "Sam"
-    }
+            // Create a request
+            val request = DeletePersonRequestKt(id = "456")
+
+            // Make the call
+            stub.deletePerson(request)
+
+            // No response to verify since it returns Unit, but we can assert that no exception was thrown
+            // If we reach this point, the test passes
+        }
 
     @Test
-    fun `test partial client streaming`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+    fun `test partial server streaming`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Create a flow of requests
-        val requests = flow {
-            for (i in 1..3) {
-                val person = PersonKt(
-                    name = "Updated Person $i",
-                    age = 30 + i,
-                    hobbies = listOf("Updated Hobby $i"),
-                    gender = PersonKt.GenderKt.UNKNOWN,
-                    address = PersonKt.AddressKt(
-                        street = "$i Park Ave",
-                        city = "Updated City $i",
-                        country = "Updated Country $i"
+            // Create a request
+            val request = ListPersonsRequestKt(limit = 5, offset = 0)
+
+            // Make the call and collect responses
+            val responses = mutableListOf<PersonKt?>()
+            stub.listPersons(request).collect { response ->
+                responses.add(response.person)
+                println("Received person: ${response.person?.name}")
+            }
+
+            // Verify we received the expected number of responses
+            responses.size shouldBe 3
+
+            // Verify the content of the responses
+            responses[0]?.name shouldBe "David"
+            responses[1]?.name shouldBe "Emma"
+            responses[2]?.name shouldBe "Sam"
+        }
+
+    @Test
+    fun `test partial client streaming`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+            // Create a flow of requests
+            val requests = flow {
+                for (i in 1..3) {
+                    val person = PersonKt(
+                        name = "Updated Person $i",
+                        age = 30 + i,
+                        hobbies = listOf("Updated Hobby $i"),
+                        gender = PersonKt.GenderKt.UNKNOWN,
+                        address = PersonKt.AddressKt(
+                            street = "$i Park Ave",
+                            city = "Updated City $i",
+                            country = "Updated Country $i",
+                        ),
                     )
-                )
-                println("Sending update for person: ${person.name}")
-                emit(UpdatePersonRequestKt(person = person))
-                delay(100) // Simulate some processing time
+                    println("Sending update for person: ${person.name}")
+                    emit(UpdatePersonRequestKt(person = person))
+                    delay(100) // Simulate some processing time
+                }
             }
+
+            // Make the call
+            val response = stub.updatePerson(requests)
+
+            // Verify the response
+            response.success shouldBe true
         }
 
-        // Make the call
-        val response = stub.updatePerson(requests)
-
-        // Verify the response
-        response.success shouldBe true
-    }
-
     @Test
-    fun `test partial bidirectional streaming`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+    fun `test partial bidirectional streaming`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Create a flow of chat requests
-        val requests = flow {
+            // Create a flow of chat requests
+            val requests = flow {
+                for (i in 1..5) {
+                    val message = "Hello $i from test client"
+                    println("Sending: $message")
+                    emit(ChatRequestKt(message = message))
+                    delay(100) // Simulate some processing time
+                }
+            }
+
+            // Launch a coroutine to collect responses
+            val responses = mutableListOf<String>()
+            val job = launch {
+                stub.chatWithPerson(requests).collect { response ->
+                    responses.add(response.message)
+                    println("Received: ${response.message}")
+                }
+            }
+
+            // Wait for the chat to complete
+            job.join()
+
+            // Verify we received the expected number of responses
+            responses.size shouldBe 5
+
+            // Verify the content of the responses
             for (i in 1..5) {
-                val message = "Hello $i from test client"
-                println("Sending: $message")
-                emit(ChatRequestKt(message = message))
-                delay(100) // Simulate some processing time
+                responses[i - 1] shouldContain "Hello $i from test client"
             }
         }
 
-        // Launch a coroutine to collect responses
-        val responses = mutableListOf<String>()
-        val job = launch {
-            stub.chatWithPerson(requests).collect { response ->
-                responses.add(response.message)
-                println("Received: ${response.message}")
-            }
+    @Test
+    fun `test updateContactInfo with string oneof`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+            // Test with email contact method
+            val contactInfoEmail = ContactInfoKt(
+                name = "John Email",
+                contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "john@test.com"),
+                tags = listOf("test", "email"),
+                preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY,
+            )
+            val requestEmail = UpdateContactInfoRequestKt(
+                personId = "test123",
+                contactInfo = contactInfoEmail,
+            )
+            val responseEmail = stub.updateContactInfo(requestEmail)
+            responseEmail.success shouldBe true
+
+            // Test with phone contact method
+            val contactInfoPhone = ContactInfoKt(
+                name = "Jane Phone",
+                contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
+                tags = listOf("test", "phone"),
+                preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY,
+            )
+            val requestPhone = UpdateContactInfoRequestKt(
+                personId = "test456",
+                contactInfo = contactInfoPhone,
+            )
+            val responsePhone = stub.updateContactInfo(requestPhone)
+            responsePhone.success shouldBe true
+
+            // Test with username contact method
+            val contactInfoUsername = ContactInfoKt(
+                name = "Bob Username",
+                contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@bobtest"),
+                tags = listOf("test", "username"),
+                preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD,
+            )
+            val requestUsername = UpdateContactInfoRequestKt(
+                personId = "test789",
+                contactInfo = contactInfoUsername,
+            )
+            val responseUsername = stub.updateContactInfo(requestUsername)
+            responseUsername.success shouldBe true
+
+            // Test with null contact method
+            val contactInfoNull = ContactInfoKt(
+                name = "Charlie None",
+                contactMethod = null,
+                tags = listOf("test", "null"),
+                preference = ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE,
+            )
+            val requestNull = UpdateContactInfoRequestKt(
+                personId = "test000",
+                contactInfo = contactInfoNull,
+            )
+            val responseNull = stub.updateContactInfo(requestNull)
+            responseNull.success shouldBe true
         }
 
-        // Wait for the chat to complete
-        job.join()
+    @Test
+    fun `test updateNotificationSettings with message oneof`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Verify we received the expected number of responses
-        responses.size shouldBe 5
+            // Test with email settings
+            val emailSettings = NotificationSettingsKt.EmailSettingsKt(
+                emailAddress = "test@example.com",
+                dailyDigest = true,
+                categories = listOf("orders", "news"),
+            )
+            val settingsEmail = NotificationSettingsKt(
+                userId = "user123",
+                notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
+                    emailSettings = emailSettings,
+                ),
+                notificationsEnabled = true,
+            )
+            val requestEmail = UpdateNotificationSettingsRequestKt(
+                userId = "user123",
+                settings = settingsEmail,
+            )
+            val responseEmail = stub.updateNotificationSettings(requestEmail)
+            responseEmail.success shouldBe true
+            responseEmail.message shouldBe "Test settings updated"
 
-        // Verify the content of the responses
-        for (i in 1..5) {
-            responses[i - 1] shouldContain "Hello $i from test client"
+            // Test with SMS settings
+            val smsSettings = NotificationSettingsKt.SmsSettingsKt(
+                phoneNumber = "+1-555-0789",
+                urgentOnly = true,
+            )
+            val settingsSms = NotificationSettingsKt(
+                userId = "user456",
+                notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
+                    smsSettings = smsSettings,
+                ),
+                notificationsEnabled = false,
+            )
+            val requestSms = UpdateNotificationSettingsRequestKt(
+                userId = "user456",
+                settings = settingsSms,
+            )
+            val responseSms = stub.updateNotificationSettings(requestSms)
+            responseSms.success shouldBe true
+
+            // Test with push settings
+            val pushSettings = NotificationSettingsKt.PushSettingsKt(
+                deviceToken = "test_device_token_xyz",
+                soundEnabled = false,
+                soundName = "silent.wav",
+            )
+            val settingsPush = NotificationSettingsKt(
+                userId = "user789",
+                notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
+                    pushSettings = pushSettings,
+                ),
+                notificationsEnabled = true,
+            )
+            val requestPush = UpdateNotificationSettingsRequestKt(
+                userId = "user789",
+                settings = settingsPush,
+            )
+            val responsePush = stub.updateNotificationSettings(requestPush)
+            responsePush.success shouldBe true
+
+            // Test with null notification channel
+            val settingsNull = NotificationSettingsKt(
+                userId = "user000",
+                notificationChannel = null,
+                notificationsEnabled = false,
+            )
+            val requestNull = UpdateNotificationSettingsRequestKt(
+                userId = "user000",
+                settings = settingsNull,
+            )
+            val responseNull = stub.updateNotificationSettings(requestNull)
+            responseNull.success shouldBe true
         }
-    }
 
     @Test
-    fun `test updateContactInfo with string oneof`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+    fun `test getSchedule with Kotlin keywords`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Test with email contact method
-        val contactInfoEmail = ContactInfoKt(
-            name = "John Email",
-            contactMethod = ContactInfoKt.ContactMethodKt.EmailKt(email = "john@test.com"),
-            tags = listOf("test", "email"),
-            preference = ContactInfoKt.ContactPreferenceKt.EMAIL_ONLY
-        )
-        val requestEmail = UpdateContactInfoRequestKt(
-            personId = "test123",
-            contactInfo = contactInfoEmail
-        )
-        val responseEmail = stub.updateContactInfo(requestEmail)
-        responseEmail.success shouldBe true
+            // Create request (no longer has 'when' field)
+            val request = GetScheduleRequestKt(
+                personId = "test_person_789",
+            )
 
-        // Test with phone contact method
-        val contactInfoPhone = ContactInfoKt(
-            name = "Jane Phone",
-            contactMethod = ContactInfoKt.ContactMethodKt.PhoneKt(phone = "+1-555-0123"),
-            tags = listOf("test", "phone"),
-            preference = ContactInfoKt.ContactPreferenceKt.PHONE_ONLY
-        )
-        val requestPhone = UpdateContactInfoRequestKt(
-            personId = "test456",
-            contactInfo = contactInfoPhone
-        )
-        val responsePhone = stub.updateContactInfo(requestPhone)
-        responsePhone.success shouldBe true
+            val response = stub.getSchedule(request)
 
-        // Test with username contact method
-        val contactInfoUsername = ContactInfoKt(
-            name = "Bob Username",
-            contactMethod = ContactInfoKt.ContactMethodKt.UsernameKt(username = "@bobtest"),
-            tags = listOf("test", "username"),
-            preference = ContactInfoKt.ContactPreferenceKt.ANY_METHOD
-        )
-        val requestUsername = UpdateContactInfoRequestKt(
-            personId = "test789",
-            contactInfo = contactInfoUsername
-        )
-        val responseUsername = stub.updateContactInfo(requestUsername)
-        responseUsername.success shouldBe true
+            // Verify response has items and timestamp (with Kotlin keyword field)
+            response.items.isNotEmpty() shouldBe true
+            response.`when` shouldNotBe null
 
-        // Test with null contact method
-        val contactInfoNull = ContactInfoKt(
-            name = "Charlie None",
-            contactMethod = null,
-            tags = listOf("test", "null"),
-            preference = ContactInfoKt.ContactPreferenceKt.UNKNOWN_PREFERENCE
-        )
-        val requestNull = UpdateContactInfoRequestKt(
-            personId = "test000",
-            contactInfo = contactInfoNull
-        )
-        val responseNull = stub.updateContactInfo(requestNull)
-        responseNull.success shouldBe true
-    }
+            // Verify item properties (now nested ScheduleItem type)
+            val firstItem = response.items.first()
+            firstItem.id.isNotEmpty() shouldBe true
+            firstItem.title.isNotEmpty() shouldBe true
+            firstItem.description.isNotEmpty() shouldBe true
 
-    @Test
-    fun `test updateNotificationSettings with message oneof`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Test with email settings
-        val emailSettings = NotificationSettingsKt.EmailSettingsKt(
-            emailAddress = "test@example.com",
-            dailyDigest = true,
-            categories = listOf("orders", "news")
-        )
-        val settingsEmail = NotificationSettingsKt(
-            userId = "user123",
-            notificationChannel = NotificationSettingsKt.NotificationChannelKt.EmailSettingsKt(
-                emailSettings = emailSettings
-            ),
-            notificationsEnabled = true
-        )
-        val requestEmail = UpdateNotificationSettingsRequestKt(
-            userId = "user123",
-            settings = settingsEmail
-        )
-        val responseEmail = stub.updateNotificationSettings(requestEmail)
-        responseEmail.success shouldBe true
-        responseEmail.message shouldBe "Test settings updated"
-
-        // Test with SMS settings
-        val smsSettings = NotificationSettingsKt.SmsSettingsKt(
-            phoneNumber = "+1-555-0789",
-            urgentOnly = true
-        )
-        val settingsSms = NotificationSettingsKt(
-            userId = "user456",
-            notificationChannel = NotificationSettingsKt.NotificationChannelKt.SmsSettingsKt(
-                smsSettings = smsSettings
-            ),
-            notificationsEnabled = false
-        )
-        val requestSms = UpdateNotificationSettingsRequestKt(
-            userId = "user456",
-            settings = settingsSms
-        )
-        val responseSms = stub.updateNotificationSettings(requestSms)
-        responseSms.success shouldBe true
-
-        // Test with push settings
-        val pushSettings = NotificationSettingsKt.PushSettingsKt(
-            deviceToken = "test_device_token_xyz",
-            soundEnabled = false,
-            soundName = "silent.wav"
-        )
-        val settingsPush = NotificationSettingsKt(
-            userId = "user789",
-            notificationChannel = NotificationSettingsKt.NotificationChannelKt.PushSettingsKt(
-                pushSettings = pushSettings
-            ),
-            notificationsEnabled = true
-        )
-        val requestPush = UpdateNotificationSettingsRequestKt(
-            userId = "user789",
-            settings = settingsPush
-        )
-        val responsePush = stub.updateNotificationSettings(requestPush)
-        responsePush.success shouldBe true
-
-        // Test with null notification channel
-        val settingsNull = NotificationSettingsKt(
-            userId = "user000",
-            notificationChannel = null,
-            notificationsEnabled = false
-        )
-        val requestNull = UpdateNotificationSettingsRequestKt(
-            userId = "user000",
-            settings = settingsNull
-        )
-        val responseNull = stub.updateNotificationSettings(requestNull)
-        responseNull.success shouldBe true
-    }
-
-    @Test
-    fun `test getSchedule with Kotlin keywords`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Create request (no longer has 'when' field)
-        val request = GetScheduleRequestKt(
-            personId = "test_person_789"
-        )
-
-        val response = stub.getSchedule(request)
-
-        // Verify response has items and timestamp (with Kotlin keyword field)
-        response.items.isNotEmpty() shouldBe true
-        response.`when` shouldNotBe null
-
-        // Verify item properties (now nested ScheduleItem type)
-        val firstItem = response.items.first()
-        firstItem.id.isNotEmpty() shouldBe true
-        firstItem.title.isNotEmpty() shouldBe true
-        firstItem.description.isNotEmpty() shouldBe true
-
-        // Verify we got the expected test data
-        response.items.size shouldBe 2
-        firstItem.id shouldBe "test_schedule1"
-        firstItem.title shouldBe "Test Meeting"
-    }
+            // Verify we got the expected test data
+            response.items.size shouldBe 2
+            firstItem.id shouldBe "test_schedule1"
+            firstItem.title shouldBe "Test Meeting"
+        }
 
     @Test
     fun `test structure of PartialServerExample`() {
@@ -580,7 +595,8 @@ class PartialServerExampleTest {
 
         val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
             PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
-                com.google.protobuf.Empty.getDefaultInstance()
+                com.google.protobuf.Empty
+                    .getDefaultInstance()
             }
 
         val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
@@ -616,7 +632,7 @@ class PartialServerExampleTest {
             PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
                 GetScheduleResponseKt(
                     items = listOf(),
-                    `when` = LocalDateTime.now()
+                    `when` = LocalDateTime.now(),
                 )
             }
 
@@ -635,7 +651,7 @@ class PartialServerExampleTest {
             updateContactInfo = updateContactInfo,
             updateNotificationSettings = updateNotificationSettings,
             getSchedule = getSchedule,
-            testOptionalField = testOptionalField
+            testOptionalField = testOptionalField,
         )
 
         // Verify that the service was created successfully
@@ -654,7 +670,8 @@ class PartialServerExampleTest {
 
         val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
             PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
-                com.google.protobuf.Empty.getDefaultInstance()
+                com.google.protobuf.Empty
+                    .getDefaultInstance()
             }
 
         val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
@@ -690,7 +707,7 @@ class PartialServerExampleTest {
             PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
                 GetScheduleResponseKt(
                     items = listOf(),
-                    `when` = LocalDateTime.now()
+                    `when` = LocalDateTime.now(),
                 )
             }
 
@@ -709,19 +726,21 @@ class PartialServerExampleTest {
             updateContactInfo = updateContactInfo,
             updateNotificationSettings = updateNotificationSettings,
             getSchedule = getSchedule,
-            testOptionalField = testOptionalField
+            testOptionalField = testOptionalField,
         )
 
         // Start the gRPC server with the partial service
         val testPort = 50054
-        val server = ServerBuilder.forPort(testPort)
+        val server = ServerBuilder
+            .forPort(testPort)
             .addService(partialService)
             .build()
             .start()
 
         try {
             // Create a channel to the server
-            val channel = ManagedChannelBuilder.forAddress("localhost", testPort)
+            val channel = ManagedChannelBuilder
+                .forAddress("localhost", testPort)
                 .usePlaintext()
                 .build()
 
@@ -744,110 +763,114 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test simple unary call`(): Unit = runBlocking {
-        // This test makes a very simple unary gRPC call to see if that works
+    fun `test simple unary call`(): Unit =
+        runBlocking {
+            // This test makes a very simple unary gRPC call to see if that works
 
-        // Define the service implementation functions - only implement getPerson for this test
-        val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
-            PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
-                println("[DEBUG_LOG] Server received getPerson request for id: ${request.id}")
-                GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25))
-            }
+            // Define the service implementation functions - only implement getPerson for this test
+            val getPerson: PersonServiceGrpcPartialKt.GetPersonGrpcMethod =
+                PersonServiceGrpcPartialKt.GetPersonGrpcMethod { request ->
+                    println("[DEBUG_LOG] Server received getPerson request for id: ${request.id}")
+                    GetPersonResponseKt(person = PersonKt(name = "Simple Test Person", age = 25))
+                }
 
-        // Create empty implementations for the other methods
-        val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
-            PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
-                com.google.protobuf.Empty.getDefaultInstance()
-            }
+            // Create empty implementations for the other methods
+            val deletePerson: PersonServiceGrpcPartialKt.DeletePersonGrpcMethod =
+                PersonServiceGrpcPartialKt.DeletePersonGrpcMethod { request ->
+                    com.google.protobuf.Empty
+                        .getDefaultInstance()
+                }
 
-        val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
-            PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
-                flow { }
-            }
+            val listPersons: PersonServiceGrpcPartialKt.ListPersonsGrpcMethod =
+                PersonServiceGrpcPartialKt.ListPersonsGrpcMethod { request ->
+                    flow { }
+                }
 
-        val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
-            PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
-                UpdatePersonResponseKt(success = true)
-            }
+            val updatePerson: PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod =
+                PersonServiceGrpcPartialKt.UpdatePersonGrpcMethod { requests ->
+                    UpdatePersonResponseKt(success = true)
+                }
 
-        val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
-            PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
-                flow { }
-            }
+            val chatWithPerson: PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod =
+                PersonServiceGrpcPartialKt.ChatWithPersonGrpcMethod { requests ->
+                    flow { }
+                }
 
-        val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
-            PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
-                UpdateContactInfoResponseKt(success = true)
-            }
+            val updateContactInfo: PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod =
+                PersonServiceGrpcPartialKt.UpdateContactInfoGrpcMethod { request ->
+                    UpdateContactInfoResponseKt(success = true)
+                }
 
-        val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
-            PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
-                UpdateNotificationSettingsResponseKt(success = true, message = "Test")
-            }
+            val updateNotificationSettings: PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod =
+                PersonServiceGrpcPartialKt.UpdateNotificationSettingsGrpcMethod { request ->
+                    UpdateNotificationSettingsResponseKt(success = true, message = "Test")
+                }
 
-        val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
-            PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
-                GetScheduleResponseKt(
-                    items = listOf(),
-                    `when` = LocalDateTime.now()
-                )
-            }
+            val getSchedule: PersonServiceGrpcPartialKt.GetScheduleGrpcMethod =
+                PersonServiceGrpcPartialKt.GetScheduleGrpcMethod { request ->
+                    GetScheduleResponseKt(
+                        items = listOf(),
+                        `when` = LocalDateTime.now(),
+                    )
+                }
 
-        val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
-            PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
-                TestOptionalFieldResponseKt(hasField = request.hasField())
-            }
+            val testOptionalField: PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod =
+                PersonServiceGrpcPartialKt.TestOptionalFieldGrpcMethod { request ->
+                    TestOptionalFieldResponseKt(hasField = request.hasField())
+                }
 
-        // Create the service using the PartialServerBuilder
-        val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
-            getPerson = getPerson,
-            deletePerson = deletePerson,
-            listPersons = listPersons,
-            updatePerson = updatePerson,
-            chatWithPerson = chatWithPerson,
-            updateContactInfo = updateContactInfo,
-            updateNotificationSettings = updateNotificationSettings,
-            getSchedule = getSchedule,
-            testOptionalField = testOptionalField
-        )
+            // Create the service using the PartialServerBuilder
+            val partialService = PersonServiceGrpcPartialKt.PersonServiceCoroutineImplPartial(
+                getPerson = getPerson,
+                deletePerson = deletePerson,
+                listPersons = listPersons,
+                updatePerson = updatePerson,
+                chatWithPerson = chatWithPerson,
+                updateContactInfo = updateContactInfo,
+                updateNotificationSettings = updateNotificationSettings,
+                getSchedule = getSchedule,
+                testOptionalField = testOptionalField,
+            )
 
-        // Start the gRPC server with the partial service
-        val testPort = 50055
-        val server = ServerBuilder.forPort(testPort)
-            .addService(partialService)
-            .build()
-            .start()
-
-        println("[DEBUG_LOG] Server started on port $testPort")
-
-        try {
-            // Create a channel to the server
-            val channel = ManagedChannelBuilder.forAddress("localhost", testPort)
-                .usePlaintext()
+            // Start the gRPC server with the partial service
+            val testPort = 50055
+            val server = ServerBuilder
+                .forPort(testPort)
+                .addService(partialService)
                 .build()
+                .start()
+
+            println("[DEBUG_LOG] Server started on port $testPort")
 
             try {
-                // Create a client stub
-                val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
+                // Create a channel to the server
+                val channel = ManagedChannelBuilder
+                    .forAddress("localhost", testPort)
+                    .usePlaintext()
+                    .build()
 
-                // Make a simple unary call
-                println("[DEBUG_LOG] Making unary call")
-                val request = GetPersonRequestKt(id = "simple-test")
-                val response = stub.getPerson(request)
+                try {
+                    // Create a client stub
+                    val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel)
 
-                // Verify the response
-                println("[DEBUG_LOG] Received response: ${response.person?.name}, age: ${response.person?.age}")
-                response.person?.name shouldBe "Simple Test Person"
-                response.person?.age shouldBe 25
+                    // Make a simple unary call
+                    println("[DEBUG_LOG] Making unary call")
+                    val request = GetPersonRequestKt(id = "simple-test")
+                    val response = stub.getPerson(request)
+
+                    // Verify the response
+                    println("[DEBUG_LOG] Received response: ${response.person?.name}, age: ${response.person?.age}")
+                    response.person?.name shouldBe "Simple Test Person"
+                    response.person?.age shouldBe 25
+                } finally {
+                    // Shutdown the channel
+                    channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                }
             } finally {
-                // Shutdown the channel
-                channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+                // Shutdown the server
+                server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
             }
-        } finally {
-            // Shutdown the server
-            server.shutdown().awaitTermination(5, TimeUnit.SECONDS)
         }
-    }
 
     @Test
     fun `test direct use of PartialServerExample`() {
@@ -862,77 +885,81 @@ class PartialServerExampleTest {
     }
 
     @Test
-    fun `test TestOptionalField - field not set`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+    fun `test TestOptionalField - field not set`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
 
-        // Test scenario 1: Field NOT set
-        println("Testing TestOptionalField - field not set")
-        val request = TestOptionalFieldRequestKt()
-        val response = stub.testOptionalField(request)
-
-        // Should return false for hasField when field is not set
-        response.hasField shouldBe false
-        println("✓ Field not set test passed: hasField = ${response.hasField}")
-    }
-
-    @Test
-    fun `test TestOptionalField - field set to empty string`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Test scenario 2: Field SET to empty string
-        println("Testing TestOptionalField - field set to empty string")
-        val request = TestOptionalFieldRequestKt(field = "")
-        val response = stub.testOptionalField(request)
-
-        // Should return true for hasField when field is set to empty string
-        response.hasField shouldBe true
-        println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
-    }
-
-    @Test
-    fun `test TestOptionalField - field set to John`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        // Test scenario 3: Field SET to "John"
-        println("Testing TestOptionalField - field set to 'John'")
-        val request = TestOptionalFieldRequestKt(field = "John")
-        val response = stub.testOptionalField(request)
-
-        // Should return true for hasField when field is set to "John"
-        response.hasField shouldBe true
-        println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
-    }
-
-    @Test
-    fun `test TestOptionalField - comprehensive scenarios`(): Unit = runBlocking {
-        // Create a client stub
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-
-        println("\n=== Comprehensive TestOptionalField Tests ===")
-
-        // Test various scenarios
-        val testCases = listOf(
-            Triple("Field not set", TestOptionalFieldRequestKt(), false),
-            Triple("Field set to empty string", TestOptionalFieldRequestKt(field = ""), true),
-            Triple("Field set to 'John'", TestOptionalFieldRequestKt(field = "John"), true),
-            Triple("Field set to whitespace", TestOptionalFieldRequestKt(field = " "), true),
-            Triple("Field set to null string", TestOptionalFieldRequestKt(field = "null"), true),
-            Triple("Field set to long string", TestOptionalFieldRequestKt(field = "This is a very long string to test"), true)
-        )
-
-        testCases.forEach { (description, request, expectedHasField) ->
-            println("\nTesting: $description")
+            // Test scenario 1: Field NOT set
+            println("Testing TestOptionalField - field not set")
+            val request = TestOptionalFieldRequestKt()
             val response = stub.testOptionalField(request)
 
-            response.hasField shouldBe expectedHasField
-
-            val fieldValue = if (request.hasField()) request.field else "<not set>"
-            println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
+            // Should return false for hasField when field is not set
+            response.hasField shouldBe false
+            println("✓ Field not set test passed: hasField = ${response.hasField}")
         }
 
-        println("\n=== All comprehensive tests passed! ===")
-    }
+    @Test
+    fun `test TestOptionalField - field set to empty string`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+            // Test scenario 2: Field SET to empty string
+            println("Testing TestOptionalField - field set to empty string")
+            val request = TestOptionalFieldRequestKt(field = "")
+            val response = stub.testOptionalField(request)
+
+            // Should return true for hasField when field is set to empty string
+            response.hasField shouldBe true
+            println("✓ Field set to empty string test passed: hasField = ${response.hasField}")
+        }
+
+    @Test
+    fun `test TestOptionalField - field set to John`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+            // Test scenario 3: Field SET to "John"
+            println("Testing TestOptionalField - field set to 'John'")
+            val request = TestOptionalFieldRequestKt(field = "John")
+            val response = stub.testOptionalField(request)
+
+            // Should return true for hasField when field is set to "John"
+            response.hasField shouldBe true
+            println("✓ Field set to 'John' test passed: hasField = ${response.hasField}")
+        }
+
+    @Test
+    fun `test TestOptionalField - comprehensive scenarios`(): Unit =
+        runBlocking {
+            // Create a client stub
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+
+            println("\n=== Comprehensive TestOptionalField Tests ===")
+
+            // Test various scenarios
+            val testCases = listOf(
+                Triple("Field not set", TestOptionalFieldRequestKt(), false),
+                Triple("Field set to empty string", TestOptionalFieldRequestKt(field = ""), true),
+                Triple("Field set to 'John'", TestOptionalFieldRequestKt(field = "John"), true),
+                Triple("Field set to whitespace", TestOptionalFieldRequestKt(field = " "), true),
+                Triple("Field set to null string", TestOptionalFieldRequestKt(field = "null"), true),
+                Triple("Field set to long string", TestOptionalFieldRequestKt(field = "This is a very long string to test"), true),
+            )
+
+            testCases.forEach { (description, request, expectedHasField) ->
+                println("\nTesting: $description")
+                val response = stub.testOptionalField(request)
+
+                response.hasField shouldBe expectedHasField
+
+                val fieldValue = if (request.hasField()) request.field else "<not set>"
+                println("✓ $description: hasField = ${response.hasField}, field value = '$fieldValue'")
+            }
+
+            println("\n=== All comprehensive tests passed! ===")
+        }
 }

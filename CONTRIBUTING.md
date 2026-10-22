@@ -91,8 +91,8 @@ Before making changes, make sure your local environment is ready.
 Required tools:
 
 - Java 17+; JDK 21 is recommended
-- Kotlin 2.1.0
-- Gradle 8.0+
+- Kotlin 2.4.21; artifacts are published with Kotlin language/API level 2.1
+- Gradle 9.8.2 (provided by the wrapper)
 - Protoc 4.30.x
 
 Install dependencies and check the build:

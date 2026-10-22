@@ -28,10 +28,11 @@ import io.github.imonja.grpc.kt.toolkit.protobufKotlinTypeName
 class DataClassTypeBuilder(
     private val typeMapper: ProtoTypeMapper,
     private val oneOfBuilder: OneOfTypeBuilder,
-    private val enumTypeBuilder: EnumTypeBuilder = EnumTypeBuilder()
+    private val enumTypeBuilder: EnumTypeBuilder = EnumTypeBuilder(),
 ) : TypeSpecsBuilder<Descriptor> {
-
-    override fun build(descriptor: Descriptor): TypeSpecsWithImports {
+    override fun build(
+        descriptor: Descriptor,
+    ): TypeSpecsWithImports {
         if (descriptor.isGooglePackageType() || descriptor.options.mapEntry) {
             return TypeSpecsWithImports.EMPTY
         }
@@ -39,11 +40,12 @@ class DataClassTypeBuilder(
         val imports = mutableSetOf<Import>()
         val className = descriptor.protobufKotlinTypeName
 
-        val dataClassBuilder = TypeSpec.classBuilder(className)
+        val dataClassBuilder = TypeSpec
+            .classBuilder(className)
             .apply {
                 this.addKdoc(
                     "Data class as a Kotlin representation of the [%T] protocol buffer message",
-                    descriptor.protobufJavaTypeName
+                    descriptor.protobufJavaTypeName,
                 )
                 if (descriptor.fields.isNotEmpty()) {
                     addModifiers(KModifier.DATA)
@@ -52,7 +54,7 @@ class DataClassTypeBuilder(
             // Implement common message interface
             .addSuperinterface(
                 ClassName("io.github.imonja.grpc.kt.common", "ProtoKtMessage")
-                    .parameterizedBy(descriptor.protobufJavaTypeName)
+                    .parameterizedBy(descriptor.protobufJavaTypeName),
             )
 
         val constructorBuilder = FunSpec.constructorBuilder()
@@ -82,24 +84,30 @@ class DataClassTypeBuilder(
             val oneOfType = oneOfResult.oneOfType
 
             constructorBuilder.addParameter(
-                ParameterSpec.builder(
-                    oneOfName,
-                    oneOfType.copy(nullable = true)
-                ).defaultValue("null").build()
+                ParameterSpec
+                    .builder(
+                        oneOfName,
+                        oneOfType.copy(nullable = true),
+                    ).defaultValue("null")
+                    .build(),
             )
 
             dataClassBuilder.addProperty(
-                PropertySpec.builder(
-                    oneOfName,
-                    oneOfType.copy(nullable = true)
-                ).initializer(oneOfName).build()
+                PropertySpec
+                    .builder(
+                        oneOfName,
+                        oneOfType.copy(nullable = true),
+                    ).initializer(oneOfName)
+                    .build(),
             )
         }
 
         // Process regular fields
         for (field in descriptor.fields) {
             if (
-                field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }
+                field.name in descriptor.realOneofs
+                    .flatMap { it.fields }
+                    .map { it.name }
                     .toSet() || field.isExtension
             ) {
                 continue
@@ -112,12 +120,12 @@ class DataClassTypeBuilder(
             val paramBuilder = ParameterSpec.builder(fieldName, fieldType)
             if (field.options.deprecated) {
                 paramBuilder.addAnnotation(
-                    AnnotationSpec.builder(Deprecated::class)
+                    AnnotationSpec
+                        .builder(Deprecated::class)
                         .addMember(
                             "%S",
-                            "The underlying message field is marked deprecated."
-                        )
-                        .build()
+                            "The underlying message field is marked deprecated.",
+                        ).build(),
                 )
             }
             paramBuilder.defaultValue(default.code)
@@ -146,10 +154,12 @@ class DataClassTypeBuilder(
 
         // DSL Builder
         val builderClassName = "Builder"
-        val builderTypeSpec = TypeSpec.classBuilder(builderClassName)
+        val builderTypeSpec = TypeSpec
+            .classBuilder(builderClassName)
             .addModifiers(KModifier.PUBLIC)
         FunSpec.constructorBuilder()
-        val buildFunction = FunSpec.builder("build")
+        val buildFunction = FunSpec
+            .builder("build")
             .addModifiers(KModifier.PUBLIC)
             .returns(className)
         val buildArgs = mutableListOf<String>()
@@ -161,17 +171,22 @@ class DataClassTypeBuilder(
             val oneOfType = oneOfResult.oneOfType.copy(nullable = true)
 
             builderTypeSpec.addProperty(
-                PropertySpec.builder(oneOfJsonName.escapeIfNecessary(), oneOfType)
+                PropertySpec
+                    .builder(oneOfJsonName.escapeIfNecessary(), oneOfType)
                     .mutable(true)
                     .initializer("null")
-                    .build()
+                    .build(),
             )
             buildArgs.add("${oneOfJsonName.escapeIfNecessary()} = ${oneOfJsonName.escapeIfNecessary()}")
         }
 
         // Process regular fields for builder
         for (field in descriptor.fields) {
-            if (field.name in descriptor.realOneofs.flatMap { it.fields }.map { it.name }.toSet() || field.isExtension) {
+            if (field.name in descriptor.realOneofs
+                    .flatMap { it.fields }
+                    .map { it.name }
+                    .toSet() || field.isExtension
+            ) {
                 continue
             }
 
@@ -179,10 +194,11 @@ class DataClassTypeBuilder(
             val (fieldType, default) = typeMapper.mapProtoTypeToKotlinTypeAndDefaultValue(field)
 
             builderTypeSpec.addProperty(
-                PropertySpec.builder(fieldName.escapeIfNecessary(), fieldType)
+                PropertySpec
+                    .builder(fieldName.escapeIfNecessary(), fieldType)
                     .mutable(true)
                     .initializer(default.code)
-                    .build()
+                    .build(),
             )
             buildArgs.add("${fieldName.escapeIfNecessary()} = ${fieldName.escapeIfNecessary()}")
         }
@@ -195,64 +211,65 @@ class DataClassTypeBuilder(
 
         // Companion object with invoke operator and ProtoKtCompanion implementation
         val javaType = descriptor.protobufJavaTypeName
-        val companionBuilder = TypeSpec.companionObjectBuilder()
+        val companionBuilder = TypeSpec
+            .companionObjectBuilder()
             .addSuperinterface(
                 ClassName("io.github.imonja.grpc.kt.common", "ProtoKtCompanion")
-                    .parameterizedBy(className, javaType)
-            )
-            .addFunction(
-                FunSpec.builder("invoke")
+                    .parameterizedBy(className, javaType),
+            ).addFunction(
+                FunSpec
+                    .builder("invoke")
                     .addModifiers(KModifier.PUBLIC, KModifier.OPERATOR)
                     .addParameter(
-                        ParameterSpec.builder(
-                            "block",
-                            LambdaTypeName.get(
-                                receiver = ClassName("", builderClassName),
-                                returnType = com.squareup.kotlinpoet.UNIT
-                            )
-                        ).build()
-                    )
-                    .returns(className)
+                        ParameterSpec
+                            .builder(
+                                "block",
+                                LambdaTypeName.get(
+                                    receiver = ClassName("", builderClassName),
+                                    returnType = com.squareup.kotlinpoet.UNIT,
+                                ),
+                            ).build(),
+                    ).returns(className)
                     .addStatement("return %L().apply(block).build()", builderClassName)
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("parseFrom")
+                    .build(),
+            ).addFunction(
+                FunSpec
+                    .builder("parseFrom")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("data", ByteArray::class)
                     .returns(className)
                     .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("parseFrom")
+                    .build(),
+            ).addFunction(
+                FunSpec
+                    .builder("parseFrom")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("data", ClassName("com.google.protobuf", "ByteString"))
                     .returns(className)
                     .addStatement("return %T.parseFrom(data).toKotlinProto()", javaType)
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("parseFrom")
+                    .build(),
+            ).addFunction(
+                FunSpec
+                    .builder("parseFrom")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .addParameter("input", ClassName("java.io", "InputStream"))
                     .returns(className)
                     .addStatement("return %T.parseFrom(input).toKotlinProto()", javaType)
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("javaParser")
+                    .build(),
+            ).addFunction(
+                FunSpec
+                    .builder("javaParser")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(javaType))
                     .addStatement("return %T.parser()", javaType)
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("parser")
+                    .build(),
+            ).addFunction(
+                FunSpec
+                    .builder("parser")
                     .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
                     .returns(ClassName("com.google.protobuf", "Parser").parameterizedBy(className))
                     .addStatement("return %T.parser().toKotlinParser { it.toKotlinProto() }", javaType)
-                    .build()
+                    .build(),
             )
 
         imports.add(Import("io.github.imonja.grpc.kt.common", listOf("toKotlinParser")))
@@ -261,7 +278,7 @@ class DataClassTypeBuilder(
 
         return TypeSpecsWithImports(
             typeSpecs = listOf(dataClassBuilder.build()),
-            imports = imports
+            imports = imports,
         )
     }
 }

@@ -20,7 +20,6 @@ import java.time.ZoneId
 import java.util.*
 
 class ExtensionsTests {
-
     @Test
     fun `test converting Timestamp to LocalDateTime`() {
         val timestamp = Timestamp.newBuilder().setSeconds(1633046400L).build()
@@ -67,7 +66,8 @@ class ExtensionsTests {
 
     @Test
     fun `test converting Protobuf Duration to Duration`() {
-        val protoDuration = com.google.protobuf.Duration.newBuilder()
+        val protoDuration = com.google.protobuf.Duration
+            .newBuilder()
             .setSeconds(3600)
             .setNanos(1_000_000)
             .build()
@@ -78,7 +78,8 @@ class ExtensionsTests {
     @Test
     fun `test converting Duration to Protobuf Duration`() {
         val duration = Duration.ofSeconds(3600, 1_000_000)
-        val expectedProtoDuration = com.google.protobuf.Duration.newBuilder()
+        val expectedProtoDuration = com.google.protobuf.Duration
+            .newBuilder()
             .setSeconds(3600)
             .setNanos(1_000_000)
             .build()
@@ -162,7 +163,8 @@ class ExtensionsTests {
     fun `test ProtoTimestamp to Date conversion`() {
         val seconds = 1683647730L
         val nanos = 500_000_000
-        val timestamp = Timestamp.newBuilder()
+        val timestamp = Timestamp
+            .newBuilder()
             .setSeconds(seconds)
             .setNanos(nanos)
             .build()
@@ -184,7 +186,8 @@ class ExtensionsTests {
 
     @Test
     fun `test ProtoTimestamp to Date and back to ProtoTimestamp`() {
-        val originalTimestamp = Timestamp.newBuilder()
+        val originalTimestamp = Timestamp
+            .newBuilder()
             .setSeconds(1683647730L)
             .setNanos(500_000_000)
             .build()

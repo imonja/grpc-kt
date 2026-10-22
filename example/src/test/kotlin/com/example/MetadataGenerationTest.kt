@@ -26,7 +26,7 @@ class MetadataGenerationTest {
     private var channel: ManagedChannel? = null
     private val receivedMetadata = AtomicReference<Metadata>()
 
-    private val TEST_KEY = Metadata.Key.of("test-header", Metadata.ASCII_STRING_MARSHALLER)
+    private val testKey = Metadata.Key.of("test-header", Metadata.ASCII_STRING_MARSHALLER)
 
     @BeforeEach
     fun setup() {
@@ -34,25 +34,26 @@ class MetadataGenerationTest {
             override fun <ReqT : Any?, RespT : Any?> interceptCall(
                 call: ServerCall<ReqT, RespT>,
                 headers: Metadata,
-                next: ServerCallHandler<ReqT, RespT>
+                next: ServerCallHandler<ReqT, RespT>,
             ): ServerCall.Listener<ReqT> {
                 receivedMetadata.set(headers)
                 return next.startCall(call, headers)
             }
         }
 
-        server = ServerBuilder.forPort(serverPort)
+        server = ServerBuilder
+            .forPort(serverPort)
             .addService(
                 ServerInterceptors.intercept(
                     PersonServiceImpl(),
                     interceptor,
-                    metadataServerInterceptor()
-                )
-            )
-            .build()
+                    metadataServerInterceptor(),
+                ),
+            ).build()
             .start()
 
-        channel = ManagedChannelBuilder.forAddress("localhost", serverPort)
+        channel = ManagedChannelBuilder
+            .forAddress("localhost", serverPort)
             .usePlaintext()
             .build()
     }
@@ -64,63 +65,71 @@ class MetadataGenerationTest {
     }
 
     @Test
-    fun `test unary call with explicit metadata`() = runBlocking {
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-        val request = GetPersonRequestKt(id = "123")
-        val metadata = Metadata()
-        metadata.put(TEST_KEY, "test-value")
+    fun `test unary call with explicit metadata`() =
+        runBlocking {
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+            val request = GetPersonRequestKt(id = "123")
+            val metadata = Metadata()
+            metadata.put(testKey, "test-value")
 
-        stub.getPerson(request, metadata)
+            stub.getPerson(request, metadata)
 
-        val headers = receivedMetadata.get()
-        headers.get(TEST_KEY) shouldBe "test-value"
-    }
-
-    @Test
-    fun `test server streaming with explicit metadata`() = runBlocking {
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-        val request = ListPersonsRequestKt(limit = 1)
-        val metadata = Metadata()
-        metadata.put(TEST_KEY, "streaming-value")
-
-        stub.listPersons(request, metadata).collect { }
-
-        val headers = receivedMetadata.get()
-        headers.get(TEST_KEY) shouldBe "streaming-value"
-    }
+            val headers = receivedMetadata.get()
+            headers.get(testKey) shouldBe "test-value"
+        }
 
     @Test
-    fun `test metadata available in server implementation`(): Unit = runBlocking {
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-        val request = GetPersonRequestKt(id = "123")
-        val metadata = Metadata()
-        metadata.put(TEST_KEY, "server-visible-value")
+    fun `test server streaming with explicit metadata`() =
+        runBlocking {
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+            val request = ListPersonsRequestKt(limit = 1)
+            val metadata = Metadata()
+            metadata.put(testKey, "streaming-value")
 
-        val response = stub.getPerson(request, metadata)
+            stub.listPersons(request, metadata).collect { }
 
-        response.person?.name shouldBe "server-visible-value"
-    }
+            val headers = receivedMetadata.get()
+            headers.get(testKey) shouldBe "streaming-value"
+        }
 
     @Test
-    fun `test metadata available in server streaming`(): Unit = runBlocking {
-        val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
-        val request = ListPersonsRequestKt(limit = 1)
-        val metadata = Metadata()
-        metadata.put(TEST_KEY, "streaming-server-value")
+    fun `test metadata available in server implementation`(): Unit =
+        runBlocking {
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+            val request = GetPersonRequestKt(id = "123")
+            val metadata = Metadata()
+            metadata.put(testKey, "server-visible-value")
 
-        val response = stub.listPersons(request, metadata).first()
+            val response = stub.getPerson(request, metadata)
 
-        response.person?.name shouldBe "streaming-server-value"
-    }
+            response.person?.name shouldBe "server-visible-value"
+        }
+
+    @Test
+    fun `test metadata available in server streaming`(): Unit =
+        runBlocking {
+            val stub = PersonServiceGrpcKt.PersonServiceCoroutineStub(channel!!)
+            val request = ListPersonsRequestKt(limit = 1)
+            val metadata = Metadata()
+            metadata.put(testKey, "streaming-server-value")
+
+            val response = stub.listPersons(request, metadata).first()
+
+            response.person?.name shouldBe "streaming-server-value"
+        }
 
     private class PersonServiceImpl : PersonServiceGrpcKt.PersonServiceCoroutineImplBase() {
-        override suspend fun getPerson(request: GetPersonRequestKt): GetPersonResponseKt {
+        override suspend fun getPerson(
+            request: GetPersonRequestKt,
+        ): GetPersonResponseKt {
             val metadata = coroutineContext.grpcMetadata
             val value = metadata?.get(Metadata.Key.of("test-header", Metadata.ASCII_STRING_MARSHALLER)) ?: "not-found"
             return GetPersonResponseKt(person = PersonKt(name = value))
         }
 
-        override fun listPersons(request: ListPersonsRequestKt) = kotlinx.coroutines.flow.flow {
+        override fun listPersons(
+            request: ListPersonsRequestKt,
+        ) = kotlinx.coroutines.flow.flow {
             val metadata = currentCoroutineContext().grpcMetadata
             val value = metadata?.get(Metadata.Key.of("test-header", Metadata.ASCII_STRING_MARSHALLER)) ?: "not-found"
             emit(ListPersonsResponseKt(person = PersonKt(name = value)))
