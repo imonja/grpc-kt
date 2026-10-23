@@ -11,10 +11,10 @@ application {
 }
 
 dependencies {
-    val jacksonVersion = "2.18.3"
+    val jacksonVersion = "2.22.4"
     val okHttpVersion = "4.12.0"
     val javaxApiVersion = "1.3.2"
-    val dependencyVersion = "3.24.2"
+    val dependencyVersion = "3.27.7"
 
     // Project-specific dependencies
     implementation("com.squareup:kotlinpoet:${rootProject.ext["kotlinPoetVersion"]}")

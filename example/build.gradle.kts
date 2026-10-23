@@ -14,14 +14,14 @@ java {
     }
 }
 
-val jupiterVersion = "5.11.4"
+val jupiterVersion = "5.14.4"
 
 dependencies {
     // Kotlin dependency
     implementation(kotlin("stdlib-jdk8"))
 
     // Additional gRPC dependencies not included in plugin
-    implementation("io.grpc:grpc-netty:1.71.0")
+    implementation("io.grpc:grpc-netty:1.85.1")
 
     // Project dependencies
     api(project(":common"))

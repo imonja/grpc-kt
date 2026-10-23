@@ -23,11 +23,11 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
         val extension = project.extensions.create<GrpcKtProtobufExtension>("grpcKtProtobuf", project)
 
         // Configure versions
-        val pgvVersion = "1.1.0"
+        val pgvVersion = "1.3.3"
         val pgdVersion = "1.5.1"
-        val kotlinGrpcVersion = "1.4.1"
-        val javaGrpcVersion = "1.71.0"
-        val protobufVersion = "4.30.2"
+        val kotlinGrpcVersion = "1.4.3"
+        val javaGrpcVersion = "1.85.1"
+        val protobufVersion = "4.36.2"
         val coroutinesVersion = "1.10.2"
 
         // Add dependencies
@@ -42,6 +42,10 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
                 add("implementation", "io.github.imonja:grpc-kt-common:${getPluginVersion()}")
             }
 
+            // The BOMs align every io.grpc and com.google.protobuf module of the project, including the ones it declares
+            // itself or gets transitively, so mixed versions of modules that must match cannot end up on the classpath
+            add("implementation", platform("io.grpc:grpc-bom:$javaGrpcVersion"))
+            add("implementation", platform("com.google.protobuf:protobuf-bom:$protobufVersion"))
             add("implementation", "io.grpc:grpc-stub:$javaGrpcVersion")
             add("implementation", "io.grpc:grpc-protobuf:$javaGrpcVersion")
             add("implementation", "io.grpc:grpc-kotlin-stub:$kotlinGrpcVersion")
