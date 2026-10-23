@@ -22,7 +22,8 @@ class GrpcKtProtobufPlugin : Plugin<Project> {
         // Create the extension
         val extension = project.extensions.create<GrpcKtProtobufExtension>("grpcKtProtobuf", project)
 
-        // Configure versions
+        // Versions added to consumer projects; keep grpc, grpc-kotlin, protobuf and coroutines in sync with
+        // the mapOf in the root build.gradle.kts. Raised manually: Dependabot cannot see versions in this file.
         val pgvVersion = "1.3.3"
         val pgdVersion = "1.5.1"
         val kotlinGrpcVersion = "1.4.3"

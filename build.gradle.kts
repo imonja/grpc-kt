@@ -22,15 +22,17 @@ if (project.hasProperty("releaseVersion")) {
     version = project.property("releaseVersion") as String
 }
 
+// The versions the Gradle plugin adds to consumer projects. Raise them manually, together with the copy in
+// GrpcKtProtobufPlugin.kt, and check them against the consumer services; Dependabot ignores them.
 mapOf(
     "grpcJavaVersion" to "1.85.1",
     "grpcKotlinVersion" to "1.4.3",
     "protobufVersion" to "4.36.2",
     "coroutinesVersion" to "1.10.2",
-    "kotlinPoetVersion" to "2.4.0",
-    "jupiterVersion" to "5.14.4",
-    "kotestVersion" to "5.9.1",
 ).forEach({ (key, value) -> ext[key] = value })
+
+val jupiterVersion = "5.14.4"
+val kotestVersion = "5.9.1"
 
 repositories {
     mavenCentral()
@@ -70,9 +72,9 @@ subprojects {
         "implementation"("org.jetbrains.kotlinx:kotlinx-coroutines-core:${rootProject.ext["coroutinesVersion"]}")
 
         // Common test dependencies
-        "testImplementation"("org.junit.jupiter:junit-jupiter-api:${rootProject.ext["jupiterVersion"]}")
-        "testImplementation"("org.junit.jupiter:junit-jupiter-engine:${rootProject.ext["jupiterVersion"]}")
-        "testImplementation"("io.kotest:kotest-assertions-core:${rootProject.ext["kotestVersion"]}")
+        "testImplementation"("org.junit.jupiter:junit-jupiter-api:$jupiterVersion")
+        "testImplementation"("org.junit.jupiter:junit-jupiter-engine:$jupiterVersion")
+        "testImplementation"("io.kotest:kotest-assertions-core:$kotestVersion")
         // Gradle 9 no longer loads the JUnit Platform launcher automatically
         "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }

@@ -1,0 +1,47 @@
+version: 2
+
+# Minor and patch updates arrive as one grouped PR per ecosystem; major updates get their own PRs.
+# All are merged manually. Commit messages carry no (BUMP)/(MINOR) marker, so merged updates ship with the next release.
+updates:
+    # The root build includes gradle-plugin (includeBuild), so "/" covers both builds;
+    # listing "/gradle-plugin" separately opens duplicate PRs.
+    -   package-ecosystem: gradle
+        directory: "/"
+        schedule:
+            interval: weekly
+            day: monday
+        ignore:
+            # The Gradle plugin adds gRPC, Protobuf and coroutines to consumer projects and puts protobuf-gradle-plugin on
+            # their build classpath. Raise them manually, together with the copy in GrpcKtProtobufPlugin.kt that Dependabot
+            # cannot see, and check them against the consumer services (see the mapOf in build.gradle.kts).
+            -   dependency-name: "io.grpc:*"
+            -   dependency-name: "com.google.protobuf:*"
+            -   dependency-name: "com.google.protobuf"
+            -   dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines-*"
+            # JUnit 6 needs JVM 17 and kotest 6 JVM 11, while the tests compile for JVM 8 like the published libraries
+            -   dependency-name: "org.junit.jupiter:*"
+                update-types: [ "version-update:semver-major" ]
+            -   dependency-name: "io.kotest:*"
+                update-types: [ "version-update:semver-major" ]
+            # Not used by the generator code; kept on 4.x on purpose
+            -   dependency-name: "com.squareup.okhttp3:okhttp"
+                update-types: [ "version-update:semver-major" ]
+        groups:
+            gradle-minor-patch:
+                update-types:
+                    - minor
+                    - patch
+
+    # "/" covers .github/workflows; composite actions under .github/actions are listed separately
+    -   package-ecosystem: github-actions
+        directories:
+            - "/"
+            - "/.github/actions/*"
+        schedule:
+            interval: weekly
+            day: monday
+        groups:
+            actions-minor-patch:
+                update-types:
+                    - minor
+                    - patch
