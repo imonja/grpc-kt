@@ -6,11 +6,11 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
     kotlin("jvm") version "2.4.21" apply false
-    id("com.google.protobuf") version "0.9.5" apply false
+    id("com.google.protobuf") version "0.10.0" apply false
     `maven-publish`
     signing
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    id("com.vanniktech.maven.publish") version "0.35.0" apply false
+    id("com.vanniktech.maven.publish") version "0.37.0" apply false
 }
 
 group = "io.github.imonja"
@@ -23,12 +23,12 @@ if (project.hasProperty("releaseVersion")) {
 }
 
 mapOf(
-    "grpcJavaVersion" to "1.71.0",
-    "grpcKotlinVersion" to "1.4.1",
-    "protobufVersion" to "4.30.2",
+    "grpcJavaVersion" to "1.85.1",
+    "grpcKotlinVersion" to "1.4.3",
+    "protobufVersion" to "4.36.2",
     "coroutinesVersion" to "1.10.2",
-    "kotlinPoetVersion" to "2.1.0",
-    "jupiterVersion" to "5.11.4",
+    "kotlinPoetVersion" to "2.4.0",
+    "jupiterVersion" to "5.14.4",
     "kotestVersion" to "5.9.1",
 ).forEach({ (key, value) -> ext[key] = value })
 

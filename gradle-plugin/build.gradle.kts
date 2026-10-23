@@ -6,8 +6,8 @@ plugins {
     `maven-publish`
     signing
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    id("com.vanniktech.maven.publish") version "0.35.0"
-    id("com.gradle.plugin-publish") version "1.3.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
+    id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 group = "io.github.imonja"
@@ -33,7 +33,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.5")
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.10.0")
     implementation(gradleApi())
     implementation(localGroovy())
 }
@@ -42,13 +42,16 @@ dependencies {
 val generateVersionProperties = tasks.register("generateVersionProperties") {
     val outputDir = layout.buildDirectory.dir("generated/sources/version")
     val versionFile = outputDir.map { it.file("version.properties") }
+    val pluginVersion = project.version.toString()
 
+    // Without the input, a changed -PreleaseVersion leaves the task up to date and the plugin requests the previous version
+    inputs.property("version", pluginVersion)
     outputs.file(versionFile)
 
     doLast {
         val outputFile = versionFile.get().asFile
         outputFile.parentFile.mkdirs()
-        outputFile.writeText("version=${project.version}")
+        outputFile.writeText("version=$pluginVersion")
     }
 }
 
