@@ -13,7 +13,7 @@ application {
 dependencies {
     val kotlinPoetVersion = "2.4.0"
     val jacksonVersion = "2.22.4"
-    val okHttpVersion = "4.12.0"
+    val okHttpVersion = "4.12.1"
     val javaxApiVersion = "1.3.2"
     val dependencyVersion = "3.27.7"
 
